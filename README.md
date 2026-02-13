@@ -1,2 +1,2 @@
-# Fantasy-Engine
+# FantasyEngine
 Make your ideas a reality!
