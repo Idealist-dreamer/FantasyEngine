@@ -1,0 +1,55 @@
+{
+    "version": 4,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 24,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "WindowsBase",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}/GenerateCacheFile",
+            "installDir": "${sourceDir}/Install/${presetName}",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe",
+                "CMAKE_JOB_POOLS": "compile=4;link=2",
+                "CMAKE_BUILD_PARALLEL_LEVEL": "4",
+                "RUNTIME_ARCHIVE_LIBRARY_BASE_DIRECTORY": "${sourceDir}/Build/${presetName}",
+                "VCPKG_ROOT": "$env{FE_VCPKG_ROOT}",
+                "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
+                "CMAKE_TOOLCHAIN_FILE": "$env{FE_VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "QT_ROOT": "$env{FE_QT_ROOT}",
+                "QT_VERSION_MAJOR": "6",
+                "SDK_ROOT": "$env{FE_SDK_ROOT}",
+                "DX12_Agility_VERSION": "616"
+            }
+        },
+        {
+            "name": "Win64-Debug",
+            "displayName": "Win64-Debug",
+            "inherits": "WindowsBase",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "Win64-Release",
+            "displayName": "Win64-Release",
+            "inherits": "WindowsBase",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ]
+}

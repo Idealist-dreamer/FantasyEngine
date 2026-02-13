@@ -1,0 +1,9 @@
+# User config
+.vscode/*
+CMakePresets.json
+
+# Build file
+Build/*
+
+# Generate fbs header file
+Engine/FlatBuffers/*
