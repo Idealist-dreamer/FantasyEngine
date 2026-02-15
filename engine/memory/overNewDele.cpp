@@ -4,6 +4,6 @@
 #include <mimalloc-new-delete.h>
 #endif
 
-namespace fe::engine {
+namespace fe::engine::memory {
 volatile int _force_link_mimalloc_v = 0;
-}  // namespace fe::engine
+}  // namespace fe::engine::memory

@@ -1,6 +1,6 @@
 #include <mimalloc.h>
 
-namespace fe::engine {
+namespace fe::engine::memory {
 
 FE_FINLINE void* Allocator::malloc(size_t size) noexcept {
   return mi_malloc(size);
@@ -62,4 +62,4 @@ FE_FINLINE void Allocator::free(void* p) noexcept {
   mi_free(p);
 }
 
-}  // namespace fe::engine
+}  // namespace fe::engine::memory

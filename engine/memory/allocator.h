@@ -6,12 +6,11 @@
 
 #include "engine/macros.h"
 
-namespace fe::engine {
+namespace fe::engine::memory {
 constexpr size_t kDefaultAlignment = alignof(std::max_align_t);
 
 class Allocator {
  public:
-  // No type alloc
   FE_FINLINE static void* malloc(size_t size) noexcept;
   FE_FINLINE static void* zalloc(size_t size) noexcept;
   FE_FINLINE static void* calloc(size_t count, size_t size) noexcept;
@@ -32,7 +31,6 @@ class Allocator {
 
   FE_FINLINE static void free(void* p) noexcept;
 
-  // Type alloc
   template <typename T>
   FE_FINLINE static T* mallocType() noexcept {
     void* p = nullptr;
@@ -106,7 +104,7 @@ class Allocator {
   }
 };
 
-}  // namespace fe::engine
+}  // namespace fe::engine::memory
 
 #include "allocator.inl"
 #include "overNewDele.h"
