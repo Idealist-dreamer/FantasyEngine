@@ -24,7 +24,7 @@ class ResIdPromise {
   friend class ResourceManager;
 
  public:
-  bool IsReady() const { return id.IsNull(); }
+  bool IsReady() const { return !(id.IsNull()); }
 
   ResId GetId() const {
     if (id.IsNull()) {
@@ -43,12 +43,11 @@ using ResOperate = std::function<void(Resource&)>;
 
 class ResCommandBuffer {
   friend class ResourceManager;
-
- public:
   enum struct OpType : uint8_t { Add = 0, Change, Operate, Remove };
 
+ public:
   ResCommandBuffer() = default;
-  ~ResCommandBuffer() = default;
+  ~ResCommandBuffer();
 
   ResCommandBuffer(const ResCommandBuffer&) = delete;
   ResCommandBuffer& operator=(const ResCommandBuffer&) = delete;
@@ -80,7 +79,7 @@ class ResCommandBuffer {
 
   template <typename F>
   void OperateResource(ResId id, F&& op) {
-    m_Orders.push_back({OpType::Operate m_OperateResources.size()});
+    m_Orders.push_back({OpType::Operate, m_OperateResources.size()});
     m_OperateResources.emplace_back(id, std::forward<F>(op));
   }
 
@@ -94,13 +93,7 @@ class ResCommandBuffer {
     m_RemoveResources.push_back(id);
   }
 
-  void Reset() {
-    m_AddResources.clear();
-    m_ChangeResources.clear();
-    m_OperateResources.clear();
-    m_RemoveResources.clear();
-    m_Orders.clear();
-  }
+  void Reset();
 
  private:
   FE_FINLINE stl::vector<stl::pair<ResIdPromise*, Resource>>& GetAddResources() { return m_AddResources; }
