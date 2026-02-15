@@ -4,9 +4,11 @@ enable_testing()
 include(GoogleTest)
 
 add_subdirectory(memory)
+add_subdirectory(type)
 
 set(TEST_TARGETS 
     TestMemory
+    TestType
 )
 
 set(RUN_COMMANDS "")

@@ -29,9 +29,9 @@ TEST(TestMiMalloc, CreateDestroyArray) {
   ASSERT_NE(arr, nullptr);
   EXPECT_EQ(MockObject::constructed_count, count);
 
-  // for (size_t i = 0; i < count; ++i) {
-  //   EXPECT_EQ(arr[i].a_, 100);
-  // }
+  for (size_t i = 0; i < count; ++i) {
+    EXPECT_EQ(arr[i].a_, 0);
+  }
 
   // 2. Test destroyArray (Verify destructor calls)
   Alloc::destroyArray(arr, count);

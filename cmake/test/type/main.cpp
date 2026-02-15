@@ -4,11 +4,9 @@
 #include <engine/engine.h>
 using namespace fe::engine;
 
-#include "malloc.h"
+#include "stlPerformance.h"
+#include "mallocPtr.h"
 #include "mallocPerformance.h"
-
-#include "mallocType.h"
-#include "mallocTypeArray.h"
 
 int main(int argc, char* argv[]) {
   printf("=== Running Unit Tests ===\n");
@@ -20,14 +18,12 @@ int main(int argc, char* argv[]) {
     return test_result;
   }
 
-#ifndef FE_DEBUG
   printf("\n=== Running Performance Benchmarks ===\n");
   benchmark::Initialize(&argc, argv);
   if (benchmark::ReportUnrecognizedArguments(argc, argv))
     return 1;
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
-#endif
 
   return 0;
 }
