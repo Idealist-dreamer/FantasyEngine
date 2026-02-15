@@ -173,35 +173,35 @@ BENCHMARK(BM_MemoryChurn_Mi);
 // ============================================================================
 
 // --- Unique Ptr ---
-// static void BM_StdMakeUnique(benchmark::State& state) {
-//   for (auto _ : state) {
-//     auto p = std::make_unique<SmallObj>(42);
-//     benchmark::DoNotOptimize(p);
-//   }
-// }
-// BENCHMARK(BM_StdMakeUnique);
+static void BM_StdMakeUnique(benchmark::State& state) {
+  for (auto _ : state) {
+    auto p = std::make_unique<SmallObj>(42);
+    benchmark::DoNotOptimize(p);
+  }
+}
+BENCHMARK(BM_StdMakeUnique);
 
-// static void BM_MiMakeUnique(benchmark::State& state) {
-//   for (auto _ : state) {
-//     auto p = MiAlloc::make_unique<SmallObj>(42);
-//     benchmark::DoNotOptimize(p);
-//   }
-// }
-// BENCHMARK(BM_MiMakeUnique);
+static void BM_MiMakeUnique(benchmark::State& state) {
+  for (auto _ : state) {
+    auto p = make_unique<SmallObj>(42);
+    benchmark::DoNotOptimize(p);
+  }
+}
+BENCHMARK(BM_MiMakeUnique);
 
-// // --- Shared Ptr ---
-// static void BM_StdMakeShared(benchmark::State& state) {
-//   for (auto _ : state) {
-//     auto p = std::make_shared<SmallObj>(42);
-//     benchmark::DoNotOptimize(p);
-//   }
-// }
-// BENCHMARK(BM_StdMakeShared);
+// --- Shared Ptr ---
+static void BM_StdMakeShared(benchmark::State& state) {
+  for (auto _ : state) {
+    auto p = std::make_shared<SmallObj>(42);
+    benchmark::DoNotOptimize(p);
+  }
+}
+BENCHMARK(BM_StdMakeShared);
 
-// static void BM_MiMakeShared(benchmark::State& state) {
-//   for (auto _ : state) {
-//     auto p = MiAlloc::make_shared<SmallObj>(42);
-//     benchmark::DoNotOptimize(p);
-//   }
-// }
-// BENCHMARK(BM_MiMakeShared);
+static void BM_MiMakeShared(benchmark::State& state) {
+  for (auto _ : state) {
+    auto p = make_shared<SmallObj>(42);
+    benchmark::DoNotOptimize(p);
+  }
+}
+BENCHMARK(BM_MiMakeShared);
