@@ -52,23 +52,8 @@ class ResCommandBuffer {
   ResCommandBuffer(const ResCommandBuffer&) = delete;
   ResCommandBuffer& operator=(const ResCommandBuffer&) = delete;
 
-  ResCommandBuffer(ResCommandBuffer&& other) noexcept
-      : m_AddResources(std::move(other.m_AddResources)),
-        m_OperateResources(std::move(other.m_OperateResources)),
-        m_ChangeResources(std::move(other.m_ChangeResources)),
-        m_RemoveResources(std::move(other.m_RemoveResources)),
-        m_Orders(std::move(other.m_Orders)) {}
-
-  ResCommandBuffer& operator=(ResCommandBuffer&& other) noexcept {
-    if (this != &other) {
-      m_AddResources = std::move(other.m_AddResources);
-      m_OperateResources = std::move(other.m_OperateResources);
-      m_ChangeResources = std::move(other.m_ChangeResources);
-      m_RemoveResources = std::move(other.m_RemoveResources);
-      m_Orders = std::move(other.m_Orders);
-    }
-    return *this;
-  }
+  ResCommandBuffer(ResCommandBuffer&& other) noexcept = default;
+  ResCommandBuffer& operator=(ResCommandBuffer&& other) noexcept = default;
 
   ResIdPromise* AddResource(Resource&& res) {
     auto promise = memory::Allocator::create<ResIdPromise>();
