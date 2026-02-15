@@ -13,4 +13,5 @@
 
 #include "render/rhi/GraphicsCore.h"
 
-#include "resource/resource.h"
+#include "ecs/resource/resource.h"
+#include "ecs/resource/resCommandBuffer.h"

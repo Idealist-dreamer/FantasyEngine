@@ -95,3 +95,5 @@
     inline bool is_set(e_ val, e_ flag) { return (val & flag) != static_cast<e_>(0); } \
     inline void flip_bit(e_& val, e_ flag) { val = is_set(val, flag) ? (val & (~flag)) : (val | flag); }
 // clang-format on
+
+#define FE_UINT32_MAX 0xFFFFFFFFU

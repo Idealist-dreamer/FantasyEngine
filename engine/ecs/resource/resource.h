@@ -1,10 +1,10 @@
 #pragma once
 
-#include "engine/macros.h"
-
 #include <typeindex>
 
-namespace fe::engine::resource {
+#include "engine/macros.h"
+
+namespace fe::engine::ecs {
 struct Resource {
   Resource() = default;
   ~Resource() { Destroy(); }
@@ -100,4 +100,4 @@ struct Resource {
   std::type_index m_TypeInfo = typeid(void);
 #endif
 };
-}  // namespace fe::engine::resource
+}  // namespace fe::engine::ecs

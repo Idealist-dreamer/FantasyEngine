@@ -32,10 +32,10 @@
 #define FE_ASSERT(isFalse, ...)                                                                                                      \
   do {                                                                                                                               \
     if (!(bool)(isFalse)) {                                                                                                          \
-      fe::engine::utility::Print("\nAssertion failed in " FE_STRINGIFY_BUILTIN(__FILE__) " @ " FE_STRINGIFY_BUILTIN(__LINE__) "\n"); \
-      fe::engine::utility::PrintSubMessage("\'" #isFalse "\' is false");                                                             \
-      fe::engine::utility::PrintSubMessage(__VA_ARGS__);                                                                             \
-      fe::engine::utility::Print("\n");                                                                                              \
+      fe::engine::utility::print("\nAssertion failed in " FE_STRINGIFY_BUILTIN(__FILE__) " @ " FE_STRINGIFY_BUILTIN(__LINE__) "\n"); \
+      fe::engine::utility::printSubMessage("\'" #isFalse "\' is false");                                                             \
+      fe::engine::utility::printSubMessage(__VA_ARGS__);                                                                             \
+      fe::engine::utility::print("\n");                                                                                              \
       __debugbreak();                                                                                                                \
     }                                                                                                                                \
   } while (0)
@@ -43,10 +43,10 @@
 #define FE_ASSERT_SUCCEEDED(hr, ...)                                                                                               \
   do {                                                                                                                             \
     if (FAILED(hr)) {                                                                                                              \
-      fe::engine::utility::Print("\nHRESULT failed in " FE_STRINGIFY_BUILTIN(__FILE__) " @ " FE_STRINGIFY_BUILTIN(__LINE__) "\n"); \
-      fe::engine::utility::PrintSubMessage("hr = 0x%08X", hr);                                                                     \
-      fe::engine::utility::PrintSubMessage(__VA_ARGS__);                                                                           \
-      fe::engine::utility::Print("\n");                                                                                            \
+      fe::engine::utility::print("\nHRESULT failed in " FE_STRINGIFY_BUILTIN(__FILE__) " @ " FE_STRINGIFY_BUILTIN(__LINE__) "\n"); \
+      fe::engine::utility::printSubMessage("hr = 0x%08X", hr);                                                                     \
+      fe::engine::utility::printSubMessage(__VA_ARGS__);                                                                           \
+      fe::engine::utility::print("\n");                                                                                            \
       __debugbreak();                                                                                                              \
     }                                                                                                                              \
   } while (0)
@@ -56,10 +56,10 @@
     static bool s_TriggeredWarning = false;                                                                                        \
     if ((bool)(isTrue) && !s_TriggeredWarning) {                                                                                   \
       s_TriggeredWarning = true;                                                                                                   \
-      fe::engine::utility::Print("\nWarning issued in " FE_STRINGIFY_BUILTIN(__FILE__) " @ " FE_STRINGIFY_BUILTIN(__LINE__) "\n"); \
-      fe::engine::utility::PrintSubMessage("\'" #isTrue "\' is true");                                                             \
-      fe::engine::utility::PrintSubMessage(__VA_ARGS__);                                                                           \
-      fe::engine::utility::Print("\n");                                                                                            \
+      fe::engine::utility::print("\nWarning issued in " FE_STRINGIFY_BUILTIN(__FILE__) " @ " FE_STRINGIFY_BUILTIN(__LINE__) "\n"); \
+      fe::engine::utility::printSubMessage("\'" #isTrue "\' is true");                                                             \
+      fe::engine::utility::printSubMessage(__VA_ARGS__);                                                                           \
+      fe::engine::utility::print("\n");                                                                                            \
     }                                                                                                                              \
   } while (0)
 
@@ -67,12 +67,12 @@
 
 #define FE_ERROR(...)                                                                                                            \
   do {                                                                                                                           \
-    fe::engine::utility::Print("\nError reported in " FE_STRINGIFY_BUILTIN(__FILE__) " @ " FE_STRINGIFY_BUILTIN(__LINE__) "\n"); \
-    fe::engine::utility::PrintSubMessage(__VA_ARGS__);                                                                           \
-    fe::engine::utility::Print("\n");                                                                                            \
+    fe::engine::utility::print("\nError reported in " FE_STRINGIFY_BUILTIN(__FILE__) " @ " FE_STRINGIFY_BUILTIN(__LINE__) "\n"); \
+    fe::engine::utility::printSubMessage(__VA_ARGS__);                                                                           \
+    fe::engine::utility::print("\n");                                                                                            \
   } while (0)
 
-#define FE_DEBUGPRINT(msg, ...) fe::engine::utility::Printf(msg "\n", ##__VA_ARGS__);
+#define FE_DEBUGPRINT(msg, ...) fe::engine::utility::printf(msg "\n", ##__VA_ARGS__);
 
 #endif
 

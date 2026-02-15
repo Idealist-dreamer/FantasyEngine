@@ -7,22 +7,22 @@
 
 namespace fe::engine::utility {
 #ifdef _CONSOLE
-FE_FINLINE void Print(const char* msg) {
+FE_FINLINE void print(const char* msg) {
   printf("%s", msg);
 }
-FE_FINLINE void Print(const wchar_t* msg) {
+FE_FINLINE void print(const wchar_t* msg) {
   wprintf(L"%ws", msg);
 }
 #else
-FE_FINLINE void Print(const char* msg) {
+FE_FINLINE void print(const char* msg) {
   OutputDebugStringA(msg);
 }
-FE_FINLINE void Print(const wchar_t* msg) {
+FE_FINLINE void print(const wchar_t* msg) {
   OutputDebugStringW(msg);
 }
 #endif
 
-FE_FINLINE void Printf(const char* format, ...) {
+FE_FINLINE void printf(const char* format, ...) {
   va_list ap;
   va_start(ap, format);
   va_list ap_copy;
@@ -44,10 +44,10 @@ FE_FINLINE void Printf(const char* format, ...) {
   va_end(ap);
   if (!buf.empty() && buf.back() == '\0')
     buf.pop_back();
-  Print(buf.c_str());
+  print(buf.c_str());
 }
 
-FE_FINLINE void Printf(const wchar_t* format, ...) {
+FE_FINLINE void printf(const wchar_t* format, ...) {
   va_list ap;
   va_start(ap, format);
   va_list ap_copy;
@@ -69,29 +69,29 @@ FE_FINLINE void Printf(const wchar_t* format, ...) {
   va_end(ap);
   if (!buf.empty() && buf.back() == L'\0')
     buf.pop_back();
-  Print(buf.c_str());
+  print(buf.c_str());
 }
 
-FE_FINLINE void PrintSubMessage(const char* format, ...) {
-  Print("--> ");
+FE_FINLINE void printSubMessage(const char* format, ...) {
+  print("--> ");
   char buffer[256];
   va_list ap;
   va_start(ap, format);
   vsprintf_s(buffer, 256, format, ap);
   va_end(ap);
-  Print(buffer);
-  Print("\n");
+  print(buffer);
+  print("\n");
 }
-FE_FINLINE void PrintSubMessage(const wchar_t* format, ...) {
-  Print("--> ");
+FE_FINLINE void printSubMessage(const wchar_t* format, ...) {
+  print("--> ");
   wchar_t buffer[256];
   va_list ap;
   va_start(ap, format);
   vswprintf(buffer, 256, format, ap);
   va_end(ap);
-  Print(buffer);
-  Print("\n");
+  print(buffer);
+  print("\n");
 }
-FE_FINLINE void PrintSubMessage(void) {}
+FE_FINLINE void printSubMessage(void) {}
 
 }  // namespace fe::engine::utility
