@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "TextRenderer.h"
 #include "FileUtility.h"
 #include "Texture.h"
@@ -54,7 +54,7 @@ class Font {
   void LoadFromBinary(const wchar_t* fontName, const uint8_t* pBinary, const size_t binarySize) {
     (fontName);
 
-    // We should at least use this to RE_ASSERT that we have a complete file
+    // We should at least use this to FE_ASSERT that we have a complete file
     (binarySize);
 
     struct FontHeader {

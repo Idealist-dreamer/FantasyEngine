@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "GpuBuffer.h"
 #include "GraphicsCore.h"
 #include "EsramAllocator.h"
@@ -123,7 +123,7 @@ void GpuBuffer::Create(const std::wstring& name, uint32_t NumElements, uint32_t 
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE GpuBuffer::CreateConstantBufferView(uint32_t Offset, uint32_t Size) const {
-  RE_ASSERT(Offset + Size <= m_BufferSize);
+  FE_ASSERT(Offset + Size <= m_BufferSize);
 
   Size = Math::AlignUp(Size, 16);
 
@@ -137,7 +137,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE GpuBuffer::CreateConstantBufferView(uint32_t Offset,
 }
 
 D3D12_RESOURCE_DESC GpuBuffer::DescribeBuffer(void) {
-  RE_ASSERT(m_BufferSize != 0);
+  FE_ASSERT(m_BufferSize != 0);
 
   D3D12_RESOURCE_DESC Desc = {};
   Desc.Alignment = 0;

@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "PixelBuffer.h"
 #include "EsramAllocator.h"
 #include "GraphicsCore.h"
@@ -100,7 +100,7 @@ DXGI_FORMAT PixelBuffer::GetUAVFormat(DXGI_FORMAT defaultFormat) {
     case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
     case DXGI_FORMAT_D16_UNORM:
 
-      RE_ASSERT(false, "Requested a UAV Format for a depth stencil Format.");
+      FE_ASSERT(false, "Requested a UAV Format for a depth stencil Format.");
 #endif
 
     default:
@@ -301,7 +301,7 @@ void PixelBuffer::AssociateWithResource(ID3D12Device* Device, const std::wstring
                                         D3D12_RESOURCE_STATES CurrentState) {
   (Device);  // Unused until we support multiple adapters
 
-  RE_ASSERT(Resource != nullptr);
+  FE_ASSERT(Resource != nullptr);
   D3D12_RESOURCE_DESC ResourceDesc = Resource->GetDesc();
 
   m_pResource.Attach(Resource);

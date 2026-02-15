@@ -83,12 +83,12 @@ class CommandSignature {
   }
 
   IndirectParameter& operator[](size_t EntryIndex) {
-    RE_ASSERT(EntryIndex < m_NumParameters);
+    FE_ASSERT(EntryIndex < m_NumParameters);
     return m_ParamArray.get()[EntryIndex];
   }
 
   const IndirectParameter& operator[](size_t EntryIndex) const {
-    RE_ASSERT(EntryIndex < m_NumParameters);
+    FE_ASSERT(EntryIndex < m_NumParameters);
     return m_ParamArray.get()[EntryIndex];
   }
 

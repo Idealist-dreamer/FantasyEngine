@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "GraphicsCommon.h"
 #include "SamplerManager.h"
 #include "CommandSignature.h"
@@ -54,7 +54,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE SamplerLinearBorder;
 
 Texture DefaultTextures[kNumDefaultTextures];
 D3D12_CPU_DESCRIPTOR_HANDLE GetDefaultTexture(eDefaultTexture texID) {
-  RE_ASSERT(texID < kNumDefaultTextures);
+  FE_ASSERT(texID < kNumDefaultTextures);
   return DefaultTextures[texID].GetSRV();
 }
 

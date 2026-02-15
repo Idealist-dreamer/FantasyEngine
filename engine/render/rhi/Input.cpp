@@ -11,7 +11,7 @@
 // // Author:  James Stanard
 // //
 
-// #include "Engine/Render/RHI/pch.h"
+// #include "engine/render/rhi/pch.h"
 // #include "GameCore.h"
 // #include "GameInput.h"
 
@@ -191,14 +191,14 @@
 //   KbmBuildKeyMapping();
 
 //   if (FAILED(DirectInput8Create(GetModuleHandle(nullptr), DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&s_DI, nullptr)))
-//     RE_ASSERT(false, "DirectInput8 initialization failed.");
+//     FE_ASSERT(false, "DirectInput8 initialization failed.");
 
 //   if (FAILED(s_DI->CreateDevice(GUID_SysKeyboard, &s_Keyboard, nullptr)))
-//     RE_ASSERT(false, "Keyboard CreateDevice failed.");
+//     FE_ASSERT(false, "Keyboard CreateDevice failed.");
 //   if (FAILED(s_Keyboard->SetDataFormat(&c_dfDIKeyboard)))
-//     RE_ASSERT(false, "Keyboard SetDataFormat failed.");
+//     FE_ASSERT(false, "Keyboard SetDataFormat failed.");
 //   if (FAILED(s_Keyboard->SetCooperativeLevel(GameCore::g_hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE)))
-//     RE_ASSERT(false, "Keyboard SetCooperativeLevel failed.");
+//     FE_ASSERT(false, "Keyboard SetCooperativeLevel failed.");
 
 //   DIPROPDWORD dipdw;
 //   dipdw.diph.dwSize = sizeof(DIPROPDWORD);
@@ -207,14 +207,14 @@
 //   dipdw.diph.dwHow = DIPH_DEVICE;
 //   dipdw.dwData = 10;
 //   if (FAILED(s_Keyboard->SetProperty(DIPROP_BUFFERSIZE, &dipdw.diph)))
-//     RE_ASSERT(false, "Keyboard set buffer size failed.");
+//     FE_ASSERT(false, "Keyboard set buffer size failed.");
 
 //   if (FAILED(s_DI->CreateDevice(GUID_SysMouse, &s_Mouse, nullptr)))
-//     RE_ASSERT(false, "Mouse CreateDevice failed.");
+//     FE_ASSERT(false, "Mouse CreateDevice failed.");
 //   if (FAILED(s_Mouse->SetDataFormat(&c_dfDIMouse2)))
-//     RE_ASSERT(false, "Mouse SetDataFormat failed.");
+//     FE_ASSERT(false, "Mouse SetDataFormat failed.");
 //   if (FAILED(s_Mouse->SetCooperativeLevel(GameCore::g_hWnd, DISCL_FOREGROUND | DISCL_EXCLUSIVE)))
-//     RE_ASSERT(false, "Mouse SetCooperativeLevel failed.");
+//     FE_ASSERT(false, "Mouse SetCooperativeLevel failed.");
 
 //   KbmZeroInputs();
 // }

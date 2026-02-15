@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "UploadBuffer.h"
 #include "GraphicsCore.h"
 
@@ -44,7 +44,7 @@ void UploadBuffer::Create(const std::wstring& name, size_t BufferSize) {
   ResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
   ResourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-  RE_ASSERT_SUCCEEDED(g_Device->CreateCommittedResource(&HeapProps, D3D12_HEAP_FLAG_NONE, &ResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+  FE_ASSERT_SUCCEEDED(g_Device->CreateCommittedResource(&HeapProps, D3D12_HEAP_FLAG_NONE, &ResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
                                                         MY_IID_PPV_ARGS(&m_pResource)));
 
   m_GpuVirtualAddress = m_pResource->GetGPUVirtualAddress();

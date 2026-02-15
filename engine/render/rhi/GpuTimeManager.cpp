@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "GpuTimeManager.h"
 #include "GraphicsCore.h"
 #include "CommandContext.h"
@@ -120,8 +120,8 @@ void GpuTimeManager::EndReadBack(void) {
 }
 
 float GpuTimeManager::GetTime(uint32_t TimerIdx) {
-  RE_ASSERT(sm_TimeStampBuffer != nullptr, "Time stamp readback buffer is not mapped");
-  RE_ASSERT(TimerIdx < sm_NumTimers, "Invalid GPU timer index");
+  FE_ASSERT(sm_TimeStampBuffer != nullptr, "Time stamp readback buffer is not mapped");
+  FE_ASSERT(TimerIdx < sm_NumTimers, "Invalid GPU timer index");
 
   uint64_t TimeStamp1 = sm_TimeStampBuffer[TimerIdx * 2];
   uint64_t TimeStamp2 = sm_TimeStampBuffer[TimerIdx * 2 + 1];

@@ -100,7 +100,7 @@ class CommandContext : NonCopyable {
   void Initialize(void);
 
   GraphicsContext& GetGraphicsContext() {
-    RE_ASSERT(m_Type != D3D12_COMMAND_LIST_TYPE_COMPUTE, "Cannot convert async compute context to graphics");
+    FE_ASSERT(m_Type != D3D12_COMMAND_LIST_TYPE_COMPUTE, "Cannot convert async compute context to graphics");
     return reinterpret_cast<GraphicsContext&>(*this);
   }
 
@@ -410,7 +410,7 @@ FE_FINLINE void GraphicsContext::SetConstantBuffer(UINT RootIndex, D3D12_GPU_VIR
 }
 
 FE_FINLINE void GraphicsContext::SetDynamicConstantBufferView(UINT RootIndex, size_t BufferSize, const void* BufferData) {
-  RE_ASSERT(BufferData != nullptr && Math::IsAligned(BufferData, 16));
+  FE_ASSERT(BufferData != nullptr && Math::IsAligned(BufferData, 16));
   DynAlloc cb = m_CpuLinearAllocator.Allocate(BufferSize);
   //SIMDMemCopy(cb.DataPtr, BufferData, Math::AlignUp(BufferSize, 16) >> 4);
   memcpy(cb.DataPtr, BufferData, BufferSize);
@@ -418,7 +418,7 @@ FE_FINLINE void GraphicsContext::SetDynamicConstantBufferView(UINT RootIndex, si
 }
 
 FE_FINLINE void ComputeContext::SetDynamicConstantBufferView(UINT RootIndex, size_t BufferSize, const void* BufferData) {
-  RE_ASSERT(BufferData != nullptr && Math::IsAligned(BufferData, 16));
+  FE_ASSERT(BufferData != nullptr && Math::IsAligned(BufferData, 16));
   DynAlloc cb = m_CpuLinearAllocator.Allocate(BufferSize);
   //SIMDMemCopy(cb.DataPtr, BufferData, Math::AlignUp(BufferSize, 16) >> 4);
   memcpy(cb.DataPtr, BufferData, BufferSize);
@@ -426,7 +426,7 @@ FE_FINLINE void ComputeContext::SetDynamicConstantBufferView(UINT RootIndex, siz
 }
 
 FE_FINLINE void GraphicsContext::SetDynamicVB(UINT Slot, size_t NumVertices, size_t VertexStride, const void* VertexData) {
-  RE_ASSERT(VertexData != nullptr && Math::IsAligned(VertexData, 16));
+  FE_ASSERT(VertexData != nullptr && Math::IsAligned(VertexData, 16));
 
   size_t BufferSize = Math::AlignUp(NumVertices * VertexStride, 16);
   DynAlloc vb = m_CpuLinearAllocator.Allocate(BufferSize);
@@ -442,7 +442,7 @@ FE_FINLINE void GraphicsContext::SetDynamicVB(UINT Slot, size_t NumVertices, siz
 }
 
 FE_FINLINE void GraphicsContext::SetDynamicIB(size_t IndexCount, const uint16_t* IndexData) {
-  RE_ASSERT(IndexData != nullptr && Math::IsAligned(IndexData, 16));
+  FE_ASSERT(IndexData != nullptr && Math::IsAligned(IndexData, 16));
 
   size_t BufferSize = Math::AlignUp(IndexCount * sizeof(uint16_t), 16);
   DynAlloc ib = m_CpuLinearAllocator.Allocate(BufferSize);
@@ -458,36 +458,36 @@ FE_FINLINE void GraphicsContext::SetDynamicIB(size_t IndexCount, const uint16_t*
 }
 
 FE_FINLINE void GraphicsContext::SetDynamicSRV(UINT RootIndex, size_t BufferSize, const void* BufferData) {
-  RE_ASSERT(BufferData != nullptr && Math::IsAligned(BufferData, 16));
+  FE_ASSERT(BufferData != nullptr && Math::IsAligned(BufferData, 16));
   DynAlloc cb = m_CpuLinearAllocator.Allocate(BufferSize);
   SIMDMemCopy(cb.DataPtr, BufferData, Math::AlignUp(BufferSize, 16) >> 4);
   m_CommandList->SetGraphicsRootShaderResourceView(RootIndex, cb.GpuAddress);
 }
 
 FE_FINLINE void ComputeContext::SetDynamicSRV(UINT RootIndex, size_t BufferSize, const void* BufferData) {
-  RE_ASSERT(BufferData != nullptr && Math::IsAligned(BufferData, 16));
+  FE_ASSERT(BufferData != nullptr && Math::IsAligned(BufferData, 16));
   DynAlloc cb = m_CpuLinearAllocator.Allocate(BufferSize);
   SIMDMemCopy(cb.DataPtr, BufferData, Math::AlignUp(BufferSize, 16) >> 4);
   m_CommandList->SetComputeRootShaderResourceView(RootIndex, cb.GpuAddress);
 }
 
 FE_FINLINE void GraphicsContext::SetBufferSRV(UINT RootIndex, const GpuBuffer& SRV, UINT64 Offset) {
-  RE_ASSERT((SRV.m_UsageState & (D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)) != 0);
+  FE_ASSERT((SRV.m_UsageState & (D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)) != 0);
   m_CommandList->SetGraphicsRootShaderResourceView(RootIndex, SRV.GetGpuVirtualAddress() + Offset);
 }
 
 FE_FINLINE void ComputeContext::SetBufferSRV(UINT RootIndex, const GpuBuffer& SRV, UINT64 Offset) {
-  RE_ASSERT((SRV.m_UsageState & D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) != 0);
+  FE_ASSERT((SRV.m_UsageState & D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) != 0);
   m_CommandList->SetComputeRootShaderResourceView(RootIndex, SRV.GetGpuVirtualAddress() + Offset);
 }
 
 FE_FINLINE void GraphicsContext::SetBufferUAV(UINT RootIndex, const GpuBuffer& UAV, UINT64 Offset) {
-  RE_ASSERT((UAV.m_UsageState & D3D12_RESOURCE_STATE_UNORDERED_ACCESS) != 0);
+  FE_ASSERT((UAV.m_UsageState & D3D12_RESOURCE_STATE_UNORDERED_ACCESS) != 0);
   m_CommandList->SetGraphicsRootUnorderedAccessView(RootIndex, UAV.GetGpuVirtualAddress() + Offset);
 }
 
 FE_FINLINE void ComputeContext::SetBufferUAV(UINT RootIndex, const GpuBuffer& UAV, UINT64 Offset) {
-  RE_ASSERT((UAV.m_UsageState & D3D12_RESOURCE_STATE_UNORDERED_ACCESS) != 0);
+  FE_ASSERT((UAV.m_UsageState & D3D12_RESOURCE_STATE_UNORDERED_ACCESS) != 0);
   m_CommandList->SetComputeRootUnorderedAccessView(RootIndex, UAV.GetGpuVirtualAddress() + Offset);
 }
 

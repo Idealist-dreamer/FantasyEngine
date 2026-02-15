@@ -12,7 +12,7 @@
 //             James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "BufferManager.h"
 #include "BitonicSort.h"
 #include "Camera.h"
@@ -171,7 +171,7 @@ void RenderTiles(ComputeContext& CompContext, ColorBuffer& ColorTarget, ColorBuf
   size_t ScreenWidth = ColorTarget.GetWidth();
   size_t ScreenHeight = ColorTarget.GetHeight();
 
-  RE_ASSERT(ColorTarget.GetFormat() == DXGI_FORMAT_R32_UINT || g_bTypedUAVLoadSupport_R11G11B10_FLOAT,
+  FE_ASSERT(ColorTarget.GetFormat() == DXGI_FORMAT_R32_UINT || g_bTypedUAVLoadSupport_R11G11B10_FLOAT,
             "Without typed UAV loads, tiled particles must render to a R32_UINT buffer");
 
   {
@@ -617,7 +617,7 @@ void ParticleEffectManager::Render(CommandContext& Context, const Camera& Camera
   uint32_t Width = (uint32_t)ColorTarget.GetWidth();
   uint32_t Height = (uint32_t)ColorTarget.GetHeight();
 
-  RE_ASSERT(
+  FE_ASSERT(
       Width == DepthTarget.GetWidth() && Height == DepthTarget.GetHeight() && Width == LinearDepth.GetWidth() && Height == LinearDepth.GetHeight(),
       "There is a mismatch in buffer dimensions for rendering particles");
 

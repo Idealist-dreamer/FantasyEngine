@@ -11,7 +11,7 @@
 // Author(s):  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "Texture.h"
 #include "DDSTextureLoader.h"
 #include "FileUtility.h"
@@ -196,7 +196,7 @@ void Texture::CreatePIXImageFromMemory(const void* memBuffer, size_t fileSize) {
   };
   const Header& header = *(Header*)memBuffer;
 
-  RE_ASSERT(fileSize >= header.Pitch * BytesPerPixel(header.Format) * header.Height + sizeof(Header), "Raw PIX image dump has an invalid file size");
+  FE_ASSERT(fileSize >= header.Pitch * BytesPerPixel(header.Format) * header.Height + sizeof(Header), "Raw PIX image dump has an invalid file size");
 
   Create2D(header.Pitch, header.Width, header.Height, header.Format, (uint8_t*)memBuffer + sizeof(Header));
 }

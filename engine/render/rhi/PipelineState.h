@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 
 class CommandContext;
 class RootSignature;
@@ -33,7 +33,7 @@ class PSO {
   void SetRootSignature(const RootSignature& BindMappings) { m_RootSignature = &BindMappings; }
 
   const RootSignature& GetRootSignature(void) const {
-    RE_ASSERT(m_RootSignature != nullptr);
+    FE_ASSERT(m_RootSignature != nullptr);
     return *m_RootSignature;
   }
 

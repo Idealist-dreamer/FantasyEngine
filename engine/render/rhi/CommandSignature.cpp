@@ -65,7 +65,7 @@ void CommandSignature::Finalize(const RootSignature* RootSignature) {
 
   ID3D12RootSignature* pRootSig = RootSignature ? RootSignature->GetSignature() : nullptr;
   if (RequiresRootSignature) {
-    RE_ASSERT(pRootSig != nullptr);
+    FE_ASSERT(pRootSig != nullptr);
   } else {
     pRootSig = nullptr;
   }

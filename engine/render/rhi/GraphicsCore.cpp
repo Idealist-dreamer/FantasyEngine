@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "GraphicsCore.h"
 #include "GameCore.h"
 #include "BufferManager.h"

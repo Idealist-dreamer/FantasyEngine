@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 
 class DescriptorCache;
 
@@ -122,12 +122,12 @@ class RootSignature {
   }
 
   RootParameter& operator[](size_t EntryIndex) {
-    RE_ASSERT(EntryIndex < m_NumParameters);
+    FE_ASSERT(EntryIndex < m_NumParameters);
     return m_ParamArray.get()[EntryIndex];
   }
 
   const RootParameter& operator[](size_t EntryIndex) const {
-    RE_ASSERT(EntryIndex < m_NumParameters);
+    FE_ASSERT(EntryIndex < m_NumParameters);
     return m_ParamArray.get()[EntryIndex];
   }
 

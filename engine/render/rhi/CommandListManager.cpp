@@ -58,9 +58,9 @@ void CommandListManager::Shutdown() {
 }
 
 void CommandQueue::Create(ID3D12Device* pDevice) {
-  RE_ASSERT(pDevice != nullptr);
-  RE_ASSERT(!IsReady());
-  RE_ASSERT(m_AllocatorPool.Size() == 0);
+  FE_ASSERT(pDevice != nullptr);
+  FE_ASSERT(!IsReady());
+  FE_ASSERT(m_AllocatorPool.Size() == 0);
 
   D3D12_COMMAND_QUEUE_DESC QueueDesc = {};
   QueueDesc.Type = m_Type;
@@ -73,15 +73,15 @@ void CommandQueue::Create(ID3D12Device* pDevice) {
   m_pFence->Signal((uint64_t)m_Type << 56);
 
   m_FenceEventHandle = CreateEvent(nullptr, false, false, nullptr);
-  RE_ASSERT(m_FenceEventHandle != NULL);
+  FE_ASSERT(m_FenceEventHandle != NULL);
 
   m_AllocatorPool.Create(pDevice);
 
-  RE_ASSERT(IsReady());
+  FE_ASSERT(IsReady());
 }
 
 void CommandListManager::Create(ID3D12Device* pDevice) {
-  RE_ASSERT(pDevice != nullptr);
+  FE_ASSERT(pDevice != nullptr);
 
   m_Device = pDevice;
 
@@ -91,7 +91,7 @@ void CommandListManager::Create(ID3D12Device* pDevice) {
 }
 
 void CommandListManager::CreateNewCommandList(D3D12_COMMAND_LIST_TYPE Type, ID3D12GraphicsCommandList** List, ID3D12CommandAllocator** Allocator) {
-  RE_ASSERT(Type != D3D12_COMMAND_LIST_TYPE_BUNDLE, "Bundles are not yet supported");
+  FE_ASSERT(Type != D3D12_COMMAND_LIST_TYPE_BUNDLE, "Bundles are not yet supported");
   switch (Type) {
     case D3D12_COMMAND_LIST_TYPE_DIRECT:
       *Allocator = m_GraphicsQueue.RequestAllocator();
@@ -151,7 +151,7 @@ void CommandQueue::StallForFence(uint64_t FenceValue) {
 }
 
 void CommandQueue::StallForProducer(CommandQueue& Producer) {
-  RE_ASSERT(Producer.m_NextFenceValue > 0);
+  FE_ASSERT(Producer.m_NextFenceValue > 0);
   m_CommandQueue->Wait(Producer.m_pFence, Producer.m_NextFenceValue - 1);
 }
 

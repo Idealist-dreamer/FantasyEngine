@@ -12,7 +12,7 @@
 //             Alex Nankervis
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "LinearAllocator.h"
 #include "GraphicsCore.h"
 #include "CommandListManager.h"
@@ -26,7 +26,7 @@ LinearAllocatorType LinearAllocatorPageManager::sm_AutoType = kGpuExclusive;
 LinearAllocatorPageManager::LinearAllocatorPageManager() {
   m_AllocationType = sm_AutoType;
   sm_AutoType = (LinearAllocatorType)(sm_AutoType + 1);
-  RE_ASSERT(sm_AutoType <= kNumAllocatorTypes);
+  FE_ASSERT(sm_AutoType <= kNumAllocatorTypes);
 }
 
 LinearAllocatorPageManager LinearAllocator::sm_PageManager[2];
@@ -141,8 +141,8 @@ DynAlloc LinearAllocator::AllocateLargePage(size_t SizeInBytes) {
 DynAlloc LinearAllocator::Allocate(size_t SizeInBytes, size_t Alignment) {
   const size_t AlignmentMask = Alignment - 1;
 
-  // RE_ASSERT that it's a power of two.
-  RE_ASSERT((AlignmentMask & Alignment) == 0);
+  // FE_ASSERT that it's a power of two.
+  FE_ASSERT((AlignmentMask & Alignment) == 0);
 
   // Align the allocation
   const size_t AlignedSize = Math::AlignUpWithMask(SizeInBytes, AlignmentMask);
@@ -153,7 +153,7 @@ DynAlloc LinearAllocator::Allocate(size_t SizeInBytes, size_t Alignment) {
   m_CurOffset = Math::AlignUp(m_CurOffset, Alignment);
 
   if (m_CurOffset + AlignedSize > m_PageSize) {
-    RE_ASSERT(m_CurPage != nullptr);
+    FE_ASSERT(m_CurPage != nullptr);
     m_RetiredPages.push_back(m_CurPage);
     m_CurPage = nullptr;
   }

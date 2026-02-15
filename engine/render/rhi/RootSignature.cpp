@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "RootSignature.h"
 #include "GraphicsCore.h"
 #include "Hash.h"
@@ -30,7 +30,7 @@ void RootSignature::DestroyAll(void) {
 }
 
 void RootSignature::InitStaticSampler(UINT Register, const D3D12_SAMPLER_DESC& NonStaticSamplerDesc, D3D12_SHADER_VISIBILITY Visibility) {
-  RE_ASSERT(m_NumInitializedStaticSamplers < m_NumSamplers);
+  FE_ASSERT(m_NumInitializedStaticSamplers < m_NumSamplers);
   D3D12_STATIC_SAMPLER_DESC& StaticSamplerDesc = m_SamplerArray[m_NumInitializedStaticSamplers++];
 
   StaticSamplerDesc.Filter = NonStaticSamplerDesc.Filter;
@@ -49,7 +49,7 @@ void RootSignature::InitStaticSampler(UINT Register, const D3D12_SAMPLER_DESC& N
 
   if (StaticSamplerDesc.AddressU == D3D12_TEXTURE_ADDRESS_MODE_BORDER || StaticSamplerDesc.AddressV == D3D12_TEXTURE_ADDRESS_MODE_BORDER ||
       StaticSamplerDesc.AddressW == D3D12_TEXTURE_ADDRESS_MODE_BORDER) {
-    RE_WARN_ONCE_IF_NOT(
+    FE_WARN_ONCE_IF_NOT(
         // Transparent Black
         NonStaticSamplerDesc.BorderColor[0] == 0.0f && NonStaticSamplerDesc.BorderColor[1] == 0.0f && NonStaticSamplerDesc.BorderColor[2] == 0.0f &&
                 NonStaticSamplerDesc.BorderColor[3] == 0.0f ||
@@ -75,7 +75,7 @@ void RootSignature::Finalize(const std::wstring& name, D3D12_ROOT_SIGNATURE_FLAG
   if (m_Finalized)
     return;
 
-  RE_ASSERT(m_NumInitializedStaticSamplers == m_NumSamplers);
+  FE_ASSERT(m_NumInitializedStaticSamplers == m_NumSamplers);
 
   D3D12_ROOT_SIGNATURE_DESC RootDesc;
   RootDesc.NumParameters = m_NumParameters;
@@ -95,7 +95,7 @@ void RootSignature::Finalize(const std::wstring& name, D3D12_ROOT_SIGNATURE_FLAG
     m_DescriptorTableSize[Param] = 0;
 
     if (RootParam.ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
-      RE_ASSERT(RootParam.DescriptorTable.pDescriptorRanges != nullptr);
+      FE_ASSERT(RootParam.DescriptorTable.pDescriptorRanges != nullptr);
 
       HashCode = Utility::HashState(RootParam.DescriptorTable.pDescriptorRanges, RootParam.DescriptorTable.NumDescriptorRanges, HashCode);
 
@@ -129,14 +129,14 @@ void RootSignature::Finalize(const std::wstring& name, D3D12_ROOT_SIGNATURE_FLAG
   if (firstCompile) {
     ComPtr<ID3DBlob> pOutBlob, pErrorBlob;
 
-    RE_ASSERT_SUCCEEDED(D3D12SerializeRootSignature(&RootDesc, D3D_ROOT_SIGNATURE_VERSION_1, pOutBlob.GetAddressOf(), pErrorBlob.GetAddressOf()));
+    FE_ASSERT_SUCCEEDED(D3D12SerializeRootSignature(&RootDesc, D3D_ROOT_SIGNATURE_VERSION_1, pOutBlob.GetAddressOf(), pErrorBlob.GetAddressOf()));
 
-    RE_ASSERT_SUCCEEDED(g_Device->CreateRootSignature(1, pOutBlob->GetBufferPointer(), pOutBlob->GetBufferSize(), MY_IID_PPV_ARGS(&m_Signature)));
+    FE_ASSERT_SUCCEEDED(g_Device->CreateRootSignature(1, pOutBlob->GetBufferPointer(), pOutBlob->GetBufferSize(), MY_IID_PPV_ARGS(&m_Signature)));
 
     m_Signature->SetName(name.c_str());
 
     s_RootSignatureHashMap[HashCode].Attach(m_Signature);
-    RE_ASSERT(*RSRef == m_Signature);
+    FE_ASSERT(*RSRef == m_Signature);
   } else {
     while (*RSRef == nullptr)
       this_thread::yield();

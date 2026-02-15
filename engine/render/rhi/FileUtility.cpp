@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "FileUtility.h"
 #include <fstream>
 //#include <zlib.h> // From NuGet package
@@ -78,7 +78,7 @@ ByteArray Inflate(ByteArray CompressedSource, int& err, uint32_t ChunkSize = 0x1
         return NullFile;
     }
 
-    RE_ASSERT(strm.total_out > 0, "Nothing to decompress");
+    FE_ASSERT(strm.total_out > 0, "Nothing to decompress");
 
     Utility::ByteArray byteArray = make_shared<vector<byte> >( strm.total_out );
 
@@ -90,7 +90,7 @@ ByteArray Inflate(ByteArray CompressedSource, int& err, uint32_t ChunkSize = 0x1
 
     for (size_t i = 0; i < blocks.size(); ++i)
     {
-        RE_ASSERT(remaining > 0);
+        FE_ASSERT(remaining > 0);
 
         size_t CopySize = remaining < ChunkSize ? remaining : ChunkSize;
 

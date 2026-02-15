@@ -73,3 +73,5 @@
 #include "EngineTuning.h"
 #include "EngineProfiling.h"
 #include "Util/CommandLineArg.h"
+
+#include "engine/utility/assert.h"

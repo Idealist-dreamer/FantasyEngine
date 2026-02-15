@@ -186,7 +186,7 @@ class NestedTimingTree {
   }
 
   NestedTimingTree* NextChild(NestedTimingTree* curChild) {
-    RE_ASSERT(curChild->m_Parent == this);
+    FE_ASSERT(curChild->m_Parent == this);
 
     for (auto iter = m_Children.begin(); iter != m_Children.end(); ++iter) {
       if (*iter == curChild) {
@@ -204,7 +204,7 @@ class NestedTimingTree {
   }
 
   NestedTimingTree* PrevChild(NestedTimingTree* curChild) {
-    RE_ASSERT(curChild->m_Parent == this);
+    FE_ASSERT(curChild->m_Parent == this);
 
     if (*m_Children.begin() == curChild) {
       if (this == &sm_RootScope)
@@ -428,7 +428,7 @@ void NestedTimingTree::PopProfilingMarker(CommandContext* Context) {
 }
 
 void NestedTimingTree::Update(void) {
-  RE_ASSERT(sm_SelectedScope != nullptr, "Corrupted profiling data structure");
+  FE_ASSERT(sm_SelectedScope != nullptr, "Corrupted profiling data structure");
 
   if (sm_SelectedScope == &sm_RootScope) {
     sm_SelectedScope = sm_RootScope.FirstChild();

@@ -201,7 +201,7 @@ void Display::Resize(uint32_t width, uint32_t height) {
   for (uint32_t i = 0; i < SWAP_CHAIN_BUFFER_COUNT; ++i)
     g_DisplayPlane[i].Destroy();
 
-  RE_ASSERT(s_SwapChain1 != nullptr);
+  FE_ASSERT(s_SwapChain1 != nullptr);
   ASSERT_SUCCEEDED(s_SwapChain1->ResizeBuffers(SWAP_CHAIN_BUFFER_COUNT, width, height, SwapChainFormat, 0));
 
   for (uint32_t i = 0; i < SWAP_CHAIN_BUFFER_COUNT; ++i) {
@@ -219,7 +219,7 @@ void Display::Resize(uint32_t width, uint32_t height) {
 
 // Initialize the DirectX resources required to run.
 void Display::Initialize(void) {
-  RE_ASSERT(s_SwapChain1 == nullptr, "Graphics has already been initialized");
+  FE_ASSERT(s_SwapChain1 == nullptr, "Graphics has already been initialized");
 
   Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;
   ASSERT_SUCCEEDED(CreateDXGIFactory2(0, MY_IID_PPV_ARGS(&dxgiFactory)));

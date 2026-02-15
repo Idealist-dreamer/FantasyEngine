@@ -12,7 +12,7 @@
 //             James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "ParticleEffect.h"
 #include "CommandContext.h"
 #include "GraphicsCore.h"

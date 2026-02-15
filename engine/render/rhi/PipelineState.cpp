@@ -10,7 +10,7 @@
 //
 // Author:  James Stanard
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "GraphicsCore.h"
 #include "PipelineState.h"
 #include "RootSignature.h"
@@ -57,7 +57,7 @@ void GraphicsPSO::SetSampleMask(UINT SampleMask) {
 }
 
 void GraphicsPSO::SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE TopologyType) {
-  RE_ASSERT(TopologyType != D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED, "Can't draw with undefined topology");
+  FE_ASSERT(TopologyType != D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED, "Can't draw with undefined topology");
   m_PSODesc.PrimitiveTopologyType = TopologyType;
 }
 
@@ -74,9 +74,9 @@ void GraphicsPSO::SetRenderTargetFormat(DXGI_FORMAT RTVFormat, DXGI_FORMAT DSVFo
 }
 
 void GraphicsPSO::SetRenderTargetFormats(UINT NumRTVs, const DXGI_FORMAT* RTVFormats, DXGI_FORMAT DSVFormat, UINT MsaaCount, UINT MsaaQuality) {
-  RE_ASSERT(NumRTVs == 0 || RTVFormats != nullptr, "Null format array conflicts with non-zero length");
+  FE_ASSERT(NumRTVs == 0 || RTVFormats != nullptr, "Null format array conflicts with non-zero length");
   for (UINT i = 0; i < NumRTVs; ++i) {
-    RE_ASSERT(RTVFormats[i] != DXGI_FORMAT_UNKNOWN);
+    FE_ASSERT(RTVFormats[i] != DXGI_FORMAT_UNKNOWN);
     m_PSODesc.RTVFormats[i] = RTVFormats[i];
   }
   for (UINT i = NumRTVs; i < m_PSODesc.NumRenderTargets; ++i)
@@ -101,7 +101,7 @@ void GraphicsPSO::SetInputLayout(UINT NumElements, const D3D12_INPUT_ELEMENT_DES
 void GraphicsPSO::Finalize() {
   // Make sure the root signature is finalized first
   m_PSODesc.pRootSignature = m_RootSignature->GetSignature();
-  RE_ASSERT(m_PSODesc.pRootSignature != nullptr);
+  FE_ASSERT(m_PSODesc.pRootSignature != nullptr);
 
   m_PSODesc.InputLayout.pInputElementDescs = nullptr;
   size_t HashCode = Utility::HashState(&m_PSODesc);
@@ -124,7 +124,7 @@ void GraphicsPSO::Finalize() {
   }
 
   if (firstCompile) {
-    RE_ASSERT(m_PSODesc.DepthStencilState.DepthEnable != (m_PSODesc.DSVFormat == DXGI_FORMAT_UNKNOWN));
+    FE_ASSERT(m_PSODesc.DepthStencilState.DepthEnable != (m_PSODesc.DSVFormat == DXGI_FORMAT_UNKNOWN));
     ASSERT_SUCCEEDED(g_Device->CreateGraphicsPipelineState(&m_PSODesc, MY_IID_PPV_ARGS(&m_PSO)));
     s_GraphicsPSOHashMap[HashCode].Attach(m_PSO);
     m_PSO->SetName(m_Name);
@@ -138,7 +138,7 @@ void GraphicsPSO::Finalize() {
 void ComputePSO::Finalize() {
   // Make sure the root signature is finalized first
   m_PSODesc.pRootSignature = m_RootSignature->GetSignature();
-  RE_ASSERT(m_PSODesc.pRootSignature != nullptr);
+  FE_ASSERT(m_PSODesc.pRootSignature != nullptr);
 
   size_t HashCode = Utility::HashState(&m_PSODesc);
 

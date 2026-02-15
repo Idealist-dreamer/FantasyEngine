@@ -11,7 +11,7 @@
 // Author:  Julia Careaga
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "GraphRenderer.h"
 #include "CommandContext.h"
 #include "PipelineState.h"
@@ -505,7 +505,7 @@ void PerfGraph::RenderGraph(GraphicsContext& Context, uint32_t vertexCount, D3D1
 
 void PerfGraph::RenderGraph(GraphicsContext& Context, uint32_t vertexCount, D3D12_VIEWPORT& viewport, uint32_t debugVarCount, float topMargin,
                             const float* MaxArray, uint32_t frameID) {
-  RE_ASSERT(MaxArray != nullptr);
+  FE_ASSERT(MaxArray != nullptr);
   viewport.TopLeftY += topMargin;
 
   CBGraph graphConstants;

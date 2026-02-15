@@ -58,8 +58,8 @@ BuddyAllocator::BuddyAllocator(kBuddyAllocationStrategy allocationStrategy, D3D1
       m_InternalFragmentation(0)
 #endif
 {
-  RE_ASSERT(Math::IsDivisible(maxBlockSize, m_minBlockSize));
-  RE_ASSERT(Math::IsPowerOfTwo(maxBlockSize / m_minBlockSize));
+  FE_ASSERT(Math::IsDivisible(maxBlockSize, m_minBlockSize));
+  FE_ASSERT(Math::IsPowerOfTwo(maxBlockSize / m_minBlockSize));
 
   m_maxOrder = UnitSizeToOrder(SizeToUnitSize(maxBlockSize));
 
@@ -187,7 +187,7 @@ void BuddyAllocator::Deallocate(BuddyBlock* pBlock)
 */
 
 void BuddyAllocator::DeallocateInternal(BuddyBlock* pBlock) {
-  RE_ASSERT(IsOwner(*pBlock));
+  FE_ASSERT(IsOwner(*pBlock));
 
   size_t offset = SizeToUnitSize(pBlock->GetOffset() - m_baseOffset);
 

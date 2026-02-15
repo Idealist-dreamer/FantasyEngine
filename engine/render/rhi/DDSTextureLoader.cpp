@@ -624,7 +624,7 @@ static HRESULT FillInitData(_In_ size_t width, _In_ size_t height, _In_ size_t d
           tdepth = d;
         }
 
-        RE_ASSERT(index < mipCount * arraySize);
+        FE_ASSERT(index < mipCount * arraySize);
         _Analysis_assume_(index < mipCount * arraySize);
         initData[index].pData = (const void*)pSrcBits;
         initData[index].RowPitch = static_cast<UINT>(RowBytes);
@@ -901,7 +901,7 @@ static HRESULT CreateTextureFromDDS(_In_ ID3D12Device* d3dDevice, _In_ const DDS
       // Note there's no way for a legacy Direct3D 9 DDS to express a '1D' texture
     }
 
-    RE_ASSERT(BitsPerPixel(format) != 0);
+    FE_ASSERT(BitsPerPixel(format) != 0);
   }
 
   // Bound sizes (for security purposes we don't trust DDS file metadata larger than the D3D 11.x hardware requirements)

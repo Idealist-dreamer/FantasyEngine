@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "TextRenderer.h"
 #include "GameInput.h"
 #include "Color.h"
@@ -185,7 +185,7 @@ EngineVar* VariableGroup::NextVariable(EngineVar* curVar) {
       break;
   }
 
-  RE_ASSERT(iter != m_Children.end(), "Did not find engine variable in its designated group");
+  FE_ASSERT(iter != m_Children.end(), "Did not find engine variable in its designated group");
 
   auto nextIter = iter;
   ++nextIter;
@@ -203,7 +203,7 @@ EngineVar* VariableGroup::PrevVariable(EngineVar* curVar) {
       break;
   }
 
-  RE_ASSERT(iter != m_Children.end(), "Did not find engine variable in its designated group");
+  FE_ASSERT(iter != m_Children.end(), "Did not find engine variable in its designated group");
 
   if (iter == m_Children.begin())
     return this;
@@ -274,7 +274,7 @@ void BoolVar::SetValue(FILE* file, const std::string& setting) {
 
 NumVar::NumVar(const std::string& path, float val, float minVal, float maxVal, float stepSize, ActionCallback pfnCallback)
     : EngineVar(path, pfnCallback) {
-  RE_ASSERT(minVal <= maxVal);
+  FE_ASSERT(minVal <= maxVal);
   m_MinValue = minVal;
   m_MaxValue = maxVal;
   m_Value = Clamp(val);
@@ -342,7 +342,7 @@ void ExpVar::SetValue(FILE* file, const std::string& setting) {
 
 IntVar::IntVar(const std::string& path, int32_t val, int32_t minVal, int32_t maxVal, int32_t stepSize, ActionCallback pfnCallback)
     : EngineVar(path, pfnCallback) {
-  RE_ASSERT(minVal <= maxVal);
+  FE_ASSERT(minVal <= maxVal);
   m_MinValue = minVal;
   m_MaxValue = maxVal;
   m_Value = Clamp(val);
@@ -369,7 +369,7 @@ void IntVar::SetValue(FILE* file, const std::string& setting) {
 
 EnumVar::EnumVar(const std::string& path, int32_t initialVal, int32_t listLength, const char** listLabels, ActionCallback pfnCallback)
     : EngineVar(path, pfnCallback) {
-  RE_ASSERT(listLength > 0);
+  FE_ASSERT(listLength > 0);
   m_EnumLength = listLength;
   m_EnumLabels = listLabels;
   m_Value = Clamp(initialVal);
@@ -461,8 +461,8 @@ void CallbackTrigger::SetValue(FILE* file, const std::string& setting) {
 void EngineTuning::Initialize(void) {
 
   for (int32_t i = 0; i < s_UnregisteredCount; ++i) {
-    RE_ASSERT(strlen(s_UnregisteredPath[i]) > 0, "Register = %d\n", i);
-    RE_ASSERT(s_UnregisteredVariable[i] != nullptr);
+    FE_ASSERT(strlen(s_UnregisteredPath[i]) > 0, "Register = %d\n", i);
+    FE_ASSERT(s_UnregisteredVariable[i] != nullptr);
     AddToVariableGraph(s_UnregisteredPath[i], *s_UnregisteredVariable[i]);
   }
   s_UnregisteredCount = -1;
@@ -611,7 +611,7 @@ void EngineTuning::AddToVariableGraph(const string& path, EngineVar& var) {
       group = nextGroup;
     } else {
       nextGroup = dynamic_cast<VariableGroup*>(node);
-      RE_ASSERT(nextGroup != nullptr, "Attempted to trash the tweak graph");
+      FE_ASSERT(nextGroup != nullptr, "Attempted to trash the tweak graph");
       group = nextGroup;
     }
   }

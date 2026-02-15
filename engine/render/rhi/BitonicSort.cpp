@@ -82,7 +82,7 @@ void BitonicSort::Sort(ComputeContext& Context, GpuBuffer& KeyIndexList, GpuBuff
   const uint32_t AlignedMaxNumElements = Math::AlignPowerOfTwo(MaxNumElements);
   const uint32_t MaxIterations = Math::Log2(std::max(2048u, AlignedMaxNumElements)) - 10;
 
-  RE_ASSERT(ElementSizeBytes == 4 || ElementSizeBytes == 8, "Invalid key-index list for bitonic sort");
+  FE_ASSERT(ElementSizeBytes == 4 || ElementSizeBytes == 8, "Invalid key-index list for bitonic sort");
 
   Context.SetRootSignature(s_RootSignature);
 
@@ -140,16 +140,16 @@ inline void VerifySort(T* List, uint32_t ListLength, bool bAscending) {
   const T IndexMask = Math::AlignPowerOfTwo(ListLength) - 1;
 
   for (uint32_t i = 0; i < ListLength - 1; ++i) {
-    RE_ASSERT((List[i] & IndexMask) < ListLength, "Corrupted list index detected");
+    FE_ASSERT((List[i] & IndexMask) < ListLength, "Corrupted list index detected");
 
     if (bAscending) {
-      RE_ASSERT(List[i] <= List[i + 1], "Invalid sort order:  non-ascending");
+      FE_ASSERT(List[i] <= List[i + 1], "Invalid sort order:  non-ascending");
     } else {
-      RE_ASSERT(List[i] >= List[i + 1], "Invalid sort order:  non-descending");
+      FE_ASSERT(List[i] >= List[i + 1], "Invalid sort order:  non-descending");
     }
   }
 
-  RE_ASSERT((List[ListLength - 1] & IndexMask) < ListLength, "Corrupted list index detected");
+  FE_ASSERT((List[ListLength - 1] & IndexMask) < ListLength, "Corrupted list index detected");
 }
 
 void TestBitonicSort(uint32_t ListSize, bool b64Bit, bool bAscending) {

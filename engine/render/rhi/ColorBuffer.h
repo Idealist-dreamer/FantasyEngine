@@ -59,7 +59,7 @@ class ColorBuffer : public PixelBuffer {
   void SetClearColor(Color ClearColor) { m_ClearColor = ClearColor; }
 
   void SetMsaaMode(uint32_t NumColorSamples, uint32_t NumCoverageSamples) {
-    RE_ASSERT(NumCoverageSamples >= NumColorSamples);
+    FE_ASSERT(NumCoverageSamples >= NumColorSamples);
     m_FragmentCount = NumColorSamples;
     m_SampleCount = NumCoverageSamples;
   }

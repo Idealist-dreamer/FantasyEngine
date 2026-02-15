@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "ImageScaling.h"
 #include "BufferManager.h"
 #include "CommandContext.h"

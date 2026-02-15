@@ -13,26 +13,24 @@
 
 #pragma once
 
-#include "Engine/Render/RHI/pch.h"
-
 namespace Utility {
 #ifdef _CONSOLE
-FE_FINLINE void Print(const char* msg) {
+inline void Print(const char* msg) {
   printf("%s", msg);
 }
-FE_FINLINE void Print(const wchar_t* msg) {
+inline void Print(const wchar_t* msg) {
   wprintf(L"%ws", msg);
 }
 #else
-FE_FINLINE void Print(const char* msg) {
+inline void Print(const char* msg) {
   OutputDebugStringA(msg);
 }
-FE_FINLINE void Print(const wchar_t* msg) {
+inline void Print(const wchar_t* msg) {
   OutputDebugStringW(msg);
 }
 #endif
 
-FE_FINLINE void Printf(const char* format, ...) {
+inline void Printf(const char* format, ...) {
   char buffer[256];
   va_list ap;
   va_start(ap, format);
@@ -41,7 +39,7 @@ FE_FINLINE void Printf(const char* format, ...) {
   Print(buffer);
 }
 
-FE_FINLINE void Printf(const wchar_t* format, ...) {
+inline void Printf(const wchar_t* format, ...) {
   wchar_t buffer[256];
   va_list ap;
   va_start(ap, format);
@@ -51,7 +49,7 @@ FE_FINLINE void Printf(const wchar_t* format, ...) {
 }
 
 #ifndef RELEASE
-FE_FINLINE void PrintSubMessage(const char* format, ...) {
+inline void PrintSubMessage(const char* format, ...) {
   Print("--> ");
   char buffer[256];
   va_list ap;
@@ -61,7 +59,7 @@ FE_FINLINE void PrintSubMessage(const char* format, ...) {
   Print(buffer);
   Print("\n");
 }
-FE_FINLINE void PrintSubMessage(const wchar_t* format, ...) {
+inline void PrintSubMessage(const wchar_t* format, ...) {
   Print("--> ");
   wchar_t buffer[256];
   va_list ap;
@@ -71,7 +69,7 @@ FE_FINLINE void PrintSubMessage(const wchar_t* format, ...) {
   Print(buffer);
   Print("\n");
 }
-FE_FINLINE void PrintSubMessage(void) {}
+inline void PrintSubMessage(void) {}
 #endif
 
 std::wstring UTF8ToWideString(const std::string& str);
@@ -92,8 +90,8 @@ std::wstring RemoveExtension(const std::wstring& str);
 #ifdef ERROR
 #undef ERROR
 #endif
-#ifdef RE_ASSERT
-#undef RE_ASSERT
+#ifdef FE_ASSERT
+#undef FE_ASSERT
 #endif
 #ifdef HALT
 #undef HALT
@@ -103,7 +101,7 @@ std::wstring RemoveExtension(const std::wstring& str);
 
 #ifdef RELEASE
 
-#define RE_ASSERT(isTrue, ...) (void)(isTrue)
+#define FE_ASSERT(isTrue, ...) (void)(isTrue)
 #define WARN_ONCE_IF(isTrue, ...) (void)(isTrue)
 #define WARN_ONCE_IF_NOT(isTrue, ...) (void)(isTrue)
 #define ERROR(msg, ...)
@@ -116,7 +114,7 @@ std::wstring RemoveExtension(const std::wstring& str);
 
 #define STRINGIFY(x) #x
 #define STRINGIFY_BUILTIN(x) STRINGIFY(x)
-#define RE_ASSERT(isFalse, ...)                                                                                  \
+#define FE_ASSERT(isFalse, ...)                                                                                  \
   if (!(bool)(isFalse)) {                                                                                        \
     Utility::Print("\nAssertion failed in " STRINGIFY_BUILTIN(__FILE__) " @ " STRINGIFY_BUILTIN(__LINE__) "\n"); \
     Utility::PrintSubMessage("\'" #isFalse "\' is false");                                                       \

@@ -67,11 +67,11 @@ void DynamicDescriptorHeap::DiscardDescriptorHeaps(D3D12_DESCRIPTOR_HEAP_TYPE He
 void DynamicDescriptorHeap::RetireCurrentHeap(void) {
   // Don't retire unused heaps.
   if (m_CurrentOffset == 0) {
-    RE_ASSERT(m_CurrentHeapPtr == nullptr);
+    FE_ASSERT(m_CurrentHeapPtr == nullptr);
     return;
   }
 
-  RE_ASSERT(m_CurrentHeapPtr != nullptr);
+  FE_ASSERT(m_CurrentHeapPtr != nullptr);
   m_RetiredHeaps.push_back(m_CurrentHeapPtr);
   m_CurrentHeapPtr = nullptr;
   m_CurrentOffset = 0;
@@ -100,7 +100,7 @@ void DynamicDescriptorHeap::CleanupUsedHeaps(uint64_t fenceValue) {
 
 FE_FINLINE ID3D12DescriptorHeap* DynamicDescriptorHeap::GetHeapPointer() {
   if (m_CurrentHeapPtr == nullptr) {
-    RE_ASSERT(m_CurrentOffset == 0);
+    FE_ASSERT(m_CurrentOffset == 0);
     m_CurrentHeapPtr = RequestDescriptorHeap(m_DescriptorType);
     m_FirstDescriptor =
         DescriptorHandle(m_CurrentHeapPtr->GetCPUDescriptorHandleForHeapStart(), m_CurrentHeapPtr->GetGPUDescriptorHandleForHeapStart());
@@ -118,7 +118,7 @@ uint32_t DynamicDescriptorHeap::DescriptorHandleCache::ComputeStagedSize() {
     StaleParams ^= (1 << RootIndex);
 
     uint32_t MaxSetHandle;
-    RE_ASSERT(TRUE == _BitScanReverse((unsigned long*)&MaxSetHandle, m_RootDescriptorTable[RootIndex].AssignedHandlesBitMap),
+    FE_ASSERT(TRUE == _BitScanReverse((unsigned long*)&MaxSetHandle, m_RootDescriptorTable[RootIndex].AssignedHandlesBitMap),
               "Root entry marked as stale but has no stale descriptors");
 
     NeededSpace += MaxSetHandle + 1;
@@ -142,7 +142,7 @@ void DynamicDescriptorHeap::DescriptorHandleCache::CopyAndBindStaleTables(
     StaleParams ^= (1 << RootIndex);
 
     uint32_t MaxSetHandle;
-    RE_ASSERT(TRUE == _BitScanReverse((unsigned long*)&MaxSetHandle, m_RootDescriptorTable[RootIndex].AssignedHandlesBitMap),
+    FE_ASSERT(TRUE == _BitScanReverse((unsigned long*)&MaxSetHandle, m_RootDescriptorTable[RootIndex].AssignedHandlesBitMap),
               "Root entry marked as stale but has no stale descriptors");
 
     NeededSpace += MaxSetHandle + 1;
@@ -151,7 +151,7 @@ void DynamicDescriptorHeap::DescriptorHandleCache::CopyAndBindStaleTables(
     ++StaleParamCount;
   }
 
-  RE_ASSERT(StaleParamCount <= DescriptorHandleCache::kMaxNumDescriptorTables, "We're only equipped to handle so many descriptor tables");
+  FE_ASSERT(StaleParamCount <= DescriptorHandleCache::kMaxNumDescriptorTables, "We're only equipped to handle so many descriptor tables");
 
   m_StaleRootParamsBitMap = 0;
 
@@ -266,8 +266,8 @@ void DynamicDescriptorHeap::DescriptorHandleCache::UnbindAllValid() {
 
 void DynamicDescriptorHeap::DescriptorHandleCache::StageDescriptorHandles(UINT RootIndex, UINT Offset, UINT NumHandles,
                                                                           const D3D12_CPU_DESCRIPTOR_HANDLE Handles[]) {
-  RE_ASSERT(((1 << RootIndex) & m_RootDescriptorTablesBitMap) != 0, "Root parameter is not a CBV_SRV_UAV descriptor table");
-  RE_ASSERT(Offset + NumHandles <= m_RootDescriptorTable[RootIndex].TableSize);
+  FE_ASSERT(((1 << RootIndex) & m_RootDescriptorTablesBitMap) != 0, "Root parameter is not a CBV_SRV_UAV descriptor table");
+  FE_ASSERT(Offset + NumHandles <= m_RootDescriptorTable[RootIndex].TableSize);
 
   DescriptorTableCache& TableCache = m_RootDescriptorTable[RootIndex];
   D3D12_CPU_DESCRIPTOR_HANDLE* CopyDest = TableCache.TableStart + Offset;
@@ -280,7 +280,7 @@ void DynamicDescriptorHeap::DescriptorHandleCache::StageDescriptorHandles(UINT R
 void DynamicDescriptorHeap::DescriptorHandleCache::ParseRootSignature(D3D12_DESCRIPTOR_HEAP_TYPE Type, const RootSignature& RootSig) {
   UINT CurrentOffset = 0;
 
-  RE_ASSERT(RootSig.m_NumParameters <= 16, "Maybe we need to support something greater");
+  FE_ASSERT(RootSig.m_NumParameters <= 16, "Maybe we need to support something greater");
 
   m_StaleRootParamsBitMap = 0;
   m_RootDescriptorTablesBitMap = (Type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER ? RootSig.m_SamplerTableBitMap : RootSig.m_DescriptorTableBitMap);
@@ -291,7 +291,7 @@ void DynamicDescriptorHeap::DescriptorHandleCache::ParseRootSignature(D3D12_DESC
     TableParams ^= (1 << RootIndex);
 
     UINT TableSize = RootSig.m_DescriptorTableSize[RootIndex];
-    RE_ASSERT(TableSize > 0);
+    FE_ASSERT(TableSize > 0);
 
     DescriptorTableCache& RootDescriptorTable = m_RootDescriptorTable[RootIndex];
     RootDescriptorTable.AssignedHandlesBitMap = 0;
@@ -303,5 +303,5 @@ void DynamicDescriptorHeap::DescriptorHandleCache::ParseRootSignature(D3D12_DESC
 
   m_MaxCachedDescriptors = CurrentOffset;
 
-  RE_ASSERT(m_MaxCachedDescriptors <= kMaxNumDescriptors, "Exceeded user-supplied maximum cache size");
+  FE_ASSERT(m_MaxCachedDescriptors <= kMaxNumDescriptors, "Exceeded user-supplied maximum cache size");
 }

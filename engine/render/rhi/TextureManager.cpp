@@ -11,7 +11,7 @@
 // Author(s):  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "TextureManager.h"
 #include "DDSTextureLoader.h"
 #include "Texture.h"
@@ -185,7 +185,7 @@ const Texture* TextureRef::Get(void) const {
 }
 
 const Texture* TextureRef::operator->(void) const {
-  RE_ASSERT(m_ref != nullptr);
+  FE_ASSERT(m_ref != nullptr);
   return m_ref;
 }
 

@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "GpuResource.h"
 
 class CommandContext;

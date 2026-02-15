@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "GameCore.h"
 #include "GraphicsCore.h"
 #include "SystemTime.h"
@@ -112,7 +112,7 @@ int RunApplication(IGameApp& app, const wchar_t* className, HINSTANCE hInst, int
   wcex.lpszMenuName = nullptr;
   wcex.lpszClassName = className;
   wcex.hIconSm = LoadIcon(hInst, IDI_APPLICATION);
-  RE_ASSERT(0 != RegisterClassEx(&wcex), "Unable to register a window");
+  FE_ASSERT(0 != RegisterClassEx(&wcex), "Unable to register a window");
 
   // Create window
   RECT rc = {0, 0, (LONG)g_DisplayWidth, (LONG)g_DisplayHeight};
@@ -121,7 +121,7 @@ int RunApplication(IGameApp& app, const wchar_t* className, HINSTANCE hInst, int
   g_hWnd = CreateWindow(className, className, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr,
                         nullptr, hInst, nullptr);
 
-  RE_ASSERT(g_hWnd != 0);
+  FE_ASSERT(g_hWnd != 0);
 
   InitializeApplication(app);
 

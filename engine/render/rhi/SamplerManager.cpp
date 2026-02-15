@@ -12,7 +12,7 @@
 //             Alex Nankervis
 //
 
-#include "Engine/Render/RHI/pch.h"
+#include "engine/render/rhi/pch.h"
 #include "SamplerManager.h"
 #include "GraphicsCore.h"
 #include "Hash.h"
@@ -38,6 +38,6 @@ D3D12_CPU_DESCRIPTOR_HANDLE SamplerDesc::CreateDescriptor() {
 }
 
 void SamplerDesc::CreateDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE Handle) {
-  RE_ASSERT(Handle.ptr != 0 && Handle.ptr != -1);
+  FE_ASSERT(Handle.ptr != 0 && Handle.ptr != -1);
   g_Device->CreateSampler(this, Handle);
 }
