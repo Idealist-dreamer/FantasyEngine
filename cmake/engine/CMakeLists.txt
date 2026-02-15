@@ -38,7 +38,7 @@ endif()
 
 target_include_directories(Engine
     PUBLIC
-    ${CodePath}
+    ${CMAKE_SOURCE_DIR}
 )
 
 include(LinkSDK.cmake)  
