@@ -1,15 +1,14 @@
 #pragma once
 
+#include <utility>
+#include <new>
+#include <cstddef>
+
 #include "engine/macros.h"
 
 namespace fe::engine {
-constexpr size_t kDefaultAlignment = 16;
-enum struct AllocType : std::uint8_t { STD, MiMalloc };
+constexpr size_t kDefaultAlignment = alignof(std::max_align_t);
 
-/*
-* Only suport MiMalloc
-*/
-template <AllocType type>
 class Allocator {
  public:
   // No type alloc
@@ -105,25 +104,9 @@ class Allocator {
     }
     free(static_cast<void*>(ptr));
   }
-
-  template <typename T>
-  struct Deleter {
-    void operator()(T* p) const noexcept { destroy<T>(p); }
-  };
-
-  template <template <typename> typename SharedPtr, typename T>
-  using temp_shared_ptr = SharedPtr<T>;
-
-  template <template <typename, typename> typename UniquePtr, typename T>
-  using temp_unique_ptr = UniquePtr<T, Deleter<T>>;
 };
 
 }  // namespace fe::engine
 
-// Convenient macro
-#define FE_CLASS_ALLOCATOR(_Type) using Alloc = fe::engine::Allocator<fe::engine::AllocType::_Type>;
-#define FE_NAME_ALLOCATOR(_Name, _Type) using _Name = fe::engine::Allocator<fe::engine::AllocType::_Type>
-
-#include "mimalloc.inl"
-#include "stlAllocator.inl"
+#include "allocator.inl"
 #include "overNewDele.h"

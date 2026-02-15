@@ -30,10 +30,15 @@ if(MSVC)
     target_compile_options(Engine PRIVATE /permissive)
 endif()
 
-option(USE_EASTL "use eastl" ON)
-if(USE_EASTL)
+option(FE_OP_USE_EASTL "use eastl" ON)
+if(FE_OP_USE_EASTL)
     target_compile_definitions(Engine PUBLIC FE_USE_EASTL)
     target_compile_definitions(Engine PUBLIC EASTL_EASTDC_VSNPRINTF=0)
+endif()
+
+option(FE_OP_OVER_NEW_DEL_MIMALLOC "use mimalloc overide new and delte" ON)
+if(FE_OP_OVER_NEW_DEL_MIMALLOC)
+    target_compile_definitions(Engine PUBLIC FE_OVER_NEW_DEL_MIMALLOC)
 endif()
 
 target_include_directories(Engine
