@@ -13,6 +13,9 @@
 
 #pragma once
 
+#include "engine/macros.h"
+#include "engine/utility/assert.h"
+
 #pragma warning(disable : 4201)  // nonstandard extension used : nameless struct/union
 #pragma warning(disable : 4238)  // nonstandard extension used : class rvalue used as lvalue
 #pragma warning(disable : 4239)  // A non-const reference may only be bound to an lvalue; assignment operator takes a reference to non-const
@@ -73,5 +76,3 @@
 #include "EngineTuning.h"
 #include "EngineProfiling.h"
 #include "Util/CommandLineArg.h"
-
-#include "engine/utility/assert.h"
