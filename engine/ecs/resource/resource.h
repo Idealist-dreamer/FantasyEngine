@@ -55,9 +55,16 @@ struct Resource {
   }
 
   template <typename T>
-  static Resource create(T* ptr) {
+  static Resource create(T* ptr, bool need_free = true) {
     Resource res;
     res.m_ptr = ptr;
+    if (need_free) {
+      res.m_deleter = [](void* p) {
+        if (p) {
+          memory::Allocator::destroy<T>(static_cast<T*>(p));
+        }
+      };
+    }
 #if defined(FE_DEBUG)
     res.m_TypeInfo = typeid(T);
 #endif
@@ -67,19 +74,19 @@ struct Resource {
   bool valid() const { return m_ptr != nullptr; }
 
   template <typename T>
-  const T* get() const {
-    FE_ASSERT(valid() && m_TypeInfo == typeid(T), "Type mismatch!");
-    return static_cast<const T*>(m_ptr);
-  }
-
-  template <typename T>
   T* get() {
     FE_ASSERT(valid() && m_TypeInfo == typeid(T), "Type mismatch!");
     return static_cast<T*>(m_ptr);
   }
 
-  FE_FINLINE const void* getPtr() const { return m_ptr; }
+  template <typename T>
+  const T* get() const {
+    FE_ASSERT(valid() && m_TypeInfo == typeid(T), "Type mismatch!");
+    return static_cast<const T*>(m_ptr);
+  }
+
   FE_FINLINE void* getPtr() { return m_ptr; }
+  FE_FINLINE const void* getPtr() const { return m_ptr; }
 
   FE_FINLINE void destroy() {
     if (m_ptr && m_deleter) {
