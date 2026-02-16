@@ -1,44 +1,44 @@
 #pragma once
 
-#include "ResourceCommandBuffer.h"
-#include "ResourceManager.h"
+#include "resourceCommandBuffer.h"
+#include "resourceManager.h"
 
-namespace re::engine::ecs {
-class RE_API ResourceVisitor {
+namespace fe::engine::ecs {
+class ResourceVisitor {
  public:
-  ResourceVisitor(ResourceManager* manager = nullptr) : m_ResourceManager(manager) {}
+  ResourceVisitor(ResourceManager* manager = nullptr) : m_resourceManager(manager) {}
 
-  RE_FINLINE void SetResourceManager(ResourceManager* manager) { m_ResourceManager = manager; }
-  RE_FINLINE ResCommandBuffer* GetCommandBuffer() { return &m_ResCommandBuffer; }
+  FE_FINLINE void setResourceManager(ResourceManager* manager) { m_resCommandBuffer = manager; }
+  FE_FINLINE ResourceCommandBuffer* getCommandBuffer() { return &m_resCommandBuffer; }
 
-  RE_FINLINE bool HasResource(ResId id) const {
-    RE_ASSERT(m_ResourceManager != nullptr);
+  FE_FINLINE bool HasResource(ResId id) const {
+    FE_ASSERT(m_ResourceManager != nullptr);
     return m_ResourceManager->HasResource(id);
   }
-  RE_FINLINE const Resource* GetResource(ResId id) const {
-    RE_ASSERT(m_ResourceManager != nullptr);
+  FE_FINLINE const Resource* GetResource(ResId id) const {
+    FE_ASSERT(m_ResourceManager != nullptr);
     return m_ResourceManager->GetResource(id);
   }
 
   template <typename T>
   ResId FindTypeResId() const {
-    RE_ASSERT(m_ResourceManager != nullptr);
+    FE_ASSERT(m_ResourceManager != nullptr);
     return m_ResourceManager->GetTypeResId<T>();
   }
 
-  RE_FINLINE ResId FindStringResId(const string& str) const {
-    RE_ASSERT(m_ResourceManager != nullptr);
+  FE_FINLINE ResId FindStringResId(const string& str) const {
+    FE_ASSERT(m_ResourceManager != nullptr);
     return m_ResourceManager->FindStringResId(str);
   }
 
-  RE_FINLINE void Submit() {
-    RE_ASSERT(m_ResourceManager != nullptr);
+  FE_FINLINE void Submit() {
+    FE_ASSERT(m_ResourceManager != nullptr);
     m_ResourceManager->Submit(std::move(m_ResCommandBuffer));
   }
 
  private:
-  ResCommandBuffer m_ResCommandBuffer;
-  ResourceManager* m_ResourceManager{nullptr};
+  ResourceCommandBuffer m_resCommandBuffer;
+  ResourceManager* m_resourceManager{nullptr};
 };
 
-}  // namespace re::engine::ecs
+}  // namespace fe::engine::ecs

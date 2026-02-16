@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Resource.h"
-#include "ResourceCommandBuffer.h"
+#include "resource.h"
+#include "resourceCommandBuffer.h"
 
-namespace re::engine::ecs {
+namespace fe::engine::ecs {
 class ResourceVisitor;
 
-class RE_API ResourceManager {
+class ResourceManager {
  public:
   ResourceManager() = default;
   ~ResourceManager() = default;
@@ -14,58 +14,62 @@ class RE_API ResourceManager {
   ResourceManager(const ResourceManager&) = delete;
   ResourceManager& operator=(const ResourceManager&) = delete;
 
-  RE_FINLINE bool HasResource(ResourceId id) const {
-    return (id.value < m_Resources.size() && id.version == m_ResourceIdVersions[id.value] && m_Resources[id.value].Valid());
-  }
-  RE_FINLINE const Resource* GetResource(ResourceId id) const {
-    RE_ASSERT(HasResource(id));
-    return &(m_Resources[id.value]);
+  FE_FINLINE bool hasResource(ResourceId id) const {
+    return (id.value < m_resources.size() && id.version == m_resourceIdVersions[id.value] && m_resources[id.value].valid());
   }
 
-  ResourceId AddResource(Resource&& res);
-  RE_FINLINE Resource* GetResource(ResourceId id) { return &(m_Resources[id.value]); }
-  void RemoveResource(ResourceId id);
+  FE_FINLINE Resource* getResource(ResourceId id) {
+    FE_ASSERT(hasResource(id));
+    return &(m_resources[id.value]);
+  }
+  FE_FINLINE const Resource* getResource(ResourceId id) const {
+    FE_ASSERT(hasResource(id));
+    return &(m_resources[id.value]);
+  }
+
+  ResourceId addResource(Resource&& res);
+  bool removeResource(ResourceId id);
 
   template <typename T>
-  void SetTypeResourceId(ResourceId id) {
+  void setTypeResourceId(ResourceId id) {
     static const auto type_index = std::type_index(typeid(T));
-    m_TypeResourceIdMap[type_index] = id;
+    m_typeResourceIdMap[type_index] = id;
   }
 
   template <typename T>
-  ResourceId FindTypeResourceId() const {
+  ResourceId findTypeResourceId() const {
     static const auto type_index = std::type_index(typeid(T));
-    auto it = m_TypeResourceIdMap.find(type_index);
-    if (it != m_TypeResourceIdMap.end()) {
+    auto it = m_typeResourceIdMap.find(type_index);
+    if (it != m_typeResourceIdMap.end()) {
       return it->second;
     }
-    return ResourceId::Null;
+    return ResourceId();
   }
 
-  RE_FINLINE void SetStringResourceId(const string& str, ResourceId id) { m_StringResourceIdMap[str] = id; }
-  RE_FINLINE ResourceId FindStringResourceId(const string& str) const {
-    auto it = m_StringResourceIdMap.find(str);
-    if (it != m_StringResourceIdMap.end()) {
+  FE_FINLINE void setStringResourceId(const stl::string& str, ResourceId id) { m_stringResourceIdMap[str] = id; }
+  FE_FINLINE ResourceId findStringResourceId(const stl::string& str) const {
+    auto it = m_stringResourceIdMap.find(str);
+    if (it != m_stringResourceIdMap.end()) {
       return it->second;
     }
-    return ResourceId::Null;
+    return ResourceId();
   }
 
-  ResourceVisitor RequestResourceVisitor();
+  ResourceVisitor requestResourceVisitor();
 
-  void Submit(ResCommandBuffer&& buffer);
-  void Flush();
+  void submit(ResourceCommandBuffer&& buffer);
+  void flush();
 
  private:
-  void ChangeResourceImpl(stl::pair<ResourceId, ResOperate>& changeRes);
+  void changeResourceImpl(stl::pair<ResourceId, ResOperate>& changeRes);
 
-  vector<Resource> m_Resources;
-  vector<uint32_t> m_ResourceIdVersions;
-  vector<ResourceId> m_FreeResourceIds;
-  vector<ResCommandBuffer> m_CommandBuffers;
-  std::mutex m_Mutex;
+  stl::vector<Resource> m_resources;
+  stl::vector<uint32_t> m_resourceIdVersions;
+  stl::vector<ResourceId> m_freeResourceIds;
+  stl::vector<ResourceCommandBuffer> m_commandBuffers;
+  std::mutex m_mutex;
 
-  unordered_map<std::type_index, ResourceId> m_TypeResourceIdMap;
-  unordered_map<string, ResourceId> m_StringResourceIdMap;
+  stl::unordered_map<std::type_index, ResourceId> m_typeResourceIdMap;
+  stl::unordered_map<stl::string, ResourceId> m_stringResourceIdMap;
 };
-}  // namespace re::engine::ecs
+}  // namespace fe::engine::ecs

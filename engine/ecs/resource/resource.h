@@ -39,6 +39,34 @@ struct Resource {
     return *this;
   }
 
+  bool valid() const { return m_ptr != nullptr; }
+
+  template <typename T>
+  T* get() {
+    FE_ASSERT(valid() && m_TypeInfo == typeid(T), "Type mismatch!");
+    return static_cast<T*>(m_ptr);
+  }
+
+  template <typename T>
+  const T* get() const {
+    FE_ASSERT(valid() && m_TypeInfo == typeid(T), "Type mismatch!");
+    return static_cast<const T*>(m_ptr);
+  }
+
+  FE_FINLINE void* getPtr() { return m_ptr; }
+  FE_FINLINE const void* getPtr() const { return m_ptr; }
+
+  FE_FINLINE void destroy() {
+    if (m_ptr && m_deleter) {
+      m_deleter(m_ptr);
+    }
+    m_ptr = nullptr;
+    m_deleter = nullptr;
+#if defined(FE_DEBUG)
+    m_TypeInfo = typeid(void);
+#endif
+  }
+
   template <typename T, typename... Args>
   static Resource create(Args&&... args) {
     Resource res;
@@ -69,34 +97,6 @@ struct Resource {
     res.m_TypeInfo = typeid(T);
 #endif
     return res;
-  }
-
-  bool valid() const { return m_ptr != nullptr; }
-
-  template <typename T>
-  T* get() {
-    FE_ASSERT(valid() && m_TypeInfo == typeid(T), "Type mismatch!");
-    return static_cast<T*>(m_ptr);
-  }
-
-  template <typename T>
-  const T* get() const {
-    FE_ASSERT(valid() && m_TypeInfo == typeid(T), "Type mismatch!");
-    return static_cast<const T*>(m_ptr);
-  }
-
-  FE_FINLINE void* getPtr() { return m_ptr; }
-  FE_FINLINE const void* getPtr() const { return m_ptr; }
-
-  FE_FINLINE void destroy() {
-    if (m_ptr && m_deleter) {
-      m_deleter(m_ptr);
-    }
-    m_ptr = nullptr;
-    m_deleter = nullptr;
-#if defined(FE_DEBUG)
-    m_TypeInfo = typeid(void);
-#endif
   }
 
  private:
