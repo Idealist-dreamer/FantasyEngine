@@ -49,7 +49,17 @@ struct Resource {
       }
     };
 #if defined(FE_DEBUG)
-    res.m_TypeInfo = typeid(T);  // 必须添加这一行
+    res.m_TypeInfo = typeid(T);
+#endif
+    return res;
+  }
+
+  template <typename T>
+  static Resource create(T* ptr) {
+    Resource res;
+    res.m_ptr = ptr;
+#if defined(FE_DEBUG)
+    res.m_TypeInfo = typeid(T);
 #endif
     return res;
   }
