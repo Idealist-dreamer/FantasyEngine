@@ -154,3 +154,10 @@ FE_FINLINE int VsnprintfW(wchar_t* pDestination, size_t n, const wchar_t* pForma
 #endif
 }
 #endif
+
+#include <typeindex>
+
+template <>
+struct FE_STL_NAMESPACE::hash<std::type_index> {
+  size_t operator()(std::type_index val) const { return val.hash_code(); }
+};

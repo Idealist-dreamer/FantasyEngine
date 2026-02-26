@@ -34,7 +34,7 @@ class WorldBase {
   }
 
   template <typename T>
-  const T& getComponent(Entity e) const {
+  const T& getComponentConst(Entity e) const {
     return m_reg.get<T>(e);
   }
 
@@ -90,7 +90,7 @@ class WorldBase {
   }
 
   template <typename... Component>
-  auto view() const {
+  auto viewConst() const {
     return m_reg.view<const Component...>();
   }
 
