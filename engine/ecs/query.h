@@ -77,7 +77,7 @@ struct Query {
     return m_worldBase->resourceManager()->getResource(id);
   }
 
-  FE_FINLINE const Resource* getResource(ResourceId id) const {
+  FE_FINLINE const Resource* getResourceConst(ResourceId id) const {
     FE_USE_RM_CONST
     return m_worldBase->resourceManager()->getResource(id);
   }
@@ -161,9 +161,9 @@ struct Query {
   }
 
   template <typename T>
-  FE_FINLINE const T& getComponent(Entity e) const {
+  FE_FINLINE const T& getComponentConst(Entity e) const {
     static_assert(has_read_perm<T>, "Access Denied: Component not registered as Readable!");
-    return m_worldBase->getComponentConst<T>(e);
+    return m_worldBase->getComponent<T>(e);
   }
 
   template <typename T, typename... Args>
@@ -212,10 +212,12 @@ struct Query {
   template <typename... Components>
   auto viewConst() const {
     static_assert((has_read_perm<Components> && ...), "Access Denied: One or more components not registered as Readable!");
-    return m_worldBase->viewConst<Components...>();
+    return cw()->view<Components...>();
   }
 
  private:
+  const WorldBase* cw() const { return static_cast<const WorldBase*>(m_worldBase); }
+
   WorldBase* m_worldBase = nullptr;
   ResourceCommandBuffer m_resCommandBuffer;
 };

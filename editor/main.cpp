@@ -21,21 +21,21 @@ class PhysicsSystem : public System {
   void onInit() override {
     // 创建 Pass 并声明权限
     // 需要：写 Transform, 读 Velocity, 读 ResourceManager(获取全局设置)
-    createPass<WriteComponent<Transform>, WriteComponent<Velocity>, WriteClass<ResourceManager>>("PhysicsPass", [](auto& query) {
+    createPass<WriteComponent<Transform>, ReadComponent<Velocity>, ReadClass<ResourceManager>>("PhysicsPass", [](auto& query) {
       // 获取 DeltaTime (模拟逻辑)
       float dt = 0.016f;
 
       // 尝试从资源管理器获取全局缩放
       ResourceId configId = query.findTypeResourceId<GlobalSettings>();
       if (!configId.null()) {
-        dt *= query.getResource(configId)->template get<GlobalSettings>()->timeScale;
+        dt *= query.getResourceConst(configId)->template get<GlobalSettings>()->timeScale;
       }
 
       // 获取 View 并迭代
-      auto view = query.template view<Transform, Velocity>();
-      for (Entity entity : view) {
+      auto view_trans = query.template view<Transform>();
+      for (Entity entity : view_trans) {
         auto& trans = query.template getComponent<Transform>(entity);
-        const auto& vel = query.template getComponent<Velocity>(entity);
+        const auto& vel = query.template getComponentConst<Velocity>(entity);
 
         trans.position += vel.value * dt;
       }
