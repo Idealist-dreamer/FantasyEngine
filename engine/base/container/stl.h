@@ -1,9 +1,9 @@
 #pragma once
 
-#include "engine/macros.h"
+#include "engine/base/macros.h"
 
 #ifdef FE_USE_EASTL
-#define STL_NAMESPACE eastl
+#define FE_STL_NAMESPACE eastl
 
 FE_FINLINE void* operator new[](size_t size, const char* name, int flags, unsigned debugFlags, const char* file, int line);
 FE_FINLINE void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* name, int flags, unsigned debugFlags,
@@ -53,7 +53,7 @@ FE_FINLINE void* operator new(size_t size, size_t alignment, size_t alignmentOff
 #include <EASTL/atomic.h>
 
 #else
-#define STL_NAMESPACE std
+#define FE_STL_NAMESPACE std
 
 #include <vector>
 #include <queue>
@@ -95,7 +95,7 @@ FE_FINLINE void* operator new(size_t size, size_t alignment, size_t alignmentOff
 #endif
 
 namespace fe::engine::stl {
-using namespace STL_NAMESPACE;
+using namespace FE_STL_NAMESPACE;
 }
 
 #ifdef FE_USE_EASTL

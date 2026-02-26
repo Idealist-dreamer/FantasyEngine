@@ -55,19 +55,16 @@ class ResourceManager {
     return ResourceId();
   }
 
-  ResourceVisitor requestResourceVisitor();
-
   void submit(ResourceCommandBuffer&& buffer);
   void flush();
 
  private:
-  void changeResourceImpl(stl::pair<ResourceId, ResOperate>& changeRes);
+  void changeResourceImpl(stl::pair<ResourceId, ResourceOperate>& changeRes);
 
   stl::vector<Resource> m_resources;
   stl::vector<uint32_t> m_resourceIdVersions;
   stl::vector<ResourceId> m_freeResourceIds;
   stl::vector<ResourceCommandBuffer> m_commandBuffers;
-  std::mutex m_mutex;
 
   stl::unordered_map<std::type_index, ResourceId> m_typeResourceIdMap;
   stl::unordered_map<stl::string, ResourceId> m_stringResourceIdMap;

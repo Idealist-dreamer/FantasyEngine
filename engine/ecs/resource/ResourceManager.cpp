@@ -1,74 +1,76 @@
-#include "ResourceManager.h"
-#include "ResourceVisitor.h"
+#include "resourceManager.h"
 
 namespace fe::engine::ecs {
-void ResourceManager::Submit(ResCommandBuffer&& buffer) {
-  std::lock_guard lock(m_Mutex);
-  m_CommandBuffers.push_back(std::move(buffer));
+void ResourceManager::submit(ResourceCommandBuffer&& buffer) {
+  m_commandBuffers.push_back(std::move(buffer));
 }
 
-ResId ResourceManager::AddResource(Resource& res) {
-  ResId id;
-  if (m_FreeResIds.empty()) {
-    id = m_Resources.size();
-    m_Resources.push_back(std::move(res));
-    m_ResIdVersions.push_back(0);
+ResourceId ResourceManager::addResource(Resource&& res) {
+  ResourceId id;
+  if (m_freeResourceIds.empty()) {
+    id = m_resources.size();
+    m_resources.push_back(std::move(res));
+    m_resourceIdVersions.push_back(0);
   } else {
-    id = m_FreeResIds.back();
-    m_FreeResIds.pop_back();
-    m_Resources[id] = std::move(res);
-    id.version = m_ResIdVersions[id];
+    id = m_freeResourceIds.back();
+    m_freeResourceIds.pop_back();
+    m_resources[id.value] = std::move(res);
+    id.version = m_resourceIdVersions[id.value];
   }
   return id;
 }
-void ResourceManager::RemoveResource(ResId id) {
-  m_FreeResIds.push_back(id);
-  m_Resources[id].Destroy();
-  m_ResIdVersions[id] += 1;
+bool ResourceManager::removeResource(ResourceId id) {
+  if (hasResource(id)) {
+    m_freeResourceIds.push_back(id);
+    m_resources[id.value].destroy();
+    m_resourceIdVersions[id.value] += 1;
+    return true;
+  } else {
+    return false;
+  }
 }
 
-void ResourceManager::ChangeResourceImpl(stl::pair<ResId, ResOperate>& changeRes) {
-  changeRes.second(m_Resources[changeRes.first]);
+void ResourceManager::changeResourceImpl(stl::pair<ResourceId, ResourceOperate>& changeRes) {
+  changeRes.second(m_resources[changeRes.first.value]);
 }
 
-void ResourceManager::Flush() {
+void ResourceManager::flush() {
   uint32_t addResNum = 0;
   uint32_t removeResNum = 0;
 
-  for (auto& cmb : m_CommandBuffers) {
+  for (auto& cmb : m_commandBuffers) {
     addResNum += cmb.GetAddResources().size();
     removeResNum += cmb.GetRemoveResources().size();
   }
 
   int absAddResNum = addResNum - removeResNum;
   if (absAddResNum > 0) {
-    m_Resources.reserve(m_Resources.size() + absAddResNum);
+    m_resources.reserve(m_resources.size() + absAddResNum);
   }
 
-  for (auto& cmb : m_CommandBuffers) {
+  for (auto& cmb : m_commandBuffers) {
     auto& addResArray = cmb.GetAddResources();
     auto& changeResArray = cmb.GetChangeResources();
+    auto& operateResArray = cmb.GetOperateResources();
     auto& removeResArray = cmb.GetRemoveResources();
 
     auto& opOrders = cmb.GetOpOrders();
     for (auto& op : opOrders) {
-      if (op.first == ResCommandBuffer::OpType::Add) {
-        *(addResArray[op.second].first) = AddResource(addResArray[op.second].second);
-      } else if (op.first == ResCommandBuffer::OpType::Change) {
-        ChangeResourceImpl(changeResArray[op.second]);
-      } else if (op.first == ResCommandBuffer::OpType::Remove) {
-        RemoveResource(removeResArray[op.second]);
+      if (op.first == ResourceCommandBuffer::OpType::Add) {
+        *(addResArray[op.second].first) = addResource(std::move(addResArray[op.second].second));
+      } else if (op.first == ResourceCommandBuffer::OpType::Operate) {
+        changeResourceImpl(operateResArray[op.second]);
+      } else if (op.first == ResourceCommandBuffer::OpType::Change) {
+        m_resources[changeResArray[op.second].first.value] = std::move(changeResArray[op.second].second);
+      } else if (op.first == ResourceCommandBuffer::OpType::Remove) {
+        removeResource(removeResArray[op.second]);
       }
     }
 
-    cmb.Reset();
+    cmb.reset();
   }
 
-  m_CommandBuffers.clear();
-}
-
-ResourceVisitor ResourceManager::RequestResourceVisitor() {
-  return ResourceVisitor(this);
+  m_commandBuffers.clear();
 }
 
 }  // namespace fe::engine::ecs

@@ -13,8 +13,8 @@
 
 #pragma once
 
-#include "engine/macros.h"
-#include "engine/utility/assert.h"
+#include "engine/base/macros.h"
+#include "engine/base/utility/assert.h"
 
 #pragma warning(disable : 4201)  // nonstandard extension used : nameless struct/union
 #pragma warning(disable : 4238)  // nonstandard extension used : class rvalue used as lvalue

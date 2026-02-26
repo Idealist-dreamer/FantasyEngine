@@ -12,11 +12,6 @@ file(GLOB_RECURSE HEAD_FILE
 file(GLOB_RECURSE SOURCE_FILE
     "${CodePath}/*.cpp")
 
-list(FILTER HEAD_FILE EXCLUDE REGEX ".*/Render/.*")
-list(FILTER SOURCE_FILE EXCLUDE REGEX ".*/Render/.*")
-list(FILTER HEAD_FILE EXCLUDE REGEX ".*/Script/.*")
-list(FILTER SOURCE_FILE EXCLUDE REGEX ".*/Script/.*")
-
 add_library(Engine STATIC ${SOURCE_FILE})
 
 # Target config

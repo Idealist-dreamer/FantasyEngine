@@ -2,10 +2,22 @@
 
 #include <typeindex>
 
-#include "engine/macros.h"
-#include "engine/memory/allocator.h"
+#include "engine/base/macros.h"
+#include "engine/base/memory/allocator.h"
 
 namespace fe::engine::ecs {
+struct ResourceId {
+  static constexpr uint32_t Invalid = FE_UINT32_MAX;
+
+  ResourceId(uint32_t _value = Invalid, uint32_t _version = 0) : value(_value), version(_version) {}
+
+  bool null() const { return value == Invalid; }
+  auto operator<=>(const ResourceId& other) const = default;
+
+  uint32_t value;
+  uint32_t version;
+};
+
 struct Resource {
   Resource() = default;
   ~Resource() { destroy(); }
