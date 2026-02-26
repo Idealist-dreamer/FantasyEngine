@@ -3,8 +3,29 @@
 #include "pass/pass.h"
 
 #include "worldBase.h"
+#include "query.h"
 
 namespace fe::engine::ecs {
+template <typename Q>
+class GenericSystemPass : public Pass {
+ public:
+  using QueryType = Q;
+
+  GenericSystemPass(const stl::string& name, WorldBase* world, std::function<void(Q&)> func) : Pass(name), m_func(func) {
+    m_query.setWorld(world);
+    this->m_mutexs = Q::getDependencies();
+  }
+
+  void execute() override {
+    if (m_func) {
+      m_func(m_query);
+    }
+  }
+
+ private:
+  Q m_query;
+  std::function<void(Q&)> m_func;
+};
 
 class System {
  public:
@@ -12,47 +33,27 @@ class System {
   virtual ~System() = default;
 
   System(const System&) = delete;
-  System& operator=(const System&) = delete;
 
-  FE_FINLINE bool IsAttach() const { return m_Attach; }
-  FE_FINLINE bool IsEnabled() const { return m_Enabled; }
-
-  virtual void OnAttach(World* world);
-  virtual void OnDetach();
-
-  virtual bool OnEnable() {
-    if (!m_Enabled) {
-      m_Enabled = true;
-    }
-    return m_Enabled;
-  }
-  virtual bool OnDisable() {
-    if (m_Enabled) {
-      m_Enabled = true;
-    }
-    return !m_Enabled;
+  void attach(WorldBase* world) {
+    m_world = world;
+    onInit();
   }
 
-  virtual void OnPreUpdate() {}
-  virtual void OnPostUpdate() {}
+  virtual void onInit() = 0;
 
-  FE_FINLINE vector<shared_ptr<SystemPass>> GetAllPass() { return m_Passes; }
+  const stl::vector<stl::shared_ptr<Pass>>& getPasses() const { return m_passes; }
 
  protected:
-  template <typename ComponentType>
-  bool PollAddComponentTemp();
+  template <typename... Tags, typename Func>
+  stl::shared_ptr<Pass> createPass(const stl::string& name, Func&& func) {
+    using Q = Query<Tags...>;
+    auto pass = stl::make_shared<GenericSystemPass<Q>>(name, m_world, std::forward<Func>(func));
+    m_passes.push_back(pass);
+    return pass;
+  }
 
-  template <typename ComponentType>
-  bool PollDelComponentTemp();
-
-  template <typename ComponentType>
-  bool PollChangeComponentTemp();
-
-  World* m_World = nullptr;
-  bool m_Enabled = false;
-  bool m_Attach = false;
-
-  vector<shared_ptr<SystemPass>> m_Passes;
+  WorldBase* m_world = nullptr;
+  stl::vector<stl::shared_ptr<Pass>> m_passes;
 };
 
 }  // namespace fe::engine::ecs

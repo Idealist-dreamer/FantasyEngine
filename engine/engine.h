@@ -1,9 +1,6 @@
 #pragma once
 
-#include "base/base.h"
+#include "base/pch.h"
 
-#include "ecs/resource/resourceManager.h"
-
-#include "ecs/pass/passInfo.h"
-
-#include "render/rhi/GraphicsCore.h"
+#include "ecs/system.h"
+#include "ecs/world.h"

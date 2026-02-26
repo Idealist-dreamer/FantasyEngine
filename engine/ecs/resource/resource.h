@@ -55,13 +55,17 @@ struct Resource {
 
   template <typename T>
   T* get() {
+#if defined(FE_DEBUG)
     FE_ASSERT(valid() && m_TypeInfo == typeid(T), "Type mismatch!");
+#endif
     return static_cast<T*>(m_ptr);
   }
 
   template <typename T>
   const T* get() const {
+#if defined(FE_DEBUG)
     FE_ASSERT(valid() && m_TypeInfo == typeid(T), "Type mismatch!");
+#endif
     return static_cast<const T*>(m_ptr);
   }
 
