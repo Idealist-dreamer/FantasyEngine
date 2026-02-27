@@ -18,7 +18,7 @@ class Pass {
   template <class R, class... Args>
   void init(R (&func)(Args...)) {
     m_call = [&func](WorldBase& world) mutable {
-      func(world.getSuper<Args>()...);
+      func(world.getParam<Args>()...);
     };
     m_mutexs = detail::merge_mutex_vectors(detail::get_mutexes_for_type<Args>()...);
   }
