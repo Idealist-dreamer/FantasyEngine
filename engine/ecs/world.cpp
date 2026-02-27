@@ -90,7 +90,11 @@ void World::compile() {
       }
 
       if (isConflict) {
-        taskA.precede(taskB);
+        if (passA->m_priority <= passB->m_priority) {
+          taskA.precede(taskB);
+        } else {
+          taskB.precede(taskA);
+        }
       }
     }
   }

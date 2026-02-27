@@ -6,6 +6,8 @@
 namespace fe::engine::ecs {
 class WorldBase;
 
+enum Priority : uint32_t { First = 0x00000000, High = 0x00001000, Mid = 0x00002000, Low = 0x00003000 };
+
 class Pass {
  public:
   using CallType = std::function<void(WorldBase&)>;
@@ -22,6 +24,7 @@ class Pass {
   }
 
   bool m_isRepeat = true;
+  uint32_t m_priority = 0;
   stl::unordered_set<stl::string> m_before;
   stl::unordered_set<stl::string> m_after;
 

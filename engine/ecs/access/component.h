@@ -6,7 +6,7 @@ namespace fe::engine::ecs {
 template <typename... Components>
 class ComponentReader {
  public:
-  ComponentReader(Registry& reg) : _reg(reg), _view(reg.view<const Components...>()) {}
+  ComponentReader(Registry& reg) : _reg(reg) {}
 
   template <typename T>
   bool all_of(entt::entity e) const {
@@ -20,17 +20,16 @@ class ComponentReader {
     return _reg.get<const T>(e);
   }
 
-  auto view() const { return _view; }
+  auto view() const { return _reg.view<const Components...>(); }
 
  protected:
   Registry& _reg;
-  entt::view<entt::get_t<const Components...>> _view;
 };
 
 template <typename... Components>
 class ComponentWriter {
  public:
-  ComponentWriter(entt::registry& reg) : _reg(reg), _view(reg.view<Components...>()) {}
+  ComponentWriter(entt::registry& reg) : _reg(reg) {}
 
   template <typename T>
   bool all_of(entt::entity e) const {
@@ -50,8 +49,8 @@ class ComponentWriter {
     return _reg.get<const T>(e);
   }
 
-  auto view() { return _view; }
-  auto view() const { return _view; }
+  auto view() { return _reg.view<const Components...>(); }
+  auto view() const { return _reg.view<Components...>(); }
 
   template <typename T, typename... Args>
   T& add(entt::entity e, Args&&... args) {
@@ -67,7 +66,6 @@ class ComponentWriter {
 
  protected:
   entt::registry& _reg;
-  entt::view<entt::get_t<Components...>> _view;
 };
 }  // namespace fe::engine::ecs
 
