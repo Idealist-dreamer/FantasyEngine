@@ -32,7 +32,7 @@ class ComponentWriter {
   ComponentWriter(entt::registry& reg) : _reg(reg) {}
 
   template <typename T>
-  bool all_of(entt::entity e) const {
+  bool has(entt::entity e) const {
     static_assert(is_in_pack<T, Components...>, "error");
     return _reg.all_of<const T>(e);
   }
@@ -62,6 +62,37 @@ class ComponentWriter {
   void remove(entt::entity e) {
     static_assert(is_in_pack<T, Components...>, "error");
     _reg.remove<T>(e);
+  }
+
+  template <typename T, typename... Args>
+  void addDelayed(Entity e, Args&&... args) {
+    if (!has<T>(e)) {
+      _reg.remove<ChangeComponentTag<T>>(e);
+      _reg.remove<RemoveComponentTag<T>>(e);
+
+      AddComponentTag<T> comTag = {std::forward<Args>(args)...};
+      _reg.emplace_or_replace<AddComponentTag<T>>(e, comTag);
+    }
+  }
+
+  template <typename T, typename... Args>
+  void changeDelayed(Entity e, Args&&... args) {
+    if (_reg.try_get<T>(e) && !_reg.all_of<RemoveComponentTag<T>>(e)) {
+      ChangeComponentTag<T> comTag = {std::forward<Args>(args)...};
+      _reg.emplace_or_replace<ChangeComponentTag<T>>(e, comTag);
+    } else if (_reg.try_get<AddComponentTag<T>>(e)) {
+      _reg.get<AddComponentTag<T>>(e).data = T(std::forward<Args>(args)...);
+    }
+  }
+
+  template <typename T>
+  void removeDelayed(Entity e) {
+    if (_reg.try_get<T>(e)) {
+      _reg.remove<AddComponentTag<T>>(e);
+      _reg.remove<ChangeComponentTag<T>>(e);
+
+      _reg.emplace_or_replace<RemoveComponentTag<T>>(e);
+    }
   }
 
  protected:

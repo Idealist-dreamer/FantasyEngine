@@ -18,7 +18,7 @@ struct Velocity {
 void PhysicsSystem(ComponentReader<Velocity> rd, ComponentWriter<Position> wr) {
   auto view = rd.view();  // 实际上这里需要处理 view 的交集，此处简写
   for (auto entity : view) {
-    if (wr.all_of<Position>(entity)) {
+    if (wr.has<Position>(entity)) {
       wr.get<Position>(entity).val += rd.get<Velocity>(entity).val;
       std::cout << "Entity updated pos\n";
     }
