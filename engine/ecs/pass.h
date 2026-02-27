@@ -21,6 +21,9 @@ class Pass {
       func(world.getParam<Args>()...);
     };
     m_mutexs = detail::merge_mutex_vectors(detail::get_mutexes_for_type<Args>()...);
+
+    m_preparers.clear();
+    (detail::collect_preparers<Args>(m_preparers), ...);
   }
 
   bool m_isRepeat = true;
@@ -32,6 +35,8 @@ class Pass {
   stl::string m_name;
   CallType m_call;
   stl::vector<Mutex> m_mutexs;
+
+  stl::vector<std::function<void(Registry&)>> m_preparers;
 
   friend class World;
 };

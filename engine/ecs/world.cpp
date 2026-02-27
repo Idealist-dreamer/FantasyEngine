@@ -38,6 +38,12 @@ void World::compile() {
     }
   }
 
+  for (auto pass : passArray) {
+    for (auto& preparer : pass->m_preparers) {
+      preparer(m_registry);
+    }
+  }
+
   taskflow.clear();
 
   if (passArray.empty()) {

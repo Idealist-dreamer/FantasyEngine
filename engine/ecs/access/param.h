@@ -57,4 +57,43 @@ stl::vector<Mutex> merge_mutex_vectors(Vecs&&... vecs) {
   return all_mutexes;
 }
 
+template <typename... T>
+struct TypeList {};
+
+template <typename... Components>
+void prepare_base_storages(Registry& reg) {
+  (reg.storage<std::remove_const_t<Components>>(), ...);
+}
+
+template <typename... Components>
+void prepare_tag_storages(Registry& reg) {
+  (reg.storage<AddComponentTag<Components>>(), ...);
+  (reg.storage<ChangeComponentTag<Components>>(), ...);
+  (reg.storage<RemoveComponentTag<Components>>(), ...);
+}
+
+template <typename Tuple>
+struct Preparer;
+
+template <typename... Cs>
+struct Preparer<std::tuple<Cs...>> {
+  static void run(Registry& reg, bool include_tags) {
+    prepare_base_storages<Cs...>(reg);
+    if (include_tags) {
+      prepare_tag_storages<Cs...>(reg);
+    }
+  }
+};
+
+template <typename T>
+void collect_preparers(stl::vector<std::function<void(Registry&)>>& out) {
+  using RawT = std::remove_cv_t<std::remove_reference_t<T>>;
+
+  if constexpr (is_component_writer<RawT>::value) {
+    out.push_back([](Registry& reg) { Preparer<typename is_component_writer<RawT>::component_types>::run(reg, true); });
+  } else if constexpr (is_component_reader<RawT>::value) {
+    out.push_back([](Registry& reg) { Preparer<typename is_component_reader<RawT>::component_types>::run(reg, false); });
+  }
+}
+
 }  // namespace fe::engine::ecs::detail
