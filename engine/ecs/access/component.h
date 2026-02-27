@@ -22,6 +22,12 @@ class ComponentReader {
 
   auto view() const { return _reg.view<const Components...>(); }
 
+  template <typename... Requested, typename = std::enable_if_t<(sizeof...(Requested) > 0)>>
+  auto view() const {
+    static_assert((is_in_pack<Requested, Components...> && ...), "Requested component not in ComponentReader's pack");
+    return _reg.view<const Requested...>();
+  }
+
  protected:
   Registry& _reg;
 };
@@ -52,6 +58,17 @@ class ComponentWriter {
   auto view() { return _reg.view<const Components...>(); }
   auto view() const { return _reg.view<Components...>(); }
 
+  template <typename... Requested, typename = std::enable_if_t<(sizeof...(Requested) > 0)>>
+  auto view() const {
+    static_assert((is_in_pack<Requested, Components...> && ...), "Requested component not in ComponentWriter's pack");
+    return _reg.view<const Requested...>();
+  }
+  template <typename... Requested, typename = std::enable_if_t<(sizeof...(Requested) > 0)>>
+  auto view() {
+    static_assert((is_in_pack<Requested, Components...> && ...), "Requested component not in ComponentWriter's pack");
+    return _reg.view<Requested...>();
+  }
+
   template <typename T, typename... Args>
   T& add(entt::entity e, Args&&... args) {
     static_assert(is_in_pack<T, Components...>, "error");
@@ -62,6 +79,12 @@ class ComponentWriter {
   void remove(entt::entity e) {
     static_assert(is_in_pack<T, Components...>, "error");
     _reg.remove<T>(e);
+  }
+
+  template <typename T>
+  void clear() {
+    static_assert(is_in_pack<T, Components...>, "error");
+    _reg.clear<T>();
   }
 
   template <typename T, typename... Args>
