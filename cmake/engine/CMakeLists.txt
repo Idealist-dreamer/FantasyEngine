@@ -12,6 +12,9 @@ file(GLOB_RECURSE HEAD_FILE
 file(GLOB_RECURSE SOURCE_FILE
     "${CodePath}/*.cpp")
 
+list(FILTER HEAD_FILE EXCLUDE REGEX ".*/ecsOld/.*")
+list(FILTER SOURCE_FILE EXCLUDE REGEX ".*/ecsOld/.*")
+
 add_library(Engine STATIC ${SOURCE_FILE})
 
 # Target config

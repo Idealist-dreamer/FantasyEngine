@@ -1,40 +1,20 @@
 #pragma once
 
-#include "worldBase.h"
 #include "system.h"
-
-#include "pass/scheduler.h"
 
 namespace fe::engine::ecs {
 class World : public WorldBase {
  public:
-  World() = default;
+  World();
+  ~World();
 
-  void addSystem(const stl::string& name, stl::shared_ptr<System> sys) {
-    sys->attach(this);
-    m_systems.insert({name, sys});
-  }
+  void addSystem(stl::shared_ptr<System> sys);
 
-  void run() {
-    if (m_fisrtRun) {
-      stl::vector<stl::shared_ptr<Pass>> allPasses;
-      for (auto& [name, sys] : m_systems) {
-        auto& passes = sys->getPasses();
-        allPasses.insert(allPasses.end(), passes.begin(), passes.end());
-      }
+  void compile();
+  void run();
 
-      m_scheduler.compile(allPasses);
+  void dumpGraph(const stl::string& path);
 
-      m_fisrtRun = false;
-    }
-
-    m_scheduler.execute();
-  }
-
- private:
-  stl::unordered_map<stl::string, stl::shared_ptr<System>> m_systems;
-
-  bool m_fisrtRun = true;
-  Scheduler m_scheduler;
+  FE_DECLARE_PRIVATE
 };
 }  // namespace fe::engine::ecs

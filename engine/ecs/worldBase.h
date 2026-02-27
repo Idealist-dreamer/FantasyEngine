@@ -1,107 +1,54 @@
 #pragma once
 
 #include "common.h"
-#include "transform.h"
 
+#include "access/param.h"
 #include "resource/resourceManager.h"
 
 namespace fe::engine::ecs {
 class WorldBase {
  public:
-  WorldBase();
-  virtual ~WorldBase();
+  WorldBase() = default;
+  virtual ~WorldBase() = default;
 
-  FE_FINLINE bool hasEntity(Entity e) const { return m_reg.valid(e); }
-  FE_FINLINE Entity createEntity() {
-    Entity e = m_reg.create();
-    m_reg.emplace<Transform>(e);
-    m_reg.emplace<ModelMatrix>(e);
-    m_reg.emplace<Hierarchy>(e);
-    return e;
+  template <typename EQ, typename std::enable_if_t<is_entity_query<EQ>::value, bool> = true>
+  EQ getSuper() {
+    return EQ(m_registry);
   }
 
-  FE_FINLINE void destroyEntity(Entity e) { m_reg.destroy(e); }
-  FE_FINLINE void destroyEntityDelayed(Entity e) { m_reg.emplace_or_replace<DestroyEntityTag>(e); }
-
-  template <typename T>
-  bool hasComponents(Entity e) const {
-    return m_reg.all_of<T>(e);
+  template <typename EC, typename std::enable_if_t<is_entity_creator<EC>::value, bool> = true>
+  EC getSuper() {
+    return EC(m_registry);
   }
 
-  template <typename T>
-  T& getComponent(Entity e) {
-    return m_reg.get<T>(e);
+  template <typename ED, typename std::enable_if_t<is_entity_destroyer<ED>::value, bool> = true>
+  ED getSuper() {
+    return ED(m_registry);
   }
 
-  template <typename T>
-  const T& getComponent(Entity e) const {
-    return m_reg.get<T>(e);
+  template <typename CR, std::enable_if_t<is_component_reader<CR>::value, bool> = true>
+  CR getSuper() {
+    return CR(m_registry);
   }
 
-  template <typename T, typename... Args>
-  void addComponent(Entity e, Args&&... args) {
-    m_reg.emplace_or_replace<T>(e, std::forward<Args>(args)...);
+  template <typename CW, std::enable_if_t<is_component_writer<CW>::value, bool> = true>
+  CW getSuper() {
+    return CW(m_registry);
   }
 
-  template <typename T, typename... Args>
-  void addComponentDelayed(Entity e, Args&&... args) {
-    if (!hasComponents<T>(e)) {
-      m_reg.remove<ChangeComponentTag<T>>(e);
-      m_reg.remove<RemoveComponentTag<T>>(e);
+  template <typename R, std::enable_if_t<is_resource_manager<R>::value, bool> = true>
+  R getSuper() {
+    using PlainType = std::remove_reference_t<R>;
 
-      AddComponentTag<T> comTag = {std::forward<Args>(args)...};
-      m_reg.emplace_or_replace<AddComponentTag<T>>(e, comTag);
+    if constexpr (std::is_const_v<PlainType>) {
+      return m_resourceManager;
+    } else {
+      return m_resourceManager;
     }
   }
-
-  template <typename T, typename... Args>
-  void changeComponent(Entity e, Args&&... args) {
-    m_reg.get<T>(e) = T(std::forward<Args>(args)...);
-  }
-
-  template <typename T, typename... Args>
-  void changeComponentDelayed(Entity e, Args&&... args) {
-    if (m_reg.try_get<T>(e) && !m_reg.all_of<RemoveComponentTag<T>>(e)) {
-      ChangeComponentTag<T> comTag = {std::forward<Args>(args)...};
-      m_reg.emplace_or_replace<ChangeComponentTag<T>>(e, comTag);
-    } else if (m_reg.try_get<AddComponentTag<T>>(e)) {
-      m_reg.get<AddComponentTag<T>>(e).data = T(std::forward<Args>(args)...);
-    }
-  }
-
-  template <typename T>
-  void removeComponent(Entity e) {
-    m_reg.remove<T>(e);
-  }
-
-  template <typename T>
-  void removeComponentDelayed(Entity e) {
-    if (m_reg.try_get<T>(e)) {
-      m_reg.remove<AddComponentTag<T>>(e);
-      m_reg.remove<ChangeComponentTag<T>>(e);
-
-      m_reg.emplace_or_replace<RemoveComponentTag<T>>(e);
-    }
-  }
-
-  template <typename... Component>
-  auto view() {
-    return m_reg.view<Component...>();
-  }
-
-  template <typename... Component>
-  auto view() const {
-    return m_reg.view<const Component...>();
-  }
-
-  FE_FINLINE Registry* registry() { return &m_reg; }
-  FE_FINLINE const Registry* registry() const { return &m_reg; }
-
-  FE_FINLINE ResourceManager* resourceManager() { return m_resourceManager.get(); }
-  FE_FINLINE const ResourceManager* resourceManager() const { return m_resourceManager.get(); }
 
  protected:
-  Registry m_reg;
-  stl::unique_ptr<ResourceManager> m_resourceManager;
+  Registry m_registry;
+  ResourceManager m_resourceManager;
 };
 }  // namespace fe::engine::ecs

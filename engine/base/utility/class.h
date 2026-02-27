@@ -12,3 +12,10 @@
   FE_FINLINE const Impl* d() const { \
     return m_pImpl.get();            \
   }
+
+#define FE_DECLARE_PRIVATE_INIT m_pImpl = stl::make_unique<Impl>();
+
+namespace fe::engine {
+template <typename T, typename... Us>
+inline constexpr bool is_in_pack = (std::is_same_v<T, Us> || ...);
+}
