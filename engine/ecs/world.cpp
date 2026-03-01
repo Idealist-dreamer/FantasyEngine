@@ -64,22 +64,15 @@ void World::compile() {
       auto& taskA = taskNodeMap[passA];
       auto& taskB = taskNodeMap[passB];
 
-      if (passA->m_before.find(passB->m_name) != passA->m_before.end()) {
-        taskA.succeed(taskB);
-        break;
-      }
-      if (passB->m_before.find(passA->m_name) != passA->m_before.end()) {
-        taskB.succeed(taskA);
-        break;
-      }
-
-      if (passA->m_after.find(passB->m_name) != passA->m_after.end()) {
+      if (passA->m_executeBefore.find(passB->m_name) != passA->m_executeBefore.end() ||
+          passB->m_executeAfter.find(passA->m_name) != passB->m_executeAfter.end()) {
         taskA.precede(taskB);
-        break;
+        continue;
       }
-      if (passB->m_after.find(passA->m_name) != passA->m_after.end()) {
-        taskB.precede(taskA);
-        break;
+      if (passA->m_executeAfter.find(passB->m_name) != passA->m_executeAfter.end() ||
+          passB->m_executeBefore.find(passA->m_name) != passB->m_executeBefore.end()) {
+        taskA.succeed(taskB);
+        continue;
       }
 
       bool isConflict = false;

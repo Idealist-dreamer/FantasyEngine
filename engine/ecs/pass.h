@@ -6,14 +6,25 @@
 namespace fe::engine::ecs {
 class WorldBase;
 
-enum Priority : uint32_t { First = 0x00000000, High = 0x00001000, Mid = 0x00002000, Low = 0x00003000 };
+enum struct Priority : uint32_t { First = 0x00000000, High = 0x00001000, Mid = 0x00002000, Low = 0x00003000 };
 
 class Pass {
  public:
   using CallType = std::function<void(WorldBase&)>;
 
-  Pass(const stl::string& name = "") : m_name(name) {}
+  Pass(const stl::string& name = "", bool isRepeat = true, uint32_t priority = uint32_t(Priority::Low))
+      : m_name(name), m_isRepeat(isRepeat), m_priority(priority) {}
   ~Pass() = default;
+
+  Pass& runAfter(const stl::string& targetPass) {
+    m_executeAfter.insert(targetPass);
+    return *this;
+  }
+
+  Pass& runBefore(const stl::string& targetPass) {
+    m_executeBefore.insert(targetPass);
+    return *this;
+  }
 
   template <class R, class... Args>
   void init(R (&func)(Args...)) {
@@ -26,16 +37,15 @@ class Pass {
     (detail::collect_preparers<Args>(m_preparers), ...);
   }
 
+  stl::string m_name;
   bool m_isRepeat = true;
   uint32_t m_priority = 0;
-  stl::unordered_set<stl::string> m_before;
-  stl::unordered_set<stl::string> m_after;
+  stl::unordered_set<stl::string> m_executeBefore;
+  stl::unordered_set<stl::string> m_executeAfter;
 
  private:
-  stl::string m_name;
   CallType m_call;
   stl::vector<Mutex> m_mutexs;
-
   stl::vector<std::function<void(Registry&)>> m_preparers;
 
   friend class World;

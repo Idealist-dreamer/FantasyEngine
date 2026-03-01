@@ -6,45 +6,57 @@
 #include "resource/resourceManager.h"
 
 namespace fe::engine::ecs {
+template <typename T>
+concept IsEntityQuery = is_entity_query<std::remove_cvref_t<T>>::value;
+
+template <typename T>
+concept IsEntityCreator = is_entity_creator<std::remove_cvref_t<T>>::value;
+
+template <typename T>
+concept IsEntityDestroyer = is_entity_destroyer<std::remove_cvref_t<T>>::value;
+
+template <typename T>
+concept IsComponentReader = is_component_reader<std::remove_cvref_t<T>>::value;
+
+template <typename T>
+concept IsComponentWriter = is_component_writer<std::remove_cvref_t<T>>::value;
+
+template <typename T>
+concept IsResourceManager = is_resource_manager<std::remove_cvref_t<T>>::value;
+
 class WorldBase {
  public:
   WorldBase() = default;
   virtual ~WorldBase() = default;
 
-  template <typename EQ, typename std::enable_if_t<is_entity_query<EQ>::value, bool> = true>
-  EQ getParam() {
-    return EQ(m_registry);
+  template <IsEntityQuery EQ>
+  auto getParam() {
+    return std::remove_cvref_t<EQ>(m_registry);
   }
 
-  template <typename EC, typename std::enable_if_t<is_entity_creator<EC>::value, bool> = true>
-  EC getParam() {
-    return EC(m_registry);
+  template <IsEntityCreator EC>
+  auto getParam() {
+    return std::remove_cvref_t<EC>(m_registry);
   }
 
-  template <typename ED, typename std::enable_if_t<is_entity_destroyer<ED>::value, bool> = true>
-  ED getParam() {
-    return ED(m_registry);
+  template <IsEntityDestroyer ED>
+  auto getParam() {
+    return std::remove_cvref_t<ED>(m_registry);
   }
 
-  template <typename CR, std::enable_if_t<is_component_reader<CR>::value, bool> = true>
-  CR getParam() {
-    return CR(m_registry);
+  template <IsComponentReader CR>
+  auto getParam() {
+    return std::remove_cvref_t<CR>(m_registry);
   }
 
-  template <typename CW, std::enable_if_t<is_component_writer<CW>::value, bool> = true>
-  CW getParam() {
-    return CW(m_registry);
+  template <IsComponentWriter CW>
+  auto getParam() {
+    return std::remove_cvref_t<CW>(m_registry);
   }
 
-  template <typename R, std::enable_if_t<is_resource_manager<R>::value, bool> = true>
-  R getParam() {
-    using PlainType = std::remove_reference_t<R>;
-
-    if constexpr (std::is_const_v<PlainType>) {
-      return m_resourceManager;
-    } else {
-      return m_resourceManager;
-    }
+  template <IsResourceManager RM>
+  auto& getParam() {
+    return m_resourceManager;
   }
 
  protected:
