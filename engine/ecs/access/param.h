@@ -34,11 +34,14 @@ stl::vector<Mutex> get_mutexes_for_type() {
     return collect_comp_mutex_vec<true>(typename is_component_writer<RawT>::component_types{});
   } else if constexpr (is_component_reader<RawT>::value) {
     return collect_comp_mutex_vec<false>(typename is_component_reader<RawT>::component_types{});
-  } else if constexpr (is_resource_manager<T>::value) {
-    if constexpr (is_resource_manager<T>::is_write)
-      result.push_back(Mutex::use_class_no_const<ResourceManager>());
-    else
-      result.push_back(Mutex::use_class_const<ResourceManager>());
+  } else if constexpr (is_resource_reader<RawT>::value) {
+    return {Mutex::read_resource<RawT>()};
+  } else if constexpr (is_resource_writer<RawT>::value) {
+    return {Mutex::write_resource<RawT>()};
+  } else if constexpr (is_event_reader<RawT>::value) {
+    return {Mutex::read_event<RawT>()};
+  } else if constexpr (is_event_writer<RawT>::value) {
+    return {Mutex::write_event<RawT>()};
   }
 
   return result;

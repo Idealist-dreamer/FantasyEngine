@@ -7,22 +7,38 @@ namespace fe::engine::ecs {
 template <typename T>
 class EventReader {
  public:
-  EventReader(const stl::vector<T>& _events) : m_events(_events) {}
+  EventReader(stl::vector<T>& _events) : m_events(_events) {}
 
   const stl::vector<T>& get() const { return m_events; }
 
- private:
-  const stl::vector<T>& m_events;
+ protected:
+  stl::vector<T>& m_events;
 };
 
 template <typename T>
-class EventWriter {
+class EventWriter : public EventReader<T> {
  public:
-  EventWriter(stl::vector<T>& _events) : m_events(_events) {}
+  using EventReader<T>::get;
+  using EventReader<T>::m_events;
+
+  EventWriter(stl::vector<T>& _events) : EventReader<T>(_events) {}
 
   stl::vector<T>& get() { return m_events; }
+};
+}  // namespace fe::engine::ecs
 
- private:
-  stl::vector<T>& m_events;
+namespace fe::engine::ecs {
+template <typename T>
+struct is_event_reader : std::false_type {};
+template <typename T>
+struct is_event_reader<EventReader<T>> : std::true_type {
+  using Type = T;
+};
+
+template <typename T>
+struct is_event_writer : std::false_type {};
+template <typename T>
+struct is_event_writer<EventWriter<T>> : std::true_type {
+  using Type = T;
 };
 }  // namespace fe::engine::ecs

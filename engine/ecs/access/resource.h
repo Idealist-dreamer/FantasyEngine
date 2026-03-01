@@ -3,41 +3,43 @@
 #include "common.h"
 
 namespace fe::engine::ecs {
+class Resource;
+
 template <typename T>
 class ResourceReader {
  public:
-  ResourceReader(const T& _value) : m_value(_value) {}
+  ResourceReader(Resource& resource) : m_resource(resource) {}
 
-  const T& get() const { return m_value; }
+  const Resource& get() const { return m_resource; }
 
- private:
-  const T& m_value;
+ protected:
+  Resource m_resource;
 };
 
 template <typename T>
-class ResourceWriter {
+class ResourceWriter : public ResourceReader<T> {
  public:
-  ResourceWriter(T& _value) : m_value(_value) {}
+  using ResourceReader<T>::get;
+  using ResourceReader<T>::m_resource;
 
-  const T& get() const { return m_value; }
-  T& get() const { return m_value; }
+  ResourceWriter(Resource& resource) : ResourceReader<T>(resource) {}
 
- private:
-  T& m_value;
+  Resource& get() { return m_resource; }
 };
+}  // namespace fe::engine::ecs
 
-class ResourceManager;
+namespace fe::engine::ecs {
+template <typename T>
+struct is_resource_reader : std::false_type {};
+template <typename T>
+struct is_resource_reader<ResourceReader<T>> : std::true_type {
+  using Type = T;
+};
 
 template <typename T>
-struct is_resource_manager : std::false_type {};
-
-template <>
-struct is_resource_manager<ResourceManager&> : std::true_type {
-  static constexpr bool is_write = true;
-};
-
-template <>
-struct is_resource_manager<const ResourceManager&> : std::true_type {
-  static constexpr bool is_write = false;
+struct is_resource_writer : std::false_type {};
+template <typename T>
+struct is_resource_writer<ResourceWriter<T>> : std::true_type {
+  using Type = T;
 };
 }  // namespace fe::engine::ecs

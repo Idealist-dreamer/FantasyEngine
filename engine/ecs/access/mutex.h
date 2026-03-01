@@ -10,9 +10,11 @@ enum class MutexType : uint8_t {
   EntityCreate,
   EntityDestroy,
   ComponentRead,
-  ComponentReadWrite,
-  ClassUseConst,
-  ClassUseNoConst
+  ComponentWrite,
+  ResourceRead,
+  ResourceWrite,
+  EventRead,
+  EventWrite,
 };
 
 struct Mutex {
@@ -40,23 +42,31 @@ struct Mutex {
     }
 
     if (checkOneOther(m_type, other.m_type, MutexType::EntityDestroy, otherSide)) {
-      return otherSide == MutexType::EntityDestroy || otherSide == MutexType::ComponentRead || otherSide == MutexType::ComponentReadWrite;
+      return otherSide == MutexType::EntityDestroy || otherSide == MutexType::ComponentRead || otherSide == MutexType::ComponentWrite;
     }
 
     if (checkOneOther(m_type, other.m_type, MutexType::ComponentRead, otherSide)) {
-      return otherSide == MutexType::ComponentReadWrite && m_tag == other.m_tag;
+      return otherSide == MutexType::ComponentWrite && m_tag == other.m_tag;
     }
 
-    if (checkOneOther(m_type, other.m_type, MutexType::ComponentReadWrite, otherSide)) {
-      return otherSide == MutexType::ComponentReadWrite && m_tag == other.m_tag;
+    if (checkOneOther(m_type, other.m_type, MutexType::ComponentWrite, otherSide)) {
+      return otherSide == MutexType::ComponentWrite && m_tag == other.m_tag;
     }
 
-    if (checkOneOther(m_type, other.m_type, MutexType::ClassUseConst, otherSide)) {
-      return otherSide == MutexType::ClassUseNoConst && m_tag == other.m_tag;
+    if (checkOneOther(m_type, other.m_type, MutexType::ResourceRead, otherSide)) {
+      return otherSide == MutexType::ResourceWrite && m_tag == other.m_tag;
     }
 
-    if (checkOneOther(m_type, other.m_type, MutexType::ClassUseNoConst, otherSide)) {
-      return otherSide == MutexType::ClassUseNoConst && m_tag == other.m_tag;
+    if (checkOneOther(m_type, other.m_type, MutexType::ResourceWrite, otherSide)) {
+      return otherSide == MutexType::ResourceWrite && m_tag == other.m_tag;
+    }
+
+    if (checkOneOther(m_type, other.m_type, MutexType::EventRead, otherSide)) {
+      return otherSide == MutexType::EventWrite && m_tag == other.m_tag;
+    }
+
+    if (checkOneOther(m_type, other.m_type, MutexType::EventWrite, otherSide)) {
+      return otherSide == MutexType::EventWrite && m_tag == other.m_tag;
     }
 
     return false;
@@ -73,10 +83,16 @@ struct Mutex {
   static Mutex write_component();
 
   template <typename T>
-  static Mutex use_class_const();
+  static Mutex read_resource();
 
   template <typename T>
-  static Mutex use_class_no_const();
+  static Mutex write_resource();
+
+  template <typename T>
+  static Mutex read_event();
+
+  template <typename T>
+  static Mutex write_event();
 };
 
 }  // namespace fe::engine::ecs
@@ -105,21 +121,35 @@ Mutex Mutex::read_component() {
 
 template <typename T>
 Mutex Mutex::write_component() {
-  Mutex mutex(MutexType::ComponentReadWrite);
+  Mutex mutex(MutexType::ComponentWrite);
   mutex.m_tag = typeid(T).hash_code();
   return mutex;
 }
 
 template <typename T>
-Mutex Mutex::use_class_const() {
-  Mutex mutex(MutexType::ClassUseConst);
+Mutex Mutex::read_resource() {
+  Mutex mutex(MutexType::ResourceRead);
   mutex.m_tag = typeid(T).hash_code();
   return mutex;
 }
 
 template <typename T>
-Mutex Mutex::use_class_no_const() {
-  Mutex mutex(MutexType::ClassUseNoConst);
+Mutex Mutex::write_resource() {
+  Mutex mutex(MutexType::ResourceWrite);
+  mutex.m_tag = typeid(T).hash_code();
+  return mutex;
+}
+
+template <typename T>
+Mutex Mutex::read_event() {
+  Mutex mutex(MutexType::EventRead);
+  mutex.m_tag = typeid(T).hash_code();
+  return mutex;
+}
+
+template <typename T>
+Mutex Mutex::write_event() {
+  Mutex mutex(MutexType::EventWrite);
   mutex.m_tag = typeid(T).hash_code();
   return mutex;
 }
