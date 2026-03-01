@@ -33,13 +33,13 @@ template <typename T>
 struct is_resource_reader : std::false_type {};
 template <typename T>
 struct is_resource_reader<ResourceReader<T>> : std::true_type {
-  using Type = T;
+  using type = T;
 };
 
 template <typename T>
 struct is_resource_writer : std::false_type {};
 template <typename T>
 struct is_resource_writer<ResourceWriter<T>> : std::true_type {
-  using Type = T;
+  using type = T;
 };
 }  // namespace fe::engine::ecs

@@ -6,18 +6,6 @@
 #include "engine/base/memory/allocator.h"
 
 namespace fe::engine::ecs {
-struct ResourceId {
-  static constexpr uint32_t Invalid = FE_UINT32_MAX;
-
-  ResourceId(uint32_t _value = Invalid, uint32_t _version = 0) : m_value(_value), m_version(_version) {}
-
-  bool null() const { return m_value == Invalid; }
-  auto operator<=>(const ResourceId& other) const = default;
-
-  uint32_t m_value;
-  uint32_t m_version;
-};
-
 struct Resource {
   Resource() = default;
   ~Resource() { destroy(); }

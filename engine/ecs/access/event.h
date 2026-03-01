@@ -32,13 +32,13 @@ template <typename T>
 struct is_event_reader : std::false_type {};
 template <typename T>
 struct is_event_reader<EventReader<T>> : std::true_type {
-  using Type = T;
+  using type = stl::vector<T>;
 };
 
 template <typename T>
 struct is_event_writer : std::false_type {};
 template <typename T>
 struct is_event_writer<EventWriter<T>> : std::true_type {
-  using Type = T;
+  using type = stl::vector<T>;
 };
 }  // namespace fe::engine::ecs

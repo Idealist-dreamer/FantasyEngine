@@ -1,9 +1,9 @@
 #pragma once
 
 #include "common.h"
+#include "resource.h"
 
 #include "access/param.h"
-#include "resource/resourceManager.h"
 
 namespace fe::engine::ecs {
 template <typename T>
@@ -57,27 +57,41 @@ class WorldBase {
 
   template <IsResourceReader RR>
   auto get_param() {
-    return std::remove_cvref_t<RR>(m_registry);
+    using T = typename is_resource_reader<std::remove_cvref_t<RR>>::type;
+    auto it = m_resource_manager.find(std::type_index(typeid(T)));
+    FE_ASSERT(it != m_resource_manager.end() && "Resource not registered in World!");
+    return std::remove_cvref_t<RR>(it->second);
   }
+
   template <IsResourceWriter RW>
   auto get_param() {
-    return std::remove_cvref_t<RW>(m_registry);
+    using T = typename is_resource_writer<std::remove_cvref_t<RW>>::type;
+    auto it = m_resource_manager.find(std::type_index(typeid(T)));
+    FE_ASSERT(it != m_resource_manager.end() && "Resource not registered in World!");
+    return std::remove_cvref_t<RW>(it->second);
   }
 
   template <IsEventReader ER>
   auto get_param() {
-    return std::remove_cvref_t<ER>(m_registry);
+    using T = typename is_event_reader<std::remove_cvref_t<ER>>::type;
+    auto it = m_event_manager1.find(std::type_index(typeid(T)));
+    FE_ASSERT(it != m_event_manager1.end() && "Event type not registered!");
+    return std::remove_cvref_t<ER>(it->second);
   }
   template <IsEventWriter EW>
   auto get_param() {
-    return std::remove_cvref_t<EW>(m_registry);
+    using T = typename is_event_writer<std::remove_cvref_t<EW>>::type;
+    auto it = m_event_manager2.find(std::type_index(typeid(T)));
+    FE_ASSERT(it != m_event_manager2.end() && "Event type not registered!");
+    return std::remove_cvref_t<EW>(it->second);
   }
 
  protected:
   Registry m_registry;
-  ResourceManager m_resource_manager;
 
-  ResourceManager m_event_reader_manager;
-  ResourceManager m_event_writer_manager;
+  stl::unordered_map<std::type_index, Resource> m_resource_manager;
+
+  stl::unordered_map<std::type_index, Resource> m_event_manager1;
+  stl::unordered_map<std::type_index, Resource> m_event_manager2;
 };
 }  // namespace fe::engine::ecs
