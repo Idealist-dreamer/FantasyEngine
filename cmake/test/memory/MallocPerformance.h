@@ -80,11 +80,11 @@ BENCHMARK(BM_StdArray_RealWork)->Arg(10)->Arg(100)->Arg(1000);
 static void BM_MiCreateArray_RealWork(benchmark::State& state) {
   size_t count = state.range(0);
   for (auto _ : state) {
-    SmallObj* p = MiAlloc::createArray<SmallObj>(count);
+    SmallObj* p = MiAlloc::create_array<SmallObj>(count);
     for (size_t i = 0; i < count; ++i)
       p[i].data[0] = i;  // 强制写入
     benchmark::DoNotOptimize(p);
-    MiAlloc::destroyArray(p, count);
+    MiAlloc::destroy_array(p, count);
   }
 }
 BENCHMARK(BM_MiCreateArray_RealWork)->Arg(10)->Arg(100)->Arg(1000);
@@ -127,7 +127,7 @@ BENCHMARK(BM_StdAlignedMalloc);
 
 static void BM_MiAlignedMalloc(benchmark::State& state) {
   for (auto _ : state) {
-    void* p = MiAlloc::mallocAligned(1024, 64);
+    void* p = MiAlloc::malloc_aligned(1024, 64);
     benchmark::DoNotOptimize(p);
     MiAlloc::free(p);
   }

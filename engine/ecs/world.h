@@ -8,12 +8,12 @@ class World : public WorldBase {
   World();
   ~World();
 
-  void addSystem(stl::shared_ptr<System> sys);
+  void add_system(stl::shared_ptr<System> sys);
 
   void compile();
   void run();
 
-  void dumpGraph(const stl::string& path);
+  void dump_graph(const stl::string& path);
 
   FE_DECLARE_PRIVATE
 };

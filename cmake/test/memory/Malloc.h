@@ -48,7 +48,7 @@ TEST(TestMiMalloc, ReallocAndExpand) {
   EXPECT_EQ(p[0], 0xBB);
 
   // reallocN
-  p = static_cast<uint8_t*>(Alloc::reallocN(p, 2, size));
+  p = static_cast<uint8_t*>(Alloc::realloc_n(p, 2, size));
   ASSERT_NE(p, nullptr);
   EXPECT_EQ(p[0], 0xBB);
 
@@ -67,25 +67,25 @@ TEST(TestMiMalloc, AlignedAllocators) {
   const size_t align = 64;
 
   // mallocAligned
-  void* p1 = Alloc::mallocAligned(size, align);
+  void* p1 = Alloc::malloc_aligned(size, align);
   EXPECT_TRUE(IsAligned(p1, align));
   Alloc::free(p1);
 
   // zallocAligned
-  uint8_t* p2 = static_cast<uint8_t*>(Alloc::zallocAligned(size, align));
+  uint8_t* p2 = static_cast<uint8_t*>(Alloc::zalloc_aligned(size, align));
   EXPECT_TRUE(IsAligned(p2, align));
   EXPECT_EQ(p2[0], 0);
   Alloc::free(p2);
 
   // callocAligned
-  uint8_t* p3 = static_cast<uint8_t*>(Alloc::callocAligned(4, 256, align));
+  uint8_t* p3 = static_cast<uint8_t*>(Alloc::calloc_aligned(4, 256, align));
   EXPECT_TRUE(IsAligned(p3, align));
   EXPECT_EQ(p3[1023], 0);
   Alloc::free(p3);
 
   // reallocAligned
-  void* p4 = Alloc::mallocAligned(size, align);
-  p4 = Alloc::reallocAligned(p4, size * 2, align * 2);
+  void* p4 = Alloc::malloc_aligned(size, align);
+  p4 = Alloc::realloc_aligned(p4, size * 2, align * 2);
   EXPECT_TRUE(IsAligned(p4, align * 2));
   Alloc::free(p4);
 }
@@ -96,25 +96,25 @@ TEST(TestMiMalloc, AlignedAtAllocators) {
   const size_t offset = 16;
 
   // mallocAlignedAt
-  void* p1 = Alloc::mallocAlignedAt(size, align, offset);
+  void* p1 = Alloc::malloc_aligned_at(size, align, offset);
   EXPECT_TRUE(IsAlignedAt(p1, align, offset));
   Alloc::free(p1);
 
   // zallocAlignedAt
-  uint8_t* p2 = static_cast<uint8_t*>(Alloc::zallocAlignedAt(size, align, offset));
+  uint8_t* p2 = static_cast<uint8_t*>(Alloc::zalloc_aligned_at(size, align, offset));
   EXPECT_TRUE(IsAlignedAt(p2, align, offset));
   EXPECT_EQ(p2[0], 0);
   Alloc::free(p2);
 
   // callocAlignedAt
-  uint8_t* p3 = static_cast<uint8_t*>(Alloc::callocAlignedAt(2, 512, align, offset));
+  uint8_t* p3 = static_cast<uint8_t*>(Alloc::calloc_aligned_at(2, 512, align, offset));
   EXPECT_TRUE(IsAlignedAt(p3, align, offset));
   EXPECT_EQ(p3[0], 0);
   Alloc::free(p3);
 
   // reallocAlignedAt
-  void* p4 = Alloc::mallocAlignedAt(size, align, offset);
-  p4 = Alloc::reallocAlignedAt(p4, size * 2, align, offset);
+  void* p4 = Alloc::malloc_aligned_at(size, align, offset);
+  p4 = Alloc::realloc_aligned_at(p4, size * 2, align, offset);
   EXPECT_TRUE(IsAlignedAt(p4, align, offset));
   Alloc::free(p4);
 }
@@ -128,7 +128,7 @@ TEST(TestMiMalloc, SafetyAndEdgeCases) {
   Alloc::free(p1);
 
   // Large alignment
-  void* p2 = Alloc::mallocAligned(1024, 4096);
+  void* p2 = Alloc::malloc_aligned(1024, 4096);
   EXPECT_TRUE(IsAligned(p2, 4096));
   Alloc::free(p2);
 }

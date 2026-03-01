@@ -16,12 +16,12 @@ class Pass {
       : m_name(name), m_isRepeat(isRepeat), m_priority(priority) {}
   ~Pass() = default;
 
-  Pass& runAfter(const stl::string& targetPass) {
+  Pass& run_after(const stl::string& targetPass) {
     m_executeAfter.insert(targetPass);
     return *this;
   }
 
-  Pass& runBefore(const stl::string& targetPass) {
+  Pass& run_before(const stl::string& targetPass) {
     m_executeBefore.insert(targetPass);
     return *this;
   }
@@ -29,7 +29,7 @@ class Pass {
   template <class R, class... Args>
   void init(R (&func)(Args...)) {
     m_call = [&func](WorldBase& world) mutable {
-      func(world.getParam<Args>()...);
+      func(world.get_param<Args>()...);
     };
     m_mutexs = detail::merge_mutex_vectors(detail::get_mutexes_for_type<Args>()...);
 

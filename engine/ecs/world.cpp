@@ -14,7 +14,7 @@ World::World(){FE_DECLARE_PRIVATE_INIT}
 
 World::~World() {}
 
-void World::addSystem(stl::shared_ptr<System> sys) {
+void World::add_system(stl::shared_ptr<System> sys) {
   auto& sysMap = d()->sysMap;
 
   FE_ASSERT(sysMap.find(sys->m_name) == sysMap.end());
@@ -82,7 +82,7 @@ void World::compile() {
       bool isConflict = false;
       for (auto& mutexA : passA->m_mutexs) {
         for (auto& mutexB : passB->m_mutexs) {
-          if (mutexA.isConflict(mutexB)) {
+          if (mutexA.is_conflict(mutexB)) {
             isConflict = true;
             break;
           }
@@ -112,7 +112,7 @@ void World::run() {
   }
 }
 
-void World::dumpGraph(const stl::string& path) {
+void World::dump_graph(const stl::string& path) {
   std::filesystem::path fsPath(path.c_str());
   if (fsPath.has_parent_path()) {
     std::filesystem::create_directories(fsPath.parent_path());

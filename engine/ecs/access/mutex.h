@@ -29,111 +29,111 @@ FE_FINLINE bool checkOneOther(T t1, T t2, T x, T& other) {
 }
 
 struct Mutex {
-  Mutex(MutexType _type = MutexType::None, size_t _tag = 0) : type(_type), tag(_tag) {}
+  Mutex(MutexType _type = MutexType::None, size_t _tag = 0) : m_type(_type), m_tag(_tag) {}
 
-  MutexType type;
-  size_t tag;
+  MutexType m_type;
+  size_t m_tag;
 
   auto operator<=>(const Mutex& other) const = default;
   bool operator==(const Mutex& other) const { return (*this <=> other) == 0; }
 
-  bool isConflict(const Mutex& other) const {
-    if (type == MutexType::Exclusive || other.type == MutexType::Exclusive) {
+  bool is_conflict(const Mutex& other) const {
+    if (m_type == MutexType::Exclusive || other.m_type == MutexType::Exclusive) {
       return true;
     }
 
     MutexType otherSide;
 
-    if (checkOneOther(type, other.type, MutexType::EntityQuery, otherSide)) {
+    if (checkOneOther(m_type, other.m_type, MutexType::EntityQuery, otherSide)) {
       return otherSide == MutexType::EntityCreate || otherSide == MutexType::EntityDestroy;
     }
 
-    if (checkOneOther(type, other.type, MutexType::EntityCreate, otherSide)) {
+    if (checkOneOther(m_type, other.m_type, MutexType::EntityCreate, otherSide)) {
       return otherSide == MutexType::EntityCreate || otherSide == MutexType::EntityDestroy;
     }
 
-    if (checkOneOther(type, other.type, MutexType::EntityDestroy, otherSide)) {
+    if (checkOneOther(m_type, other.m_type, MutexType::EntityDestroy, otherSide)) {
       return otherSide == MutexType::EntityDestroy || otherSide == MutexType::ComponentRead || otherSide == MutexType::ComponentReadWrite;
     }
 
-    if (checkOneOther(type, other.type, MutexType::ComponentRead, otherSide)) {
-      return otherSide == MutexType::ComponentReadWrite && tag == other.tag;
+    if (checkOneOther(m_type, other.m_type, MutexType::ComponentRead, otherSide)) {
+      return otherSide == MutexType::ComponentReadWrite && m_tag == other.m_tag;
     }
 
-    if (checkOneOther(type, other.type, MutexType::ComponentReadWrite, otherSide)) {
-      return otherSide == MutexType::ComponentReadWrite && tag == other.tag;
+    if (checkOneOther(m_type, other.m_type, MutexType::ComponentReadWrite, otherSide)) {
+      return otherSide == MutexType::ComponentReadWrite && m_tag == other.m_tag;
     }
 
-    if (checkOneOther(type, other.type, MutexType::ClassUseConst, otherSide)) {
-      return otherSide == MutexType::ClassUseNoConst && tag == other.tag;
+    if (checkOneOther(m_type, other.m_type, MutexType::ClassUseConst, otherSide)) {
+      return otherSide == MutexType::ClassUseNoConst && m_tag == other.m_tag;
     }
 
-    if (checkOneOther(type, other.type, MutexType::ClassUseNoConst, otherSide)) {
-      return otherSide == MutexType::ClassUseNoConst && tag == other.tag;
+    if (checkOneOther(m_type, other.m_type, MutexType::ClassUseNoConst, otherSide)) {
+      return otherSide == MutexType::ClassUseNoConst && m_tag == other.m_tag;
     }
 
     return false;
   }
 
-  FE_FINLINE static Mutex QueryEntity();
-  FE_FINLINE static Mutex CreateEntity();
-  FE_FINLINE static Mutex DestroyEntity();
+  FE_FINLINE static Mutex query_entity();
+  FE_FINLINE static Mutex create_entity();
+  FE_FINLINE static Mutex destroy_entity();
 
   template <typename T>
-  static Mutex ReadComponent();
+  static Mutex read_component();
 
   template <typename T>
-  static Mutex WriteComponent();
+  static Mutex write_component();
 
   template <typename T>
-  static Mutex UseClassConst();
+  static Mutex use_class_const();
 
   template <typename T>
-  static Mutex UseClassNoConst();
+  static Mutex use_class_no_const();
 };
 
 }  // namespace fe::engine::ecs
 
 // Impl
 namespace fe::engine::ecs {
-FE_FINLINE Mutex Mutex::QueryEntity() {
+FE_FINLINE Mutex Mutex::query_entity() {
   Mutex mutex(MutexType::EntityQuery);
   return mutex;
 }
-FE_FINLINE Mutex Mutex::CreateEntity() {
+FE_FINLINE Mutex Mutex::create_entity() {
   Mutex mutex(MutexType::EntityCreate);
   return mutex;
 }
-FE_FINLINE Mutex Mutex::DestroyEntity() {
+FE_FINLINE Mutex Mutex::destroy_entity() {
   Mutex mutex(MutexType::EntityDestroy);
   return mutex;
 }
 
 template <typename T>
-Mutex Mutex::ReadComponent() {
+Mutex Mutex::read_component() {
   Mutex mutex(MutexType::ComponentRead);
-  mutex.tag = typeid(T).hash_code();
+  mutex.m_tag = typeid(T).hash_code();
   return mutex;
 }
 
 template <typename T>
-Mutex Mutex::WriteComponent() {
+Mutex Mutex::write_component() {
   Mutex mutex(MutexType::ComponentReadWrite);
-  mutex.tag = typeid(T).hash_code();
+  mutex.m_tag = typeid(T).hash_code();
   return mutex;
 }
 
 template <typename T>
-Mutex Mutex::UseClassConst() {
+Mutex Mutex::use_class_const() {
   Mutex mutex(MutexType::ClassUseConst);
-  mutex.tag = typeid(T).hash_code();
+  mutex.m_tag = typeid(T).hash_code();
   return mutex;
 }
 
 template <typename T>
-Mutex Mutex::UseClassNoConst() {
+Mutex Mutex::use_class_no_const() {
   Mutex mutex(MutexType::ClassUseNoConst);
-  mutex.tag = typeid(T).hash_code();
+  mutex.m_tag = typeid(T).hash_code();
   return mutex;
 }
 

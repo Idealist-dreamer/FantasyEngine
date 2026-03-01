@@ -24,14 +24,14 @@ TEST(TestMiMalloc, TypeAllocators) {
   };
 
   // 1. Test mallocType
-  SimpleStruct* p1 = Alloc::mallocType<SimpleStruct>();
+  SimpleStruct* p1 = Alloc::malloc_type<SimpleStruct>();
   ASSERT_NE(p1, nullptr);
   p1->x = 100;
   EXPECT_EQ(p1->x, 100);
   Alloc::free(p1);
 
   // 2. Test zallocType
-  SimpleStruct* p2 = Alloc::zallocType<SimpleStruct>();
+  SimpleStruct* p2 = Alloc::zalloc_type<SimpleStruct>();
   ASSERT_NE(p2, nullptr);
   EXPECT_EQ(p2->x, 0);
   EXPECT_EQ(p2->y, 0);

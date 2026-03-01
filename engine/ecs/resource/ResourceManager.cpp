@@ -5,7 +5,7 @@ void ResourceManager::submit(ResourceCommandBuffer&& buffer) {
   m_commandBuffers.push_back(std::move(buffer));
 }
 
-ResourceId ResourceManager::addResource(Resource&& res) {
+ResourceId ResourceManager::add_resource(Resource&& res) {
   ResourceId id;
   if (m_freeResourceIds.empty()) {
     id = m_resources.size();
@@ -14,24 +14,24 @@ ResourceId ResourceManager::addResource(Resource&& res) {
   } else {
     id = m_freeResourceIds.back();
     m_freeResourceIds.pop_back();
-    m_resources[id.value] = std::move(res);
-    id.version = m_resourceIdVersions[id.value];
+    m_resources[id.m_value] = std::move(res);
+    id.m_version = m_resourceIdVersions[id.m_value];
   }
   return id;
 }
-bool ResourceManager::removeResource(ResourceId id) {
-  if (hasResource(id)) {
+bool ResourceManager::remove_resource(ResourceId id) {
+  if (has_resource(id)) {
     m_freeResourceIds.push_back(id);
-    m_resources[id.value].destroy();
-    m_resourceIdVersions[id.value] += 1;
+    m_resources[id.m_value].destroy();
+    m_resourceIdVersions[id.m_value] += 1;
     return true;
   } else {
     return false;
   }
 }
 
-void ResourceManager::changeResourceImpl(stl::pair<ResourceId, ResourceOperate>& changeRes) {
-  changeRes.second(m_resources[changeRes.first.value]);
+void ResourceManager::change_resource_impl(stl::pair<ResourceId, ResourceOperate>& changeRes) {
+  changeRes.second(m_resources[changeRes.first.m_value]);
 }
 
 void ResourceManager::flush() {
@@ -39,8 +39,8 @@ void ResourceManager::flush() {
   uint32_t removeResNum = 0;
 
   for (auto& cmb : m_commandBuffers) {
-    addResNum += cmb.GetAddResources().size();
-    removeResNum += cmb.GetRemoveResources().size();
+    addResNum += cmb.get_add_resources().size();
+    removeResNum += cmb.get_remove_resources().size();
   }
 
   int absAddResNum = addResNum - removeResNum;
@@ -49,21 +49,21 @@ void ResourceManager::flush() {
   }
 
   for (auto& cmb : m_commandBuffers) {
-    auto& addResArray = cmb.GetAddResources();
-    auto& changeResArray = cmb.GetChangeResources();
-    auto& operateResArray = cmb.GetOperateResources();
-    auto& removeResArray = cmb.GetRemoveResources();
+    auto& addResArray = cmb.get_add_resources();
+    auto& changeResArray = cmb.get_change_resources();
+    auto& operateResArray = cmb.get_operate_resources();
+    auto& removeResArray = cmb.get_remove_resources();
 
-    auto& opOrders = cmb.GetOpOrders();
+    auto& opOrders = cmb.get_op_orders();
     for (auto& op : opOrders) {
       if (op.first == ResourceCommandBuffer::OpType::Add) {
-        *(addResArray[op.second].first) = addResource(std::move(addResArray[op.second].second));
+        *(addResArray[op.second].first) = add_resource(std::move(addResArray[op.second].second));
       } else if (op.first == ResourceCommandBuffer::OpType::Operate) {
-        changeResourceImpl(operateResArray[op.second]);
+        change_resource_impl(operateResArray[op.second]);
       } else if (op.first == ResourceCommandBuffer::OpType::Change) {
-        m_resources[changeResArray[op.second].first.value] = std::move(changeResArray[op.second].second);
+        m_resources[changeResArray[op.second].first.m_value] = std::move(changeResArray[op.second].second);
       } else if (op.first == ResourceCommandBuffer::OpType::Remove) {
-        removeResource(removeResArray[op.second]);
+        remove_resource(removeResArray[op.second]);
       }
     }
 

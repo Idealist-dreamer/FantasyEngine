@@ -15,12 +15,12 @@ struct DestroyEntityTag {};
 
 template <typename T>
 struct AddComponentDelayed {
-  T data;
+  T m_data;
 };
 
 template <typename T>
 struct ChangeComponentDelayed {
-  T data;
+  T m_data;
 };
 
 template <typename T>

@@ -6,24 +6,24 @@ namespace fe::engine::ecs {
 template <typename T>
 class ResourceReader {
  public:
-  ResourceReader(const T& _value) : value(_value) {}
+  ResourceReader(const T& _value) : m_value(_value) {}
 
-  const T& get() const { return value; }
+  const T& get() const { return m_value; }
 
  private:
-  const T& value;
+  const T& m_value;
 };
 
 template <typename T>
 class ResourceWriter {
  public:
-  ResourceWriter(T& _value) : value(_value) {}
+  ResourceWriter(T& _value) : m_value(_value) {}
 
-  const T& get() const { return value; }
-  T& get() const { return value; }
+  const T& get() const { return m_value; }
+  T& get() const { return m_value; }
 
  private:
-  T& value;
+  T& m_value;
 };
 
 class ResourceManager;

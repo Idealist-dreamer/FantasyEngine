@@ -25,7 +25,7 @@ class ResourceCommandBuffer {
   ResourceCommandBuffer(ResourceCommandBuffer&&) noexcept = default;
   ResourceCommandBuffer& operator=(ResourceCommandBuffer&&) noexcept = default;
 
-  stl::shared_ptr<ResourceId> addResource(Resource&& res) {
+  stl::shared_ptr<ResourceId> add_resource(Resource&& res) {
     auto resIdPtr = stl::make_shared<ResourceId>();
     m_orders.push_back({OpType::Add, m_addResources.size()});
     m_addResources.emplace_back(resIdPtr, std::move(res));
@@ -33,17 +33,17 @@ class ResourceCommandBuffer {
   }
 
   template <typename F>
-  void operateResource(ResourceId id, F&& op) {
+  void operate_resource(ResourceId id, F&& op) {
     m_orders.push_back({OpType::Operate, m_operateResources.size()});
     m_operateResources.emplace_back(id, std::forward<F>(op));
   }
 
-  void changeResource(ResourceId id, Resource&& res) {
+  void change_resource(ResourceId id, Resource&& res) {
     m_orders.push_back({OpType::Change, m_changeResources.size()});
     m_changeResources.emplace_back(id, std::move(res));
   }
 
-  void removeResource(ResourceId id) {
+  void remove_resource(ResourceId id) {
     m_orders.push_back({OpType::Remove, m_removeResources.size()});
     m_removeResources.push_back(id);
   }
@@ -51,11 +51,11 @@ class ResourceCommandBuffer {
   void reset();
 
  private:
-  FE_FINLINE stl::vector<stl::pair<stl::shared_ptr<ResourceId>, Resource>>& GetAddResources() { return m_addResources; }
-  FE_FINLINE stl::vector<stl::pair<ResourceId, Resource>>& GetChangeResources() { return m_changeResources; }
-  FE_FINLINE stl::vector<stl::pair<ResourceId, ResourceOperate>>& GetOperateResources() { return m_operateResources; }
-  FE_FINLINE stl::vector<ResourceId>& GetRemoveResources() { return m_removeResources; }
-  FE_FINLINE stl::vector<stl::pair<OpType, uint32_t>>& GetOpOrders() { return m_orders; }
+  FE_FINLINE stl::vector<stl::pair<stl::shared_ptr<ResourceId>, Resource>>& get_add_resources() { return m_addResources; }
+  FE_FINLINE stl::vector<stl::pair<ResourceId, Resource>>& get_change_resources() { return m_changeResources; }
+  FE_FINLINE stl::vector<stl::pair<ResourceId, ResourceOperate>>& get_operate_resources() { return m_operateResources; }
+  FE_FINLINE stl::vector<ResourceId>& get_remove_resources() { return m_removeResources; }
+  FE_FINLINE stl::vector<stl::pair<OpType, uint32_t>>& get_op_orders() { return m_orders; }
 
   stl::vector<stl::pair<stl::shared_ptr<ResourceId>, Resource>> m_addResources;
   stl::vector<stl::pair<ResourceId, Resource>> m_changeResources;

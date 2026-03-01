@@ -7,26 +7,26 @@ using namespace fe::engine;
 
 // 1. 定义组件
 struct Position {
-  glm::vec3 val;
+  glm::vec3 m_val;
 };
 struct Velocity {
-  glm::vec3 val;
+  glm::vec3 m_val;
 };
 
 // 2. 定义系统逻辑 (Pass 函数)
 // 模拟物理系统：读取 Velocity，写入 Position
-void PhysicsSystem(ComponentReader<Velocity> rd, ComponentWriter<Position> wr) {
+void physics_system(ComponentReader<Velocity> rd, ComponentWriter<Position> wr) {
   auto view = rd.view();  // 实际上这里需要处理 view 的交集，此处简写
   for (auto entity : view) {
-    if (wr.has<Position>(entity)) {
-      wr.get<Position>(entity).val += rd.get<Velocity>(entity).val;
+    if (wr.have<Position>(entity)) {
+      wr.get<Position>(entity).m_val += rd.get<Velocity>(entity).m_val;
       std::cout << "Entity updated pos\n";
     }
   }
 }
 
 // 模拟初始化系统：只运行一次
-void InitSystem(EntityCreator ec, ComponentWriter<Position, Velocity> wr) {
+void init_system(EntityCreator ec, ComponentWriter<Position, Velocity> wr) {
   for (int i = 0; i < 10; ++i) {
     auto e = ec.create();
     wr.add<Position>(e, glm::vec3(0.0f));
@@ -41,7 +41,7 @@ class MovementSystem : public System {
   MovementSystem() : System("MovementSystem") {}
   void init(WorldBase& world) override {
     Pass p("PhysicsPass");
-    p.init(PhysicsSystem);  // 自动推导 Mutex
+    p.init(physics_system);  // 自动推导 Mutex
     m_passes.push_back(p);
   }
 };
@@ -51,7 +51,7 @@ class SetupSystem : public System {
   SetupSystem() : System("SetupSystem") {}
   void init(WorldBase& world) override {
     Pass p("InitPass");
-    p.init(InitSystem);
+    p.init(init_system);
     m_passes.push_back(p);
   }
 };
@@ -63,15 +63,15 @@ int main() {
   auto setup = stl::make_shared<SetupSystem>();
   auto move = stl::make_shared<MovementSystem>();
 
-  world.addSystem(setup);
-  world.addSystem(move);
+  world.add_system(setup);
+  world.add_system(move);
 
   // 编译 DAG 图 (根据 Mutex 自动排布 InitPass -> PhysicsPass)
   std::cout << "Compiling Graph..." << std::endl;
   world.compile();
 
   // 导出图查看结构 (可选)
-  // world.dumpGraph("task_graph.dot");
+  // world.dump_graph("task_graph.dot");
 
   std::cout << "--- Starting Simulation ---" << std::endl;
   for (int frame = 0; frame < 10; ++frame) {

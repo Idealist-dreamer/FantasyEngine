@@ -4,26 +4,26 @@
 
 namespace fe::engine::ecs {
 struct EntityQuery {
-  EntityQuery(Registry& reg) : _reg(reg) {}
+  EntityQuery(Registry& reg) : m_reg(reg) {}
 
-  bool valid(entt::entity e) const { return _reg.valid(e); }
-  auto view() const { return _reg.view<entt::entity>(); }
+  bool valid(entt::entity e) const { return m_reg.valid(e); }
+  auto view() const { return m_reg.view<entt::entity>(); }
 
  protected:
-  Registry& _reg;
+  Registry& m_reg;
 };
 
 struct EntityCreator : public EntityQuery {
   EntityCreator(Registry& reg) : EntityQuery(reg) {}
 
-  entt::entity create() { return _reg.create(); }
-  auto view() { return _reg.view<entt::entity>(); }
+  entt::entity create() { return m_reg.create(); }
+  auto view() { return m_reg.view<entt::entity>(); }
 };
 
 struct EntityDestroyer : public EntityCreator {
   EntityDestroyer(Registry& reg) : EntityCreator(reg) {}
 
-  void destroy(entt::entity e) { _reg.destroy(e); }
+  void destroy(entt::entity e) { m_reg.destroy(e); }
 };
 }  // namespace fe::engine::ecs
 

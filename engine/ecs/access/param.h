@@ -14,9 +14,9 @@ namespace fe::engine::ecs::detail {
 template <bool IsWrite, typename... Components>
 stl::vector<Mutex> collect_comp_mutex_vec(std::tuple<Components...>) {
   if constexpr (IsWrite) {
-    return {Mutex::WriteComponent<Components>()...};
+    return {Mutex::write_component<Components>()...};
   } else {
-    return {Mutex::ReadComponent<Components>()...};
+    return {Mutex::read_component<Components>()...};
   }
 }
 
@@ -26,20 +26,20 @@ stl::vector<Mutex> get_mutexes_for_type() {
   stl::vector<Mutex> result;
 
   if constexpr (is_entity_query<RawT>::value) {
-    result.push_back(Mutex::QueryEntity());
+    result.push_back(Mutex::query_entity());
   } else if constexpr (is_entity_creator<RawT>::value) {
-    result.push_back(Mutex::CreateEntity());
+    result.push_back(Mutex::create_entity());
   } else if constexpr (is_entity_destroyer<RawT>::value) {
-    result.push_back(Mutex::DestroyEntity());
+    result.push_back(Mutex::destroy_entity());
   } else if constexpr (is_component_writer<RawT>::value) {
     return collect_comp_mutex_vec<true>(typename is_component_writer<RawT>::component_types{});
   } else if constexpr (is_component_reader<RawT>::value) {
     return collect_comp_mutex_vec<false>(typename is_component_reader<RawT>::component_types{});
   } else if constexpr (is_resource_manager<T>::value) {
     if constexpr (is_resource_manager<T>::is_write)
-      result.push_back(Mutex::UseClassNoConst<ResourceManager>());
+      result.push_back(Mutex::use_class_no_const<ResourceManager>());
     else
-      result.push_back(Mutex::UseClassConst<ResourceManager>());
+      result.push_back(Mutex::use_class_const<ResourceManager>());
   }
 
   return result;

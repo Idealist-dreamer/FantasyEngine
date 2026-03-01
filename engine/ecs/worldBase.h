@@ -30,32 +30,32 @@ class WorldBase {
   virtual ~WorldBase() = default;
 
   template <IsEntityQuery EQ>
-  auto getParam() {
+  auto get_param() {
     return std::remove_cvref_t<EQ>(m_registry);
   }
 
   template <IsEntityCreator EC>
-  auto getParam() {
+  auto get_param() {
     return std::remove_cvref_t<EC>(m_registry);
   }
 
   template <IsEntityDestroyer ED>
-  auto getParam() {
+  auto get_param() {
     return std::remove_cvref_t<ED>(m_registry);
   }
 
   template <IsComponentReader CR>
-  auto getParam() {
+  auto get_param() {
     return std::remove_cvref_t<CR>(m_registry);
   }
 
   template <IsComponentWriter CW>
-  auto getParam() {
+  auto get_param() {
     return std::remove_cvref_t<CW>(m_registry);
   }
 
   template <IsResourceManager RM>
-  auto& getParam() {
+  auto& get_param() {
     return m_resourceManager;
   }
 

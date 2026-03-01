@@ -9,13 +9,13 @@ namespace fe::engine::ecs {
 struct ResourceId {
   static constexpr uint32_t Invalid = FE_UINT32_MAX;
 
-  ResourceId(uint32_t _value = Invalid, uint32_t _version = 0) : value(_value), version(_version) {}
+  ResourceId(uint32_t _value = Invalid, uint32_t _version = 0) : m_value(_value), m_version(_version) {}
 
-  bool null() const { return value == Invalid; }
+  bool null() const { return m_value == Invalid; }
   auto operator<=>(const ResourceId& other) const = default;
 
-  uint32_t value;
-  uint32_t version;
+  uint32_t m_value;
+  uint32_t m_version;
 };
 
 struct Resource {
@@ -69,8 +69,8 @@ struct Resource {
     return static_cast<const T*>(m_ptr);
   }
 
-  FE_FINLINE void* getPtr() { return m_ptr; }
-  FE_FINLINE const void* getPtr() const { return m_ptr; }
+  FE_FINLINE void* get_ptr() { return m_ptr; }
+  FE_FINLINE const void* get_ptr() const { return m_ptr; }
 
   FE_FINLINE void destroy() {
     if (m_ptr && m_deleter) {
