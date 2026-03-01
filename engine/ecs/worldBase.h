@@ -3,7 +3,10 @@
 #include "common.h"
 #include "resource.h"
 
-#include "access/param.h"
+#include "accessEntity.h"
+#include "accessComponent.h"
+#include "accessResource.h"
+#include "accessEvent.h"
 
 namespace fe::engine::ecs {
 template <typename T>
@@ -33,6 +36,7 @@ class WorldBase {
   WorldBase() = default;
   virtual ~WorldBase() = default;
 
+ protected:
   template <IsEntityQuery EQ>
   auto get_param() {
     return std::remove_cvref_t<EQ>(m_registry);
@@ -93,5 +97,8 @@ class WorldBase {
 
   stl::unordered_map<std::type_index, Resource> m_event_manager1;
   stl::unordered_map<std::type_index, Resource> m_event_manager2;
+
+  friend class Detail;
+  friend class Pass;
 };
 }  // namespace fe::engine::ecs

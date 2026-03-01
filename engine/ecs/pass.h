@@ -1,7 +1,9 @@
 #pragma once
 
 #include "worldBase.h"
-#include "access/mutex.h"
+
+#include "paramMutex.h"
+#include "paramDetail.h"
 
 namespace fe::engine::ecs {
 class WorldBase;
@@ -31,9 +33,9 @@ class Pass {
     m_call = [&func](WorldBase& world) mutable {
       func(world.get_param<Args>()...);
     };
-    m_mutexes = detail::merge_mutex_vectors(detail::get_mutexes_for_type<Args>()...);
+    m_mutexes = Detail::merge_mutex_vectors(Detail::get_mutexes_for_type<Args>()...);
 
-    m_preparers = detail::get_preparers<Args...>();
+    m_preparers = Detail::get_preparers<Args...>();
   }
 
   stl::string m_name;
@@ -45,7 +47,7 @@ class Pass {
  private:
   CallType m_call;
   stl::vector<Mutex> m_mutexes;
-  stl::vector<std::function<void(Registry&)>> m_preparers;
+  stl::vector<std::function<void(WorldBase&)>> m_preparers;
 
   friend class World;
 };

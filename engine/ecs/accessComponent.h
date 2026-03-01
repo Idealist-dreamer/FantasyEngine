@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Engine/ecs/common.h"
-#include "Engine/ecs/access/comTag.h"
 
 namespace fe::engine::ecs {
 template <typename... Components>
