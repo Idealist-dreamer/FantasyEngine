@@ -33,8 +33,7 @@ class Pass {
     };
     m_mutexs = detail::merge_mutex_vectors(detail::get_mutexes_for_type<Args>()...);
 
-    m_preparers.clear();
-    (detail::collect_preparers<Args>(m_preparers), ...);
+    m_preparers = detail::get_preparers<Args...>();
   }
 
   stl::string m_name;

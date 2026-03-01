@@ -38,6 +38,10 @@ void World::compile() {
     }
   }
 
+  for (auto preparer : detail::get_default_preparers()) {
+    preparer(m_registry);
+  }
+
   for (auto pass : passArray) {
     for (auto& preparer : pass->m_preparers) {
       preparer(m_registry);
