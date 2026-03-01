@@ -13,16 +13,16 @@ class Pass {
   using CallType = std::function<void(WorldBase&)>;
 
   Pass(const stl::string& name = "", bool isRepeat = true, uint32_t priority = uint32_t(Priority::Low))
-      : m_name(name), m_isRepeat(isRepeat), m_priority(priority) {}
+      : m_name(name), m_repeat(isRepeat), m_priority(priority) {}
   ~Pass() = default;
 
   Pass& run_after(const stl::string& targetPass) {
-    m_executeAfter.insert(targetPass);
+    m_after_passes.insert(targetPass);
     return *this;
   }
 
   Pass& run_before(const stl::string& targetPass) {
-    m_executeBefore.insert(targetPass);
+    m_before_passes.insert(targetPass);
     return *this;
   }
 
@@ -31,20 +31,20 @@ class Pass {
     m_call = [&func](WorldBase& world) mutable {
       func(world.get_param<Args>()...);
     };
-    m_mutexs = detail::merge_mutex_vectors(detail::get_mutexes_for_type<Args>()...);
+    m_mutexes = detail::merge_mutex_vectors(detail::get_mutexes_for_type<Args>()...);
 
     m_preparers = detail::get_preparers<Args...>();
   }
 
   stl::string m_name;
-  bool m_isRepeat = true;
+  bool m_repeat = true;
   uint32_t m_priority = 0;
-  stl::unordered_set<stl::string> m_executeBefore;
-  stl::unordered_set<stl::string> m_executeAfter;
+  stl::unordered_set<stl::string> m_before_passes;
+  stl::unordered_set<stl::string> m_after_passes;
 
  private:
   CallType m_call;
-  stl::vector<Mutex> m_mutexs;
+  stl::vector<Mutex> m_mutexes;
   stl::vector<std::function<void(Registry&)>> m_preparers;
 
   friend class World;

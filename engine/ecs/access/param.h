@@ -1,11 +1,10 @@
 #pragma once
 
 #include "common.h"
-
 #include "entity.h"
 #include "component.h"
 #include "resource.h"
-
+#include "event.h"
 #include "mutex.h"
 
 #include <type_traits>

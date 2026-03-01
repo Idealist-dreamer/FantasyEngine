@@ -2,28 +2,28 @@
 
 namespace fe::engine::ecs {
 void ResourceManager::submit(ResourceCommandBuffer&& buffer) {
-  m_commandBuffers.push_back(std::move(buffer));
+  m_command_buffers.push_back(std::move(buffer));
 }
 
 ResourceId ResourceManager::add_resource(Resource&& res) {
   ResourceId id;
-  if (m_freeResourceIds.empty()) {
+  if (m_free_ids.empty()) {
     id = m_resources.size();
     m_resources.push_back(std::move(res));
-    m_resourceIdVersions.push_back(0);
+    m_id_versions.push_back(0);
   } else {
-    id = m_freeResourceIds.back();
-    m_freeResourceIds.pop_back();
+    id = m_free_ids.back();
+    m_free_ids.pop_back();
     m_resources[id.m_value] = std::move(res);
-    id.m_version = m_resourceIdVersions[id.m_value];
+    id.m_version = m_id_versions[id.m_value];
   }
   return id;
 }
 bool ResourceManager::remove_resource(ResourceId id) {
   if (has_resource(id)) {
-    m_freeResourceIds.push_back(id);
+    m_free_ids.push_back(id);
     m_resources[id.m_value].destroy();
-    m_resourceIdVersions[id.m_value] += 1;
+    m_id_versions[id.m_value] += 1;
     return true;
   } else {
     return false;
@@ -38,7 +38,7 @@ void ResourceManager::flush() {
   uint32_t addResNum = 0;
   uint32_t removeResNum = 0;
 
-  for (auto& cmb : m_commandBuffers) {
+  for (auto& cmb : m_command_buffers) {
     addResNum += cmb.get_add_resources().size();
     removeResNum += cmb.get_remove_resources().size();
   }
@@ -48,7 +48,7 @@ void ResourceManager::flush() {
     m_resources.reserve(m_resources.size() + absAddResNum);
   }
 
-  for (auto& cmb : m_commandBuffers) {
+  for (auto& cmb : m_command_buffers) {
     auto& addResArray = cmb.get_add_resources();
     auto& changeResArray = cmb.get_change_resources();
     auto& operateResArray = cmb.get_operate_resources();
@@ -70,7 +70,7 @@ void ResourceManager::flush() {
     cmb.reset();
   }
 
-  m_commandBuffers.clear();
+  m_command_buffers.clear();
 }
 
 }  // namespace fe::engine::ecs

@@ -30,8 +30,8 @@ struct Resource {
     other.m_deleter = nullptr;
 
 #if defined(FE_DEBUG)
-    m_TypeInfo = other.m_TypeInfo;
-    other.m_TypeInfo = typeid(void);
+    m_type_info = other.m_type_info;
+    other.m_type_info = typeid(void);
 #endif
   }
 
@@ -44,8 +44,8 @@ struct Resource {
       other.m_deleter = nullptr;
 
 #if defined(FE_DEBUG)
-      m_TypeInfo = other.m_TypeInfo;
-      other.m_TypeInfo = typeid(void);
+      m_type_info = other.m_type_info;
+      other.m_type_info = typeid(void);
 #endif
     }
     return *this;
@@ -56,7 +56,7 @@ struct Resource {
   template <typename T>
   T* get() {
 #if defined(FE_DEBUG)
-    FE_ASSERT(valid() && m_TypeInfo == typeid(T), "Type mismatch!");
+    FE_ASSERT(valid() && m_type_info == typeid(T), "Type mismatch!");
 #endif
     return static_cast<T*>(m_ptr);
   }
@@ -64,7 +64,7 @@ struct Resource {
   template <typename T>
   const T* get() const {
 #if defined(FE_DEBUG)
-    FE_ASSERT(valid() && m_TypeInfo == typeid(T), "Type mismatch!");
+    FE_ASSERT(valid() && m_type_info == typeid(T), "Type mismatch!");
 #endif
     return static_cast<const T*>(m_ptr);
   }
@@ -79,7 +79,7 @@ struct Resource {
     m_ptr = nullptr;
     m_deleter = nullptr;
 #if defined(FE_DEBUG)
-    m_TypeInfo = typeid(void);
+    m_type_info = typeid(void);
 #endif
   }
 
@@ -93,7 +93,7 @@ struct Resource {
       }
     };
 #if defined(FE_DEBUG)
-    res.m_TypeInfo = typeid(T);
+    res.m_type_info = typeid(T);
 #endif
     return res;
   }
@@ -110,7 +110,7 @@ struct Resource {
       };
     }
 #if defined(FE_DEBUG)
-    res.m_TypeInfo = typeid(T);
+    res.m_type_info = typeid(T);
 #endif
     return res;
   }
@@ -119,7 +119,7 @@ struct Resource {
   void* m_ptr{nullptr};
   void (*m_deleter)(void*) = nullptr;
 #if defined(FE_DEBUG)
-  std::type_index m_TypeInfo = typeid(void);
+  std::type_index m_type_info = typeid(void);
 #endif
 };
 }  // namespace fe::engine::ecs

@@ -15,19 +15,6 @@ enum class MutexType : uint8_t {
   ClassUseNoConst
 };
 
-template <typename T>
-FE_FINLINE bool checkOneOther(T t1, T t2, T x, T& other) {
-  if (t1 == x) {
-    other = t2;
-    return true;
-  }
-  if (t2 == x) {
-    other = t1;
-    return true;
-  }
-  return false;
-}
-
 struct Mutex {
   Mutex(MutexType _type = MutexType::None, size_t _tag = 0) : m_type(_type), m_tag(_tag) {}
 

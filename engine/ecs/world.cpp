@@ -7,7 +7,7 @@ struct World::Impl {
   tf::Executor executor;
   tf::Taskflow taskflow;
 
-  stl::map<stl::string, stl::shared_ptr<System>> sysMap;
+  stl::map<stl::string, stl::shared_ptr<System>> sys_map;
 };
 
 World::World(){FE_DECLARE_PRIVATE_INIT}
@@ -15,26 +15,26 @@ World::World(){FE_DECLARE_PRIVATE_INIT}
 World::~World() {}
 
 void World::add_system(stl::shared_ptr<System> sys) {
-  auto& sysMap = d()->sysMap;
+  auto& sys_map = d()->sys_map;
 
-  FE_ASSERT(sysMap.find(sys->m_name) == sysMap.end());
-  sysMap.insert({sys->m_name, sys});
+  FE_ASSERT(sys_map.find(sys->m_name) == sys_map.end());
+  sys_map.insert({sys->m_name, sys});
   sys->init(*this);
 }
 
 void World::compile() {
-  auto& sysMap = d()->sysMap;
+  auto& sys_map = d()->sys_map;
   auto& taskflow = d()->taskflow;
 
-  stl::unordered_set<stl::string> passNameSet;
-  stl::vector<Pass*> passArray;
-  for (auto& [name, sys] : sysMap) {
+  stl::unordered_set<stl::string> pass_name_set;
+  stl::vector<Pass*> pass_array;
+  for (auto& [name, sys] : sys_map) {
     auto& passes = sys->m_passes;
 
     for (auto& pass : passes) {
-      FE_ASSERT(passNameSet.find(pass.m_name) == passNameSet.end());
-      passNameSet.insert(pass.m_name);
-      passArray.push_back(&pass);
+      FE_ASSERT(pass_name_set.find(pass.m_name) == pass_name_set.end());
+      pass_name_set.insert(pass.m_name);
+      pass_array.push_back(&pass);
     }
   }
 
@@ -42,7 +42,7 @@ void World::compile() {
     preparer(m_registry);
   }
 
-  for (auto pass : passArray) {
+  for (auto pass : pass_array) {
     for (auto& preparer : pass->m_preparers) {
       preparer(m_registry);
     }
@@ -50,53 +50,53 @@ void World::compile() {
 
   taskflow.clear();
 
-  if (passArray.empty()) {
+  if (pass_array.empty()) {
     return;
   }
 
-  stl::map<Pass*, tf::Task> taskNodeMap;
-  for (auto pass : passArray) {
-    taskNodeMap[pass] = taskflow.emplace([pass, this]() { pass->m_call(*this); }).name(pass->m_name.c_str());
+  stl::map<Pass*, tf::Task> task_node_map;
+  for (auto pass : pass_array) {
+    task_node_map[pass] = taskflow.emplace([pass, this]() { pass->m_call(*this); }).name(pass->m_name.c_str());
   }
 
-  auto count = passArray.size();
+  auto count = pass_array.size();
   for (size_t i = 0; i < count; ++i) {
     for (size_t j = i + 1; j < count; ++j) {
-      auto passA = passArray[i];
-      auto passB = passArray[j];
+      auto pass_a = pass_array[i];
+      auto pass_b = pass_array[j];
 
-      auto& taskA = taskNodeMap[passA];
-      auto& taskB = taskNodeMap[passB];
+      auto& task_a = task_node_map[pass_a];
+      auto& task_b = task_node_map[pass_b];
 
-      if (passA->m_executeBefore.find(passB->m_name) != passA->m_executeBefore.end() ||
-          passB->m_executeAfter.find(passA->m_name) != passB->m_executeAfter.end()) {
-        taskA.precede(taskB);
+      if (pass_a->m_before_passes.find(pass_b->m_name) != pass_a->m_before_passes.end() ||
+          pass_b->m_after_passes.find(pass_a->m_name) != pass_b->m_after_passes.end()) {
+        task_a.precede(task_b);
         continue;
       }
-      if (passA->m_executeAfter.find(passB->m_name) != passA->m_executeAfter.end() ||
-          passB->m_executeBefore.find(passA->m_name) != passB->m_executeBefore.end()) {
-        taskA.succeed(taskB);
+      if (pass_a->m_after_passes.find(pass_b->m_name) != pass_a->m_after_passes.end() ||
+          pass_b->m_before_passes.find(pass_a->m_name) != pass_b->m_before_passes.end()) {
+        task_a.succeed(task_b);
         continue;
       }
 
-      bool isConflict = false;
-      for (auto& mutexA : passA->m_mutexs) {
-        for (auto& mutexB : passB->m_mutexs) {
-          if (mutexA.is_conflict(mutexB)) {
-            isConflict = true;
+      bool is_conflict = false;
+      for (auto& mutex_a : pass_a->m_mutexes) {
+        for (auto& mutex_b : pass_b->m_mutexes) {
+          if (mutex_a.is_conflict(mutex_b)) {
+            is_conflict = true;
             break;
           }
         }
-        if (isConflict) {
+        if (is_conflict) {
           break;
         }
       }
 
-      if (isConflict) {
-        if (passA->m_priority <= passB->m_priority) {
-          taskA.precede(taskB);
+      if (is_conflict) {
+        if (pass_a->m_priority <= pass_b->m_priority) {
+          task_a.precede(task_b);
         } else {
-          taskB.precede(taskA);
+          task_b.precede(task_a);
         }
       }
     }
@@ -113,12 +113,12 @@ void World::run() {
 }
 
 void World::dump_graph(const stl::string& path) {
-  std::filesystem::path fsPath(path.c_str());
-  if (fsPath.has_parent_path()) {
-    std::filesystem::create_directories(fsPath.parent_path());
+  std::filesystem::path fs_path(path.c_str());
+  if (fs_path.has_parent_path()) {
+    std::filesystem::create_directories(fs_path.parent_path());
   }
 
-  std::ofstream ofs(fsPath);
+  std::ofstream ofs(fs_path);
 
   if (ofs.is_open()) {
     d()->taskflow.dump(ofs);

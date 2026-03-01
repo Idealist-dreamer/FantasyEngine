@@ -22,39 +22,39 @@ class ComponentReader {
   template <typename T>
   bool have(entt::entity e) const {
     check_auth<T>();
-    return m_reg.all_of<const T>(e);
+    return m_reg.all_of<T>(e);
   }
 
   template <typename... T>
   bool have_all(entt::entity e) const {
     check_auth_all<T...>();
-    return m_reg.all_of<const T...>(e);
+    return m_reg.all_of<T...>(e);
   }
 
   template <typename... T>
   bool have_any(entt::entity e) const {
     check_auth_all<T...>();
-    return m_reg.any_of<const T...>(e);
+    return m_reg.any_of<T...>(e);
   }
 
   template <typename T>
   const T* try_get(entt::entity e) const {
     check_auth<T>();
-    return m_reg.try_get<const T>(e);
+    return m_reg.try_get<T>(e);
   }
 
   template <typename T>
   const T& get(entt::entity e) const {
     check_auth<T>();
-    return m_reg.get<const T>(e);
+    return m_reg.get<T>(e);
   }
 
-  auto view() const { return m_reg.view<const Components...>(); }
+  auto view() const { return m_reg.view<Components...>(); }
 
   template <typename... Req, typename = std::enable_if_t<(sizeof...(Req) > 0)>>
   auto view() const {
     (check_auth<Req>(), ...);
-    return m_reg.view<const Req...>();
+    return m_reg.view<Req...>();
   }
 
  protected:
@@ -68,6 +68,7 @@ class ComponentWriter : public ComponentReader<Components...> {
  public:
   using Base::check_auth;
   using Base::get;
+  using Base::have;
   using Base::have_all;
   using Base::have_any;
   using Base::m_reg;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "engine/base/pch.h"
 
 namespace fe::engine::ecs {
 template <typename T>
@@ -19,7 +20,7 @@ class EventWriter {
  public:
   EventWriter(stl::vector<T>& _events) : m_events(_events) {}
 
-  stl::vector<T>& get() const { return m_events; }
+  stl::vector<T>& get() { return m_events; }
 
  private:
   stl::vector<T>& m_events;

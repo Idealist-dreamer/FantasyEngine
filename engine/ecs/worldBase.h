@@ -56,11 +56,11 @@ class WorldBase {
 
   template <IsResourceManager RM>
   auto& get_param() {
-    return m_resourceManager;
+    return m_resource_manager;
   }
 
  protected:
   Registry m_registry;
-  ResourceManager m_resourceManager;
+  ResourceManager m_resource_manager;
 };
 }  // namespace fe::engine::ecs

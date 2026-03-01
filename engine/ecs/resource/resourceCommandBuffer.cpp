@@ -6,10 +6,10 @@ ResourceCommandBuffer::~ResourceCommandBuffer() {
 }
 
 void ResourceCommandBuffer::reset() {
-  m_addResources.clear();
-  m_operateResources.clear();
-  m_changeResources.clear();
-  m_removeResources.clear();
+  m_add_resources.clear();
+  m_operate_resources.clear();
+  m_change_resources.clear();
+  m_remove_resources.clear();
   m_orders.clear();
 }
 }  // namespace fe::engine::ecs
