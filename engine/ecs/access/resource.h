@@ -3,6 +3,29 @@
 #include "common.h"
 
 namespace fe::engine::ecs {
+template <typename T>
+class ResourceReader {
+ public:
+  ResourceReader(const T& _value) : value(_value) {}
+
+  const T& get() const { return value; }
+
+ private:
+  const T& value;
+};
+
+template <typename T>
+class ResourceWriter {
+ public:
+  ResourceWriter(T& _value) : value(_value) {}
+
+  const T& get() const { return value; }
+  T& get() const { return value; }
+
+ private:
+  T& value;
+};
+
 class ResourceManager;
 
 template <typename T>
