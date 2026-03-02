@@ -94,10 +94,10 @@ class Detail {
       out.push_back([](WorldBase& w) { Preparer<typename is_component_reader<RawT>::component_types>::run(w.m_registry); });
     } else if constexpr (is_event_reader<RawT>::value || is_event_writer<RawT>::value) {
       using EvT = typename is_event_reader<RawT>::type;
-      out.push_back([](WorldBase& w) { w.m_event_manager1.insert({std::type_index(typeid(RawT)), Resource()}); });
-      out.push_back([](WorldBase& w) { w.m_event_manager2.insert({std::type_index(typeid(RawT)), Resource()}); });
+      out.push_back([](WorldBase& w) { w.m_event_manager1.insert({std::type_index(typeid(RawT)), ResourceStorage()}); });
+      out.push_back([](WorldBase& w) { w.m_event_manager2.insert({std::type_index(typeid(RawT)), ResourceStorage()}); });
     } else {
-      out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(RawT)), Resource()}); });
+      out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(RawT)), ResourceStorage()}); });
     }
   }
 

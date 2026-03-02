@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "resource.h"
+#include "ResourceStorage.h"
 
 #include "accessEntity.h"
 #include "accessComponent.h"
@@ -83,7 +83,7 @@ class WorldBase {
     using RawT = std::remove_cvref_t<R>;
 
     auto it = m_resource_manager.find(std::type_index(typeid(RawT)));
-    FE_ASSERT(it != m_resource_manager.end() && "Resource not registered!");
+    FE_ASSERT(it != m_resource_manager.end() && "ResourceStorage not registered!");
 
     return (*it->second.get<RawT>());
   }
@@ -99,10 +99,10 @@ class WorldBase {
  protected:
   Registry m_registry;
 
-  stl::unordered_map<std::type_index, Resource> m_resource_manager;
+  stl::unordered_map<std::type_index, ResourceStorage> m_resource_manager;
 
-  stl::unordered_map<std::type_index, Resource> m_event_manager1;
-  stl::unordered_map<std::type_index, Resource> m_event_manager2;
+  stl::unordered_map<std::type_index, ResourceStorage> m_event_manager1;
+  stl::unordered_map<std::type_index, ResourceStorage> m_event_manager2;
 
   stl::vector<stl::function<void(WorldBase&)>> m_write_event_clear;
 

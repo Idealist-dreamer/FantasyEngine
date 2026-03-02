@@ -8,10 +8,7 @@ struct RenderCore::Impl {};
 RenderCore::RenderCore() : ecs::System("RenderCore"), m_pImpl(stl::make_unique<Impl>()) {}
 RenderCore::~RenderCore() {}
 
-// void createRenderCore(GraphicsCore resourceWriter) {
-//   auto& resource = resourceWriter.get();
-//   resource = ecs::Resource::create<GraphicsCore>();
-// }
+void createRenderCore(GraphicsCore* gc) {}
 
 bool RenderCore::init() {
   ecs::Pass pass("createRenderCore", false);

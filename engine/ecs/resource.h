@@ -6,14 +6,14 @@
 #include "engine/base/memory/allocator.h"
 
 namespace fe::engine::ecs {
-struct Resource {
-  Resource() = default;
-  ~Resource() { destroy(); }
+struct ResourceStorage {
+  ResourceStorage() = default;
+  ~ResourceStorage() { destroy(); }
 
-  Resource(const Resource&) = delete;
-  Resource& operator=(const Resource&) = delete;
+  ResourceStorage(const ResourceStorage&) = delete;
+  ResourceStorage& operator=(const ResourceStorage&) = delete;
 
-  Resource(Resource&& other) noexcept : m_ptr(other.m_ptr), m_deleter(other.m_deleter) {
+  ResourceStorage(ResourceStorage&& other) noexcept : m_ptr(other.m_ptr), m_deleter(other.m_deleter) {
     other.m_ptr = nullptr;
     other.m_deleter = nullptr;
 
@@ -23,7 +23,7 @@ struct Resource {
 #endif
   }
 
-  Resource& operator=(Resource&& other) noexcept {
+  ResourceStorage& operator=(ResourceStorage&& other) noexcept {
     if (this != &other) {
       destroy();
       m_ptr = other.m_ptr;
@@ -72,8 +72,8 @@ struct Resource {
   }
 
   template <typename T, typename... Args>
-  static Resource create(Args&&... args) {
-    Resource res;
+  static ResourceStorage create(Args&&... args) {
+    ResourceStorage res;
     res.m_ptr = memory::Allocator::create<T>(std::forward<Args>(args)...);
     res.m_deleter = [](void* p) {
       if (p) {
@@ -87,8 +87,8 @@ struct Resource {
   }
 
   template <typename T>
-  static Resource create(T* ptr, bool need_free = true) {
-    Resource res;
+  static ResourceStorage create(T* ptr, bool need_free = true) {
+    ResourceStorage res;
     res.m_ptr = ptr;
     if (need_free) {
       res.m_deleter = [](void* p) {
@@ -110,4 +110,30 @@ struct Resource {
   std::type_index m_type_info = typeid(void);
 #endif
 };
+
+template <typename T>
+struct Resource {
+  Resource(ResourceStorage& res) : m_resource(res) {}
+
+  bool valid() const { return m_resource.valid(); }
+
+  T& get() { return *m_resource.get<T>(); }
+  const T& get() const { return *m_resource.get<T>(); }
+
+  void destroy() { m_resource.destroy(); }
+
+  template <typename T, typename... Args>
+  void create(Args&&... args) {
+    m_resource = ResourceStorage::create<T>(std::forward<Args>(args)...);
+  }
+
+  template <typename T>
+  void create(T* ptr, bool need_free = true) {
+    m_resource = ResourceStorage::create<T>(ptr, need_free);
+  }
+
+ private:
+  ResourceStorage& m_resource;
+};
+
 }  // namespace fe::engine::ecs
