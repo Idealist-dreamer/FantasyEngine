@@ -141,6 +141,7 @@ void World::setup() {
 void World::run() {
   try {
     d()->executor.run(d()->run_taskflow).wait();
+    next_frame();
   } catch (const std::exception& e) {
     FE_ERROR("Scheduler execution failed: %s", e.what());
     throw;  // Rethrow for caller to handle

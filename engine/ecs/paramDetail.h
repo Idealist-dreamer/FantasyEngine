@@ -20,7 +20,9 @@ class Detail {
 
   template <typename T>
   static stl::vector<Mutex> get_mutexes_for_type() {
+    using NoRefT = std::remove_reference_t<T>;
     using RawT = std::remove_cv_t<std::remove_reference_t<T>>;
+
     stl::vector<Mutex> result;
 
     if constexpr (is_entity_query<RawT>::value) {
@@ -33,14 +35,16 @@ class Detail {
       return collect_comp_mutex_vec<true>(typename is_component_writer<RawT>::component_types{});
     } else if constexpr (is_component_reader<RawT>::value) {
       return collect_comp_mutex_vec<false>(typename is_component_reader<RawT>::component_types{});
-    } else if constexpr (is_resource_reader<RawT>::value) {
-      return {Mutex::read_resource<RawT>()};
-    } else if constexpr (is_resource_writer<RawT>::value) {
-      return {Mutex::write_resource<RawT>()};
     } else if constexpr (is_event_reader<RawT>::value) {
       return {Mutex::read_event<RawT>()};
     } else if constexpr (is_event_writer<RawT>::value) {
       return {Mutex::write_event<RawT>()};
+    } else {
+      if constexpr (std::is_const_v<NoRefT>) {
+        return {Mutex::read_resource<RawT>()};
+      } else {
+        return {Mutex::write_resource<RawT>()};
+      }
     }
 
     return result;
@@ -88,11 +92,11 @@ class Detail {
       out.push_back([](WorldBase& w) { Preparer<typename is_component_writer<RawT>::component_types>::run(w.m_registry); });
     } else if constexpr (is_component_reader<RawT>::value) {
       out.push_back([](WorldBase& w) { Preparer<typename is_component_reader<RawT>::component_types>::run(w.m_registry); });
-    } else if constexpr (is_resource_reader<RawT>::value || is_resource_writer<RawT>::value) {
-      using ResT = typename is_resource_reader<RawT>::type;
-      out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(RawT)), Resource()}); });
     } else if constexpr (is_event_reader<RawT>::value || is_event_writer<RawT>::value) {
       using EvT = typename is_event_reader<RawT>::type;
+      out.push_back([](WorldBase& w) { w.m_event_manager1.insert({std::type_index(typeid(RawT)), Resource()}); });
+      out.push_back([](WorldBase& w) { w.m_event_manager2.insert({std::type_index(typeid(RawT)), Resource()}); });
+    } else {
       out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(RawT)), Resource()}); });
     }
   }
