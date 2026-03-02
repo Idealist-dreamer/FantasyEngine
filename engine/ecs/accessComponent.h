@@ -124,7 +124,7 @@ class ComponentWriter : public ComponentReader<Components...> {
   template <typename T, typename... Args>
   void add_delayed(Entity e, Args&&... args) {
     check_auth<T>();
-    if (!has<T>(e)) {
+    if (!have<T>(e)) {
       m_reg.remove<ChangeComponentDelayed<T>, RemoveComponentDelayed<T>>(e);
       m_reg.emplace_or_replace<AddComponentDelayed<T>>(e, T{std::forward<Args>(args)...});
     }

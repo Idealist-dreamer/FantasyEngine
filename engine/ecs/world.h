@@ -11,6 +11,7 @@ class World : public WorldBase {
   void add_system(stl::shared_ptr<System> sys);
 
   void compile();
+  void setup();
   void run();
 
   void dump_graph(const stl::string& path);

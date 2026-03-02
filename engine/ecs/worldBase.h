@@ -5,7 +5,6 @@
 
 #include "accessEntity.h"
 #include "accessComponent.h"
-#include "accessResource.h"
 #include "accessEvent.h"
 
 namespace fe::engine::ecs {
@@ -22,14 +21,13 @@ template <typename T>
 concept IsComponentWriter = is_component_writer<std::remove_cvref_t<T>>::value;
 
 template <typename T>
-concept IsResourceReader = is_resource_reader<std::remove_cvref_t<T>>::value;
-template <typename T>
-concept IsResourceWriter = is_resource_writer<std::remove_cvref_t<T>>::value;
-
-template <typename T>
 concept IsEventReader = is_event_reader<std::remove_cvref_t<T>>::value;
 template <typename T>
 concept IsEventWriter = is_event_writer<std::remove_cvref_t<T>>::value;
+
+template <typename T>
+concept IsResourceParam = !IsEntityQuery<T> && !IsEntityCreator<T> && !IsEntityDestroyer<T> && !IsComponentReader<T> && !IsComponentWriter<T> &&
+                          !IsEventReader<T> && !IsEventWriter<T>;
 
 class WorldBase {
  public:
@@ -59,22 +57,6 @@ class WorldBase {
     return std::remove_cvref_t<CW>(m_registry);
   }
 
-  template <IsResourceReader RR>
-  auto get_param() {
-    using T = typename is_resource_reader<std::remove_cvref_t<RR>>::type;
-    auto it = m_resource_manager.find(std::type_index(typeid(T)));
-    FE_ASSERT(it != m_resource_manager.end() && "Resource not registered in World!");
-    return std::remove_cvref_t<RR>(it->second);
-  }
-
-  template <IsResourceWriter RW>
-  auto get_param() {
-    using T = typename is_resource_writer<std::remove_cvref_t<RW>>::type;
-    auto it = m_resource_manager.find(std::type_index(typeid(T)));
-    FE_ASSERT(it != m_resource_manager.end() && "Resource not registered in World!");
-    return std::remove_cvref_t<RW>(it->second);
-  }
-
   template <IsEventReader ER>
   auto get_param() {
     using T = typename is_event_reader<std::remove_cvref_t<ER>>::type;
@@ -88,6 +70,16 @@ class WorldBase {
     auto it = m_event_manager2.find(std::type_index(typeid(T)));
     FE_ASSERT(it != m_event_manager2.end() && "Event type not registered!");
     return std::remove_cvref_t<EW>(it->second);
+  }
+
+  template <IsResourceParam R>
+  decltype(auto) get_param() {
+    using RawT = std::remove_cvref_t<R>;
+
+    auto it = m_resource_manager.find(std::type_index(typeid(RawT)));
+    FE_ASSERT(it != m_resource_manager.end() && "Resource not registered!");
+
+    return it->second.get<RawT>();
   }
 
  protected:
