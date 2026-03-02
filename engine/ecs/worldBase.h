@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "ResourceStorage.h"
+#include "resource.h"
 
 #include "accessEntity.h"
 #include "accessComponent.h"
@@ -70,12 +70,12 @@ class WorldBase {
     auto it = m_event_manager2.find(std::type_index(typeid(T)));
     FE_ASSERT(it != m_event_manager2.end() && "Event type not registered!");
 
-    m_write_event_clear.push_back([this](WorldBase& w) {
+    m_write_event_clear.push_back([](WorldBase& w) {
       auto it = w.m_event_manager2.find(std::type_index(typeid(T)));
       auto& vector = *it->second.get<T>();
       vector.clear();
     });
-    return std::remove_cvref_t<ER>(*it->second.get<T>());
+    return std::remove_cvref_t<EW>(*it->second.get<T>());
   }
 
   template <IsResourceParam R>

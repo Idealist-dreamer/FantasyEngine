@@ -36,9 +36,11 @@ class Detail {
     } else if constexpr (is_component_reader<RawT>::value) {
       return collect_comp_mutex_vec<false>(typename is_component_reader<RawT>::component_types{});
     } else if constexpr (is_event_reader<RawT>::value) {
-      return {Mutex::read_event<RawT>()};
+      using EvT = typename is_event_reader<RawT>::type;
+      return {Mutex::read_event<EvT>()};
     } else if constexpr (is_event_writer<RawT>::value) {
-      return {Mutex::write_event<RawT>()};
+      using EvT = typename is_event_writer<RawT>::type;
+      return {Mutex::write_event<EvT>()};
     } else {
       if constexpr (std::is_const_v<NoRefT>) {
         return {Mutex::read_resource<RawT>()};
@@ -92,10 +94,24 @@ class Detail {
       out.push_back([](WorldBase& w) { Preparer<typename is_component_writer<RawT>::component_types>::run(w.m_registry); });
     } else if constexpr (is_component_reader<RawT>::value) {
       out.push_back([](WorldBase& w) { Preparer<typename is_component_reader<RawT>::component_types>::run(w.m_registry); });
-    } else if constexpr (is_event_reader<RawT>::value || is_event_writer<RawT>::value) {
+    } else if constexpr (is_event_reader<RawT>::value) {
       using EvT = typename is_event_reader<RawT>::type;
-      out.push_back([](WorldBase& w) { w.m_event_manager1.insert({std::type_index(typeid(RawT)), ResourceStorage()}); });
-      out.push_back([](WorldBase& w) { w.m_event_manager2.insert({std::type_index(typeid(RawT)), ResourceStorage()}); });
+      out.push_back([](WorldBase& w) {
+        if (w.m_event_manager1.find(std::type_index(typeid(EvT))) == w.m_event_manager1.end()) {
+          // 修复: 正确对齐 typeid(EvT) 与实际内存分配 ResourceStorage::create()
+          w.m_event_manager1.insert({std::type_index(typeid(EvT)), ResourceStorage::create<EvT>()});
+          w.m_event_manager2.insert({std::type_index(typeid(EvT)), ResourceStorage::create<EvT>()});
+        }
+      });
+    } else if constexpr (is_event_writer<RawT>::value) {
+      using EvT = typename is_event_writer<RawT>::type;
+      out.push_back([](WorldBase& w) {
+        if (w.m_event_manager1.find(std::type_index(typeid(EvT))) == w.m_event_manager1.end()) {
+          // 修复: 正确对齐 typeid(EvT) 与实际内存分配 ResourceStorage::create()
+          w.m_event_manager1.insert({std::type_index(typeid(EvT)), ResourceStorage::create<EvT>()});
+          w.m_event_manager2.insert({std::type_index(typeid(EvT)), ResourceStorage::create<EvT>()});
+        }
+      });
     } else {
       out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(RawT)), ResourceStorage()}); });
     }
