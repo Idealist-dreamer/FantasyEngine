@@ -16,8 +16,6 @@ struct ChangeComponentTag {};
 template <typename T>
 struct RemoveComponentTag {};
 
-struct DestroyEntityTag {};
-
 template <typename T>
 struct AddComponentDelayed {
   T m_data;
@@ -30,8 +28,6 @@ struct ChangeComponentDelayed {
 
 template <typename T>
 struct RemoveComponentDelayed {};
-
-struct DestroyEntityDelayed {};
 
 // Special component decide
 template <typename T>

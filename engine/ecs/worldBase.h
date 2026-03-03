@@ -33,6 +33,26 @@ class WorldBase {
   WorldBase() = default;
   virtual ~WorldBase() = default;
 
+  template <typename Component, auto Candidate>
+  void on_construct() {
+    m_registry.on_construct<Component>().template connect<Candidate>();
+  }
+
+  template <typename Component, auto Candidate>
+  void on_update() {
+    m_registry.on_update<Component>().template connect<Candidate>();
+  }
+
+  template <typename Component, auto Candidate>
+  void on_destroy() {
+    m_registry.on_destroy<Component>().template connect<Candidate>();
+  }
+
+  template <typename Component, auto Candidate, typename Type>
+  void on_destroy(Type& instance) {
+    m_registry.on_destroy<Component>().template connect<Candidate>(instance);
+  }
+
  protected:
   template <IsEntityQuery EQ>
   auto get_param() {

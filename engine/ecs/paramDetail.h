@@ -117,11 +117,6 @@ class Detail {
   FE_FINLINE static stl::vector<std::function<void(WorldBase&)>> get_default_preparers() {
     stl::vector<std::function<void(WorldBase&)>> preparers;
 
-    preparers.push_back([](WorldBase& world) {
-      world.m_registry.storage<DestroyEntityTag>();
-      world.m_registry.storage<DestroyEntityDelayed>();
-    });
-
     return preparers;
   }
 };
