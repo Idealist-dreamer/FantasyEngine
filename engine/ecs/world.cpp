@@ -50,6 +50,13 @@ void World::compile() {
     }
   }
 
+  for (auto pass : setup_passes) {
+    pass->m_binder(*this);
+  }
+  for (auto pass : run_passes) {
+    pass->m_binder(*this);
+  }
+
   for (auto preparer : Detail::get_default_preparers()) {
     preparer(*this);
   }
@@ -74,10 +81,10 @@ void World::compile() {
 
   stl::map<Pass*, tf::Task> task_node_map;
   for (auto pass : setup_passes) {
-    task_node_map[pass] = setup_taskflow.emplace([pass, this]() { pass->m_call(*this); }).name(pass->m_name.c_str());
+    task_node_map[pass] = setup_taskflow.emplace([pass, this]() { pass->m_execute(); }).name(pass->m_name.c_str());
   }
   for (auto pass : run_passes) {
-    task_node_map[pass] = run_taskflow.emplace([pass, this]() { pass->m_call(*this); }).name(pass->m_name.c_str());
+    task_node_map[pass] = run_taskflow.emplace([pass, this]() { pass->m_execute(); }).name(pass->m_name.c_str());
   }
 
   auto mutex_pass_fun = [&task_node_map](const stl::vector<Pass*>& pass_array) {

@@ -12,7 +12,7 @@ enum struct Priority : uint32_t { First = 0x00000000, High = 0x00001000, Mid = 0
 
 class Pass {
  public:
-  using CallType = std::function<void(WorldBase&)>;
+  using CallType = std::function<void()>;
 
   Pass(const stl::string& name, bool isRepeat = true, uint32_t priority = uint32_t(Priority::Low))
       : m_name(name), m_repeat(isRepeat), m_priority(priority) {}
@@ -61,11 +61,12 @@ class Pass {
   template <typename Func, typename... Args>
   void init_impl(Func&& func, std::tuple<Args...>) {
     m_mutexes = Detail::merge_mutex_vectors(Detail::get_mutexes_for_type<Args>()...);
-
     m_preparers = Detail::get_preparers<Args...>();
 
-    m_call = [func = std::forward<Func>(func)](WorldBase& world) mutable {
-      func(world.get_param<Args>()...);
+    m_binder = [func = std::forward<Func>(func), this](WorldBase& world) mutable {
+      m_execute = [func, params = std::make_tuple(world.get_param<Args>()...)]() mutable {
+        std::apply(func, params);
+      };
     };
   }
 
@@ -77,7 +78,9 @@ class Pass {
   stl::unordered_set<stl::string> m_before_stage;
   stl::unordered_set<stl::string> m_after_stage;
 
-  CallType m_call;
+  CallType m_execute;
+  std::function<void(WorldBase&)> m_binder;
+
   stl::vector<Mutex> m_mutexes;
   stl::vector<std::function<void(WorldBase&)>> m_preparers;
 
