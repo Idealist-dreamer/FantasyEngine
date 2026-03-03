@@ -13,6 +13,7 @@ function(fe_link_engine_sdks TARGET_NAME)
     find_package(benchmark CONFIG REQUIRED)
     find_package(directx12-agility CONFIG REQUIRED)
     find_package(PkgConfig REQUIRED)
+    find_package(cereal CONFIG REQUIRED)
     pkg_check_modules(LUAJIT REQUIRED IMPORTED_TARGET luajit)
 
     target_link_libraries(${TARGET_NAME} PUBLIC
@@ -33,6 +34,8 @@ function(fe_link_engine_sdks TARGET_NAME)
 
         benchmark::benchmark
         benchmark::benchmark_main
+        
+        cereal::cereal
     )
 
     if(TARGET Microsoft::DirectX12-Agility)

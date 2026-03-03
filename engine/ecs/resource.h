@@ -110,30 +110,4 @@ struct ResourceStorage {
   std::type_index m_type_info = typeid(void);
 #endif
 };
-
-template <typename T>
-struct Resource {
-  Resource(ResourceStorage& res) : m_resource(res) {}
-
-  bool valid() const { return m_resource.valid(); }
-
-  T& get() { return *m_resource.get<T>(); }
-  const T& get() const { return *m_resource.get<T>(); }
-
-  void destroy() { m_resource.destroy(); }
-
-  template <typename T, typename... Args>
-  void create(Args&&... args) {
-    m_resource = ResourceStorage::create<T>(std::forward<Args>(args)...);
-  }
-
-  template <typename T>
-  void create(T* ptr, bool need_free = true) {
-    m_resource = ResourceStorage::create<T>(ptr, need_free);
-  }
-
- private:
-  ResourceStorage& m_resource;
-};
-
 }  // namespace fe::engine::ecs

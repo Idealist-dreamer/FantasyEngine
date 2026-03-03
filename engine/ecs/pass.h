@@ -14,7 +14,7 @@ class Pass {
  public:
   using CallType = std::function<void(WorldBase&)>;
 
-  Pass(const stl::string& name = "", bool isRepeat = true, uint32_t priority = uint32_t(Priority::Low))
+  Pass(const stl::string& name, bool isRepeat = true, uint32_t priority = uint32_t(Priority::Low))
       : m_name(name), m_repeat(isRepeat), m_priority(priority) {}
   ~Pass() = default;
 
@@ -36,6 +36,13 @@ class Pass {
     m_mutexes = Detail::merge_mutex_vectors(Detail::get_mutexes_for_type<Args>()...);
 
     m_preparers = Detail::get_preparers<Args...>();
+  }
+
+  template <class R, class... Args>
+  static Pass create(const stl::string& name, R (&func)(Args...)) {
+    Pass pass(name);
+    pass.init(func);
+    return pass;
   }
 
   stl::string m_name;

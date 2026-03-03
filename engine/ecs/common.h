@@ -5,9 +5,7 @@
 namespace fe::engine::ecs {
 using Entity = entt::entity;
 using Registry = entt::registry;
-}  // namespace fe::engine::ecs
 
-namespace fe::engine::ecs {
 // Special component type
 template <typename T>
 struct AddComponentTag {};

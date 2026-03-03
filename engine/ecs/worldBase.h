@@ -26,8 +26,7 @@ template <typename T>
 concept IsEventWriter = is_event_writer<std::remove_cvref_t<T>>::value;
 
 template <typename T>
-concept IsResourceParam = !IsEntityQuery<T> && !IsEntityCreator<T> && !IsEntityDestroyer<T> && !IsComponentReader<T> && !IsComponentWriter<T> &&
-                          !IsEventReader<T> && !IsEventWriter<T>;
+concept IsResourceParam = is_resource_reader<T>::value || is_resource_writer<T>::value;
 
 class WorldBase {
  public:
@@ -69,31 +68,25 @@ class WorldBase {
     using T = typename is_event_writer<std::remove_cvref_t<EW>>::type;
     auto it = m_event_manager2.find(std::type_index(typeid(T)));
     FE_ASSERT(it != m_event_manager2.end() && "Event type not registered!");
-
-    m_write_event_clear.push_back([](WorldBase& w) {
-      auto it = w.m_event_manager2.find(std::type_index(typeid(T)));
-      auto& vector = *it->second.get<T>();
-      vector.clear();
-    });
     return std::remove_cvref_t<EW>(*it->second.get<T>());
   }
 
   template <IsResourceParam R>
-  decltype(auto) get_param() {
+  auto get_param() {
     using RawT = std::remove_cvref_t<R>;
+    using U = typename RawT::type;
 
-    auto it = m_resource_manager.find(std::type_index(typeid(RawT)));
-    FE_ASSERT(it != m_resource_manager.end() && "ResourceStorage not registered!");
+    auto it = m_resource_manager.find(std::type_index(typeid(U)));
+    FE_ASSERT(it != m_resource_manager.end() && "Resource not registered!");
 
-    return (*it->second.get<RawT>());
+    return RawT(it->second);
   }
 
   void next_frame() {
     std::swap(m_event_manager1, m_event_manager2);
-    for (auto& clear_func : m_write_event_clear) {
-      clear_func(*this);
+    for (auto& [tid, clear_func] : m_static_clearers) {
+      clear_func(m_event_manager2[tid]);
     }
-    m_write_event_clear.clear();
   }
 
  protected:
@@ -104,7 +97,7 @@ class WorldBase {
   stl::unordered_map<std::type_index, ResourceStorage> m_event_manager1;
   stl::unordered_map<std::type_index, ResourceStorage> m_event_manager2;
 
-  stl::vector<stl::function<void(WorldBase&)>> m_write_event_clear;
+  stl::unordered_map<std::type_index, void (*)(ResourceStorage&)> m_static_clearers;
 
   friend class Detail;
   friend class Pass;

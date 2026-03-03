@@ -32,21 +32,19 @@ class Detail {
     } else if constexpr (is_entity_destroyer<RawT>::value) {
       result.push_back(Mutex::destroy_entity());
     } else if constexpr (is_component_writer<RawT>::value) {
-      return collect_comp_mutex_vec<true>(typename is_component_writer<RawT>::component_types{});
+      auto m = collect_comp_mutex_vec<true>(typename is_component_writer<RawT>::component_types{});
+      result.insert(result.end(), m.begin(), m.end());
     } else if constexpr (is_component_reader<RawT>::value) {
-      return collect_comp_mutex_vec<false>(typename is_component_reader<RawT>::component_types{});
+      auto m = collect_comp_mutex_vec<false>(typename is_component_reader<RawT>::component_types{});
+      result.insert(result.end(), m.begin(), m.end());
     } else if constexpr (is_event_reader<RawT>::value) {
-      using EvT = typename is_event_reader<RawT>::type;
-      return {Mutex::read_event<EvT>()};
+      result.push_back(Mutex::read_event<RawT>());
     } else if constexpr (is_event_writer<RawT>::value) {
-      using EvT = typename is_event_writer<RawT>::type;
-      return {Mutex::write_event<EvT>()};
-    } else {
-      if constexpr (std::is_const_v<NoRefT>) {
-        return {Mutex::read_resource<RawT>()};
-      } else {
-        return {Mutex::write_resource<RawT>()};
-      }
+      result.push_back(Mutex::write_event<RawT>());
+    } else if constexpr (is_resource_reader<T>::value) {
+      result.push_back(Mutex::read_resource<RawT>());
+    } else if constexpr (is_resource_writer<T>::value) {
+      result.push_back(Mutex::write_resource<RawT>());
     }
 
     return result;
@@ -94,25 +92,17 @@ class Detail {
       out.push_back([](WorldBase& w) { Preparer<typename is_component_writer<RawT>::component_types>::run(w.m_registry); });
     } else if constexpr (is_component_reader<RawT>::value) {
       out.push_back([](WorldBase& w) { Preparer<typename is_component_reader<RawT>::component_types>::run(w.m_registry); });
-    } else if constexpr (is_event_reader<RawT>::value) {
+    } else if constexpr (is_event_reader<RawT>::value || is_event_writer<RawT>::value) {
       using EvT = typename is_event_reader<RawT>::type;
       out.push_back([](WorldBase& w) {
-        if (w.m_event_manager1.find(std::type_index(typeid(EvT))) == w.m_event_manager1.end()) {
-          // 修复: 正确对齐 typeid(EvT) 与实际内存分配 ResourceStorage::create()
-          w.m_event_manager1.insert({std::type_index(typeid(EvT)), ResourceStorage::create<EvT>()});
-          w.m_event_manager2.insert({std::type_index(typeid(EvT)), ResourceStorage::create<EvT>()});
-        }
+        auto tid = std::type_index(typeid(EvT));
+        w.m_event_manager2.insert({std::type_index(typeid(EvT)), ResourceStorage()});
+        w.m_event_manager1.insert({std::type_index(typeid(EvT)), ResourceStorage()});
+        w.m_static_clearers[tid] = [](ResourceStorage& storage) {
+          storage.get<EvT>()->clear();
+        };
       });
-    } else if constexpr (is_event_writer<RawT>::value) {
-      using EvT = typename is_event_writer<RawT>::type;
-      out.push_back([](WorldBase& w) {
-        if (w.m_event_manager1.find(std::type_index(typeid(EvT))) == w.m_event_manager1.end()) {
-          // 修复: 正确对齐 typeid(EvT) 与实际内存分配 ResourceStorage::create()
-          w.m_event_manager1.insert({std::type_index(typeid(EvT)), ResourceStorage::create<EvT>()});
-          w.m_event_manager2.insert({std::type_index(typeid(EvT)), ResourceStorage::create<EvT>()});
-        }
-      });
-    } else {
+    } else if constexpr (is_resource_reader<T>::value || is_resource_writer<T>::value) {
       out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(RawT)), ResourceStorage()}); });
     }
   }
