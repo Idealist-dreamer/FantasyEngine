@@ -3,12 +3,12 @@
 namespace fe::engine::ecs {
 // Add stages within this namespace
 namespace stage {
-struct Startup {};
 struct PreStartup {};
+struct Startup {};
 struct PostStartup {};
 
-struct Update {};
 struct PreUpdate {};
+struct Update {};
 struct PostUpdate {};
 
 struct Cleanup {};
