@@ -126,4 +126,21 @@ class Detail {
   }
 };
 
+template <typename T>
+struct function_traits : function_traits<decltype(&T::operator())> {};
+
+template <typename R, typename... Args>
+struct function_traits<R (*)(Args...)> {
+  using args_tuple = std::tuple<Args...>;
+};
+
+template <typename C, typename R, typename... Args>
+struct function_traits<R (C::*)(Args...) const> {
+  using args_tuple = std::tuple<Args...>;
+};
+
+template <typename C, typename R, typename... Args>
+struct function_traits<R (C::*)(Args...)> {
+  using args_tuple = std::tuple<Args...>;
+};
 }  // namespace fe::engine::ecs

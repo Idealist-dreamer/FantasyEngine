@@ -18,6 +18,27 @@ class Pass {
       : m_name(name), m_repeat(isRepeat), m_priority(priority) {}
   ~Pass() = default;
 
+  template <typename Func>
+  static Pass create_start(const stl::string& name, Func&& func, uint32_t priority = uint32_t(Priority::Low)) {
+    Pass pass(name, false, priority);
+    pass.init(std::forward<Func>(func));
+    return pass;
+  }
+
+  template <typename Func>
+  static Pass create_update(const stl::string& name, Func&& func, uint32_t priority = uint32_t(Priority::Low)) {
+    Pass pass(name, true, priority);
+    pass.init(std::forward<Func>(func));
+    return pass;
+  }
+
+  template <typename Func>
+  void init(Func&& func) {
+    using CleanFunc = std::remove_cvref_t<Func>;
+    using ArgsTuple = typename function_traits<CleanFunc>::args_tuple;
+    init_impl(std::forward<Func>(func), ArgsTuple{});
+  }
+
   Pass& run_after(const stl::string& targetPass) {
     m_after_passes.insert(targetPass);
     return *this;
@@ -28,30 +49,25 @@ class Pass {
     return *this;
   }
 
-  template <class R, class... Args>
-  void init(R (&func)(Args...)) {
-    m_call = [&func](WorldBase& world) mutable {
-      func(world.get_param<Args>()...);
-    };
+ private:
+  template <typename Func, typename... Args>
+  void init_impl(Func&& func, std::tuple<Args...>) {
     m_mutexes = Detail::merge_mutex_vectors(Detail::get_mutexes_for_type<Args>()...);
 
     m_preparers = Detail::get_preparers<Args...>();
-  }
 
-  template <class R, class... Args>
-  static Pass create(const stl::string& name, R (&func)(Args...)) {
-    Pass pass(name);
-    pass.init(func);
-    return pass;
+    m_call = [func = std::forward<Func>(func)](WorldBase& world) mutable {
+      func(world.get_param<Args>()...);
+    };
   }
 
   stl::string m_name;
   bool m_repeat = true;
   uint32_t m_priority = 0;
+
   stl::unordered_set<stl::string> m_before_passes;
   stl::unordered_set<stl::string> m_after_passes;
 
- private:
   CallType m_call;
   stl::vector<Mutex> m_mutexes;
   stl::vector<std::function<void(WorldBase&)>> m_preparers;
