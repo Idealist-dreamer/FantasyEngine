@@ -50,13 +50,6 @@ void World::compile() {
     }
   }
 
-  for (auto pass : setup_passes) {
-    pass->m_binder(*this);
-  }
-  for (auto pass : run_passes) {
-    pass->m_binder(*this);
-  }
-
   for (auto preparer : Detail::get_default_preparers()) {
     preparer(*this);
   }
@@ -70,6 +63,13 @@ void World::compile() {
     for (auto& preparer : pass->m_preparers) {
       preparer(*this);
     }
+  }
+
+  for (auto pass : setup_passes) {
+    pass->m_binder(*this);
+  }
+  for (auto pass : run_passes) {
+    pass->m_binder(*this);
   }
 
   setup_taskflow.clear();

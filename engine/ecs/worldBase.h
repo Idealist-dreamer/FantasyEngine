@@ -103,9 +103,8 @@ class WorldBase {
   }
 
   void next_frame() {
-    std::swap(m_event_manager1, m_event_manager2);
-    for (auto& [tid, clear_func] : m_static_clearers) {
-      clear_func(m_event_manager2[tid]);
+    for (auto& [tid, swap] : m_event_swap) {
+      swap(*this);
     }
   }
 
@@ -117,7 +116,7 @@ class WorldBase {
   stl::unordered_map<std::type_index, ResourceStorage> m_event_manager1;
   stl::unordered_map<std::type_index, ResourceStorage> m_event_manager2;
 
-  stl::unordered_map<std::type_index, void (*)(ResourceStorage&)> m_static_clearers;
+  stl::unordered_map<std::type_index, void (*)(WorldBase&)> m_event_swap;
 
   friend class Detail;
   friend class Pass;

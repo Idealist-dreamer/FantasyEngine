@@ -93,14 +93,24 @@ class Detail {
     } else if constexpr (is_component_reader<RawT>::value) {
       out.push_back([](WorldBase& w) { Preparer<typename is_component_reader<RawT>::component_types>::run(w.m_registry); });
     } else if constexpr (is_event_reader<RawT>::value || is_event_writer<RawT>::value) {
-      using EvT = typename is_event_reader<RawT>::type;
+      using EvT = std::conditional_t<is_event_reader<RawT>::value, typename is_event_reader<RawT>::type, typename is_event_writer<RawT>::type>;
+
       out.push_back([](WorldBase& w) {
         auto tid = std::type_index(typeid(EvT));
-        w.m_event_manager2.insert({std::type_index(typeid(EvT)), ResourceStorage()});
-        w.m_event_manager1.insert({std::type_index(typeid(EvT)), ResourceStorage()});
-        w.m_static_clearers[tid] = [](ResourceStorage& storage) {
-          storage.get<EvT>()->clear();
-        };
+
+        if (w.m_event_manager1.find(tid) == w.m_event_manager1.end()) {
+          w.m_event_manager1.insert({tid, ResourceStorage::create<EvT>()});
+          w.m_event_manager2.insert({tid, ResourceStorage::create<EvT>()});
+
+          w.m_event_swap[tid] = [](WorldBase& wb) {
+            auto inner_tid = std::type_index(typeid(EvT));
+            auto& data1 = *(wb.m_event_manager1[inner_tid].get<EvT>());
+            auto& data2 = *(wb.m_event_manager2[inner_tid].get<EvT>());
+
+            data1.swap(data2);
+            data2.clear();
+          };
+        }
       });
     } else if constexpr (is_resource_reader<T>::value || is_resource_writer<T>::value) {
       out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(RawT)), ResourceStorage()}); });
