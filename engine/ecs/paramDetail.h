@@ -113,7 +113,8 @@ class Detail {
         }
       });
     } else if constexpr (is_resource_reader<T>::value || is_resource_writer<T>::value) {
-      out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(RawT)), ResourceStorage()}); });
+      using U = typename RawT::type;
+      out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(U)), ResourceStorage()}); });
     }
   }
 

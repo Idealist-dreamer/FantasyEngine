@@ -6,6 +6,8 @@
 namespace fe::engine::ecs {
 template <typename T>
 struct Resource {
+  using type = T;
+
   Resource(ResourceStorage& res) : m_resource(res) {}
 
   bool valid() const { return m_resource.valid(); }

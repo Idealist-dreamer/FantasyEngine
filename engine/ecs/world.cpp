@@ -6,7 +6,7 @@
 
 namespace fe::engine::ecs {
 struct World::Impl {
-  stl::vector<Pass> m_default_passes;
+  stl::deque<Pass> m_default_passes;
 
   tf::Executor executor;
   tf::Taskflow setup_taskflow;
@@ -43,6 +43,14 @@ void World::compile() {
   stl::vector<Pass*> setup_passes;
   stl::vector<Pass*> run_passes;
 
+  for (auto& pass : d()->m_default_passes) {
+    if (pass.m_repeat) {
+      run_passes.push_back(&pass);
+    } else {
+      setup_passes.push_back(&pass);
+    }
+  }
+
   for (auto& [name, sys] : sys_map) {
     sys->setWorld(*this);
 
@@ -76,10 +84,10 @@ void World::compile() {
   }
 
   for (auto pass : setup_passes) {
-    pass->m_binder(*this);
+    pass->m_execute = pass->m_binder(*this);
   }
   for (auto pass : run_passes) {
-    pass->m_binder(*this);
+    pass->m_execute = pass->m_binder(*this);
   }
 
   setup_taskflow.clear();

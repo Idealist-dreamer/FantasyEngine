@@ -1,6 +1,7 @@
 #pragma once
 
 #include "system.h"
+#include "stage.h"
 
 namespace fe::engine::ecs {
 class World : public WorldBase {

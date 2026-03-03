@@ -6,6 +6,7 @@
 #include "accessEntity.h"
 #include "accessComponent.h"
 #include "accessEvent.h"
+#include "accessResource.h"
 
 namespace fe::engine::ecs {
 template <typename T>
@@ -69,8 +70,8 @@ class WorldBase {
     return std::remove_cvref_t<ED>(m_registry);
   }
   template <IsEntityCommandBuffer EB>
-  auto get_param(uint32_t passId) {
-    return m_entity_command_buffers[passId];
+  decltype(auto) get_param(uint32_t passId) {
+    return (m_entity_command_buffers[passId]);
   }
 
   template <IsComponentReader CR>
