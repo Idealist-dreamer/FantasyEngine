@@ -64,11 +64,14 @@ class Pass {
     m_preparers = Detail::get_preparers<Args...>();
 
     m_binder = [func = std::forward<Func>(func), this](WorldBase& world) mutable {
-      m_execute = [func, params = std::make_tuple(world.get_param<Args>()...)]() mutable {
+      m_execute = [func, params = std::make_tuple(world.get_param<Args>(m_id)...)]() mutable {
         std::apply(func, params);
       };
     };
   }
+
+  static inline uint32_t sId = 0;
+  uint32_t m_id = sId++;
 
   stl::string m_name;
   bool m_repeat = true;
