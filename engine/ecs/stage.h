@@ -1,6 +1,7 @@
 #pragma once
 
-namespace fe::engine::ecs::stage {
+namespace fe::engine::ecs {
+namespace stage {
 struct Startup {};
 struct PreStartup {};
 struct PostStartup {};
@@ -10,4 +11,5 @@ struct PreUpdate {};
 struct PostUpdate {};
 
 struct Cleanup {};
-}  // namespace fe::engine::ecs::stage
+}  // namespace stage
+}  // namespace fe::engine::ecs

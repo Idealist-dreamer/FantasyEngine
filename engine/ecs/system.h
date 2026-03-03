@@ -6,7 +6,7 @@ namespace fe::engine::ecs {
 
 class System {
  public:
-  System(const stl::string& name = "") : m_name(name) {}
+  System(const stl::string& name) : m_name(name) {}
   virtual ~System() = default;
 
   void setWorld(WorldBase& world) { m_world = &world; }
