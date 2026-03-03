@@ -90,13 +90,13 @@ void World::compile() {
         auto& task_a = task_node_map[pass_a];
         auto& task_b = task_node_map[pass_b];
 
-        if (pass_a->m_before_passes.find(pass_b->m_name) != pass_a->m_before_passes.end() ||
-            pass_b->m_after_passes.find(pass_a->m_name) != pass_b->m_after_passes.end()) {
+        if (pass_a->m_before_stage.find(pass_b->m_name) != pass_a->m_before_stage.end() ||
+            pass_b->m_after_stage.find(pass_a->m_name) != pass_b->m_after_stage.end()) {
           task_a.precede(task_b);
           continue;
         }
-        if (pass_a->m_after_passes.find(pass_b->m_name) != pass_a->m_after_passes.end() ||
-            pass_b->m_before_passes.find(pass_a->m_name) != pass_b->m_before_passes.end()) {
+        if (pass_a->m_after_stage.find(pass_b->m_name) != pass_a->m_after_stage.end() ||
+            pass_b->m_before_stage.find(pass_a->m_name) != pass_b->m_before_stage.end()) {
           task_a.succeed(task_b);
           continue;
         }

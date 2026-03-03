@@ -39,13 +39,21 @@ class Pass {
     init_impl(std::forward<Func>(func), ArgsTuple{});
   }
 
-  Pass& run_after(const stl::string& targetPass) {
-    m_after_passes.insert(targetPass);
+  template <typename T>
+  Pass& set_stage() {
+    m_stage = typeid(T).name();
     return *this;
   }
 
-  Pass& run_before(const stl::string& targetPass) {
-    m_before_passes.insert(targetPass);
+  template <typename T>
+  Pass& set_after_stage() {
+    m_after_stage.insert(typeid(T).name());
+    return *this;
+  }
+
+  template <typename T>
+  Pass& set_before_stage() {
+    m_before_stage.insert(typeid(T).name());
     return *this;
   }
 
@@ -65,8 +73,9 @@ class Pass {
   bool m_repeat = true;
   uint32_t m_priority = 0;
 
-  stl::unordered_set<stl::string> m_before_passes;
-  stl::unordered_set<stl::string> m_after_passes;
+  stl::string m_stage;
+  stl::unordered_set<stl::string> m_before_stage;
+  stl::unordered_set<stl::string> m_after_stage;
 
   CallType m_call;
   stl::vector<Mutex> m_mutexes;
