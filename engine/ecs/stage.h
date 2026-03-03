@@ -1,6 +1,7 @@
 #pragma once
 
 namespace fe::engine::ecs {
+// Add stages within this namespace
 namespace stage {
 struct Startup {};
 struct PreStartup {};
