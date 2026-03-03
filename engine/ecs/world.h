@@ -16,6 +16,17 @@ class World : public WorldBase {
 
   void dump_graph(const stl::string& path);
 
+ private:
   FE_DECLARE_PRIVATE
+
+  void PreStartup();
+  void Startup();
+  void PostStartup();
+
+  void PreUpdate();
+  void Update();
+  void PostUpdate();
+
+  void Cleanup();
 };
 }  // namespace fe::engine::ecs

@@ -8,7 +8,7 @@
 namespace fe::engine::ecs {
 class WorldBase;
 
-enum struct Priority : uint32_t { First = 0x00000000, High = 0x00001000, Mid = 0x00002000, Low = 0x00003000 };
+enum Priority : uint32_t { First = 0x00000000, High = 0x00001000, Mid = 0x00002000, Low = 0x00003000 };
 
 class Pass {
  public:

@@ -6,6 +6,8 @@
 
 namespace fe::engine::ecs {
 struct World::Impl {
+  stl::vector<Pass> m_default_passes;
+
   tf::Executor executor;
   tf::Taskflow setup_taskflow;
   tf::Taskflow run_taskflow;
@@ -13,8 +15,16 @@ struct World::Impl {
   stl::map<stl::string, stl::shared_ptr<System>> sys_map;
 };
 
-World::World(){FE_DECLARE_PRIVATE_INIT}
+World::World() {
+  FE_DECLARE_PRIVATE_INIT
+  d()->m_default_passes.push_back(Pass::create_start("Wolrd_PreStartup", [this]() { PreStartup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start("Wolrd_Startup", [this]() { Startup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start("Wolrd_PostStartup", [this]() { PostStartup(); }, Priority::First));
 
+  d()->m_default_passes.push_back(Pass::create_update("Wolrd_PreUpdate", [this]() { PreUpdate(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update("Wolrd_Update", [this]() { Update(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update("Wolrd_PostUpdate", [this]() { PostUpdate(); }, Priority::First));
+}
 World::~World() {}
 
 void World::add_system(stl::shared_ptr<System> sys) {
@@ -182,5 +192,15 @@ void World::dump_graph(const stl::string& path) {
     }
   }
 }
+
+void World::PreStartup() {}
+void World::Startup() {}
+void World::PostStartup() {}
+
+void World::PreUpdate() {}
+void World::Update() {}
+void World::PostUpdate() {}
+
+void World::Cleanup() {}
 
 }  // namespace fe::engine::ecs
