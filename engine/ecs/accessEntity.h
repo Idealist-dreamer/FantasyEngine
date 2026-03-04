@@ -28,20 +28,26 @@ struct EntityDestroyer : public EntityCreator {
 };
 
 struct EntityCommandBuffer {
+  using EntityHandle = uint32_t;
+
   EntityCommandBuffer() {}
 
-  uint32_t create() {
-    uint32_t id = m_entity_map.size();
-    m_entity_map[id] = entt::null;
-    return id;
+  EntityHandle create() {
+    EntityHandle handle = m_entity_map.size();
+    m_entity_map[handle] = entt::null;
+    return handle;
   }
 
-  bool valid(uint32_t id) const {
-    auto it = m_entity_map.find(id);
+  bool valid(EntityHandle handle) const {
+    auto it = m_entity_map.find(handle);
     return it != m_entity_map.end() && it->second != entt::null;
   }
 
-  entt::entity get(uint32_t id) const { return m_entity_map.at(id); }
+  entt::entity get(EntityHandle handle) const {
+    auto it = m_entity_map.find(handle);
+    FE_ASSERT(it != m_entity_map.end());
+    return it->second;
+  }
 
   void destroy(entt::entity e) { m_destroyed_entities.push_back(e); }
 
@@ -51,7 +57,7 @@ struct EntityCommandBuffer {
   }
 
  private:
-  stl::unordered_map<uint32_t, entt::entity> m_entity_map;
+  stl::unordered_map<EntityHandle, entt::entity> m_entity_map;
   stl::vector<entt::entity> m_destroyed_entities;
 
   friend class WorldBase;

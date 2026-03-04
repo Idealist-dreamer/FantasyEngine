@@ -17,13 +17,13 @@ struct World::Impl {
 
 World::World() {
   FE_DECLARE_PRIVATE_INIT
-  d()->m_default_passes.push_back(Pass::create_start("Wolrd_PreStartup", [this]() { PreStartup(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_start("Wolrd_Startup", [this]() { Startup(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_start("Wolrd_PostStartup", [this]() { PostStartup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start("World_PreStartup", [this]() { PreStartup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start("World_Startup", [this]() { Startup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start("World_PostStartup", [this]() { PostStartup(); }, Priority::First));
 
-  d()->m_default_passes.push_back(Pass::create_update("Wolrd_PreUpdate", [this]() { PreUpdate(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update("Wolrd_Update", [this]() { Update(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update("Wolrd_PostUpdate", [this]() { PostUpdate(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update("World_PreUpdate", [this]() { PreUpdate(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update("World_Update", [this]() { Update(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update("World_PostUpdate", [this]() { PostUpdate(); }, Priority::First));
 }
 World::~World() {}
 
@@ -115,13 +115,13 @@ void World::compile() {
         auto& task_a = task_node_map[pass_a];
         auto& task_b = task_node_map[pass_b];
 
-        if (pass_a->m_before_stage.find(pass_b->m_name) != pass_a->m_before_stage.end() ||
-            pass_b->m_after_stage.find(pass_a->m_name) != pass_b->m_after_stage.end()) {
+        if (pass_a->m_before_stage.find(pass_b->m_stage) != pass_a->m_before_stage.end() ||
+            pass_b->m_after_stage.find(pass_a->m_stage) != pass_b->m_after_stage.end()) {
           task_a.precede(task_b);
           continue;
         }
-        if (pass_a->m_after_stage.find(pass_b->m_name) != pass_a->m_after_stage.end() ||
-            pass_b->m_before_stage.find(pass_a->m_name) != pass_b->m_before_stage.end()) {
+        if (pass_a->m_after_stage.find(pass_b->m_stage) != pass_a->m_after_stage.end() ||
+            pass_b->m_before_stage.find(pass_a->m_stage) != pass_b->m_before_stage.end()) {
           task_a.succeed(task_b);
           continue;
         }
