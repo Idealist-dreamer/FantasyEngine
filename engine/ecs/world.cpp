@@ -121,12 +121,12 @@ void World::compile() {
 
         if (pass_a->m_before_stage.find(pass_b->m_stage) != pass_a->m_before_stage.end() ||
             pass_b->m_after_stage.find(pass_a->m_stage) != pass_b->m_after_stage.end()) {
-          task_a.precede(task_b);
+          task_b.precede(task_a);
           continue;
         }
         if (pass_a->m_after_stage.find(pass_b->m_stage) != pass_a->m_after_stage.end() ||
             pass_b->m_before_stage.find(pass_a->m_stage) != pass_b->m_before_stage.end()) {
-          task_a.succeed(task_b);
+          task_a.precede(task_b);
           continue;
         }
 

@@ -41,10 +41,12 @@ class Detail {
       result.push_back(Mutex::read_event<RawT>());
     } else if constexpr (is_event_writer<RawT>::value) {
       result.push_back(Mutex::write_event<RawT>());
-    } else if constexpr (is_resource_reader<T>::value) {
-      result.push_back(Mutex::read_resource<RawT>());
-    } else if constexpr (is_resource_writer<T>::value) {
-      result.push_back(Mutex::write_resource<RawT>());
+    } else if constexpr (is_resource_reader<RawT>::value) {
+      using U = typename RawT::type;
+      result.push_back(Mutex::read_resource<U>());
+    } else if constexpr (is_resource_writer<RawT>::value) {
+      using U = typename RawT::type;
+      result.push_back(Mutex::write_resource<U>());
     }
 
     return result;
@@ -112,7 +114,7 @@ class Detail {
           };
         }
       });
-    } else if constexpr (is_resource_reader<T>::value || is_resource_writer<T>::value) {
+    } else if constexpr (is_resource_reader<RawT>::value || is_resource_writer<RawT>::value) {
       using U = typename RawT::type;
       out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(U)), ResourceStorage()}); });
     }
