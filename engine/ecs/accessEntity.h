@@ -60,7 +60,7 @@ struct EntityCommandBuffer {
   stl::unordered_map<EntityHandle, entt::entity> m_entity_map;
   stl::vector<entt::entity> m_destroyed_entities;
 
-  friend class WorldBase;
+  friend class World;
 };
 
 }  // namespace fe::engine::ecs

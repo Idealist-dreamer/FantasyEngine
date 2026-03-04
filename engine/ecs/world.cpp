@@ -17,13 +17,17 @@ struct World::Impl {
 
 World::World() {
   FE_DECLARE_PRIVATE_INIT
-  d()->m_default_passes.push_back(Pass::create_start("World_PreStartup", [this]() { PreStartup(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_start("World_Startup", [this]() { Startup(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_start("World_PostStartup", [this]() { PostStartup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::Init>("World_Init", [this]() { Init(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::PreStartup>("World_PreStartup", [this]() { PreStartup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::Startup>("World_Startup", [this]() { Startup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::PostStartup>("World_PostStartup", [this]() { PostStartup(); }, Priority::First));
 
-  d()->m_default_passes.push_back(Pass::create_update("World_PreUpdate", [this]() { PreUpdate(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update("World_Update", [this]() { Update(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update("World_PostUpdate", [this]() { PostUpdate(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::First>("World_First", [this]() { First(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::PreUpdate>("World_PreUpdate", [this]() { PreUpdate(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::Update>("World_Update", [this]() { Update(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::PostUpdate>("World_PostUpdate", [this]() { PostUpdate(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::Last>("World_Last", [this]() { Last(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::Cleanup>("World_Cleanup", [this]() { Cleanup(); }, Priority::First));
 }
 World::~World() {}
 
@@ -166,7 +170,6 @@ void World::setup() {
 void World::run() {
   try {
     d()->executor.run(d()->run_taskflow).wait();
-    next_frame();
   } catch (const std::exception& e) {
     FE_ERROR("Scheduler execution failed: %s", e.what());
     throw;  // Rethrow for caller to handle
@@ -201,14 +204,31 @@ void World::dump_graph(const stl::string& path) {
   }
 }
 
+void World::Init() {}
 void World::PreStartup() {}
 void World::Startup() {}
 void World::PostStartup() {}
 
+void World::First() {}
 void World::PreUpdate() {}
 void World::Update() {}
 void World::PostUpdate() {}
 
-void World::Cleanup() {}
+void World::Last() {}
+void World::Cleanup() {
+  for (auto& [tid, swap] : m_event_swap) {
+    swap(*this);
+  }
+  for (auto& [passId, ecb] : m_entity_command_buffers) {
+    for (auto& [handle, entity] : ecb.m_entity_map) {
+      if (entity == entt::null) {
+        entity = m_registry.create();
+      }
+    }
+    for (auto& e : ecb.m_destroyed_entities) {
+      m_registry.destroy(e);
+    }
+  }
+}
 
 }  // namespace fe::engine::ecs

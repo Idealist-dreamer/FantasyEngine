@@ -19,16 +19,18 @@ class Pass {
       : m_name(name), m_repeat(isRepeat), m_priority(priority) {}
   ~Pass() = default;
 
-  template <typename Func>
+  template <typename Stage, typename Func>
   static Pass create_start(const stl::string& name, Func&& func, uint32_t priority = uint32_t(Priority::Low)) {
     Pass pass(name, false, priority);
+    pass.set_stage<Stage>();
     pass.init(std::forward<Func>(func));
     return pass;
   }
 
-  template <typename Func>
+  template <typename Stage, typename Func>
   static Pass create_update(const stl::string& name, Func&& func, uint32_t priority = uint32_t(Priority::Low)) {
     Pass pass(name, true, priority);
+    pass.set_stage<Stage>();
     pass.init(std::forward<Func>(func));
     return pass;
   }
@@ -43,9 +45,14 @@ class Pass {
 
   template <typename T>
   Pass& set_stage() {
-    m_stage = get_stage_hash<T>();
-    m_before_stage.insert(get_previous_hashes<T>());
-    m_after_stage.insert(get_next_hashes<T>());
+    m_stage = stage::get_stage_hash<T>();
+
+    auto prev_hashes = stage::get_previous_hashes<T>();
+    auto next_hashes = stage::get_next_hashes<T>();
+
+    m_before_stage.insert(prev_hashes.begin(), prev_hashes.end());
+    m_after_stage.insert(next_hashes.begin(), next_hashes.end());
+
     return *this;
   }
 
@@ -71,9 +78,9 @@ class Pass {
   bool m_repeat = true;
   uint32_t m_priority = 0;
 
-  StageHash m_stage = 0;
-  stl::unordered_set<StageHash> m_before_stage;
-  stl::unordered_set<StageHash> m_after_stage;
+  stage::StageHash m_stage = 0;
+  stl::unordered_set<stage::StageHash> m_before_stage;
+  stl::unordered_set<stage::StageHash> m_after_stage;
 
   CallType m_execute;
   std::function<CallType(WorldBase&)> m_binder;

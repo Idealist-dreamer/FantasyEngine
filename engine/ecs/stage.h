@@ -3,6 +3,8 @@
 #include <type_traits>
 #include <tuple>
 
+#include "engine/base/pch.h"
+
 namespace fe::engine::ecs::stage {
 struct IsStage {};
 struct None {};
@@ -36,10 +38,8 @@ using after = Stage<std::tuple<Targets...>, None, std::conjunction<typename Targ
 template <typename... Targets>
 using before = Stage<None, std::tuple<Targets...>, std::conjunction<typename Targets::is_repeat...>>;
 
-class StartRoot : public Stage<None, None, std::false_type> {};
-class EngineInit : public before<StartRoot> {};
-
-class PreStartup : public after<EngineInit> {};
+class Init : public Stage<None, None, std::false_type> {};
+class PreStartup : public after<Init> {};
 class Startup : public after<PreStartup> {};
 class PostStartup : public after<Startup> {};
 
@@ -47,7 +47,6 @@ class First : public Stage<None, None, std::true_type> {};
 class PreUpdate : public after<First> {};
 class Update : public after<PreUpdate> {};
 class PostUpdate : public after<Update> {};
-
 class Last : public after<PostUpdate> {};
 class Cleanup : public after<Last> {};
 }  // namespace fe::engine::ecs::stage
@@ -56,7 +55,7 @@ class Cleanup : public after<Last> {};
 #include <vector>
 #include <algorithm>
 
-namespace fe::engine::ecs {
+namespace fe::engine::ecs::stage {
 using StageHash = size_t;
 
 template <typename T>
@@ -67,27 +66,27 @@ template <typename T>
 
 namespace detail {
 template <typename Tuple, size_t... Is>
-void fill_hashes(std::vector<StageHash>& vec, std::index_sequence<Is...>) {
+void fill_hashes(stl::vector<StageHash>& vec, std::index_sequence<Is...>) {
   (vec.push_back(get_stage_hash<std::tuple_element_t<Is, Tuple>>()), ...);
 }
 }  // namespace detail
 
 template <typename T>
-[[nodiscard]] std::vector<StageHash> get_previous_hashes() {
+[[nodiscard]] stl::vector<StageHash> get_previous_hashes() {
   using PList = typename T::previous_list;
-  std::vector<StageHash> result;
+  stl::vector<StageHash> result;
   result.reserve(std::tuple_size_v<PList>);
   detail::fill_hashes<PList>(result, std::make_index_sequence<std::tuple_size_v<PList>>{});
   return result;
 }
 
 template <typename T>
-[[nodiscard]] std::vector<StageHash> get_next_hashes() {
+[[nodiscard]] stl::vector<StageHash> get_next_hashes() {
   using NList = typename T::next_list;
-  std::vector<StageHash> result;
+  stl::vector<StageHash> result;
   result.reserve(std::tuple_size_v<NList>);
   detail::fill_hashes<NList>(result, std::make_index_sequence<std::tuple_size_v<NList>>{});
   return result;
 }
 
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine::ecs::stage

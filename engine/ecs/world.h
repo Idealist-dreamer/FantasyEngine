@@ -20,14 +20,17 @@ class World : public WorldBase {
  private:
   FE_DECLARE_PRIVATE
 
+  void Init();
   void PreStartup();
   void Startup();
   void PostStartup();
 
+  void First();
   void PreUpdate();
   void Update();
   void PostUpdate();
 
+  void Last();
   void Cleanup();
 };
 }  // namespace fe::engine::ecs

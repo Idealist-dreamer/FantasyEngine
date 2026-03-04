@@ -109,22 +109,6 @@ class WorldBase {
     return RawT(it->second);
   }
 
-  void next_frame() {
-    for (auto& [tid, swap] : m_event_swap) {
-      swap(*this);
-    }
-    for (auto& [passId, ecb] : m_entity_command_buffers) {
-      for (auto& [handle, entity] : ecb.m_entity_map) {
-        if (entity == entt::null) {
-          entity = m_registry.create();
-        }
-      }
-      for (auto& e : ecb.m_destroyed_entities) {
-        m_registry.destroy(e);
-      }
-    }
-  }
-
  protected:
   Registry m_registry;
 
