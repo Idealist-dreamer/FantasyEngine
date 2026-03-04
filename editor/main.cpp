@@ -5,8 +5,8 @@
 #include <memory>
 #include <vector>
 #include <random>
+#include <iomanip>
 
-// 包含ECS框架头文件
 #include "engine/ecs/world.h"
 #include "engine/ecs/system.h"
 #include "engine/ecs/pass.h"
@@ -20,401 +20,406 @@ using namespace fe::engine::ecs;
 using namespace fe::engine;
 
 // ==========================================
-// 1. 定义数据层：组件 (Components)、资源 (Resources)、事件 (Events)
+// 1. 定义数据层：组件、资源、事件
 // ==========================================
 
 struct Position {
   float x, y, z;
 };
-
 struct Velocity {
-  float dx, dy, dz;
+  float vx, vy, vz;
 };
-
-struct Transform {
-  float matrix[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-};
-
 struct Health {
-  int current;
-  int max;
+  float current;
+  float max;
+};
+struct Lifetime {
+  int ticks;
 };
 
-// 用于测试并行性能的高负载数据
-struct HeavyDataA {
-  float data[64] = {0};
+// 模拟各种独立且耗时的计算组件 (用于最大化并行)
+struct ComputeDataA {
+  float matrix[16];
+};
+struct ComputeDataB {
+  float distanceMap[16];
+};
+struct ComputeDataC {
+  float colorGrad[16];
+};
+struct ComputeDataD {
+  float physicsSim[16];
 };
 
-struct HeavyDataB {
-  float data[64] = {0};
+// 资源：全局时钟与统计
+struct GlobalTime {
+  float dt;
+  uint64_t frameCount;
 };
 
-struct HeavyDataC {
-  float data[64] = {0};
+struct GameStats {
+  uint32_t activeEntities;
+  uint32_t totalSpawned;
+  uint32_t totalDestroyed;
 };
 
-struct TimeResource {
-  float deltaTime;
-  float totalTime;
-};
-
-struct FrameCounter {
-  uint64_t frameCount = 0;
-};
-
-struct CollisionEvent {
-  uint32_t entityA, entityB;
-  float impactForce;
-};
-
-struct ParticleEvent {
-  uint32_t entity;
-  float x, y, z;
+// 事件：伤害事件
+struct DamageEvent {
+  entt::entity target;
+  float amount;
 };
 
 // ==========================================
 // 2. 定义逻辑层：系统 (Systems)
 // ==========================================
 
-// 初始化系统：在Init阶段创建实体和初始化资源
+// 初始化系统：设定初始资源
 class InitSystem : public System {
  public:
   InitSystem() : System("InitSystem") {}
 
   bool init() override {
-    m_passes.push_back(Pass::create_start<stage::Init>("InitResources", [](ResourceWriter<TimeResource> timeResWriter) {
-      // 初始化时间资源
-      timeResWriter.create(TimeResource{0.016f, 0.0f});
-      std::cout << "[InitSystem] Initialized time resource\n";
-    }));
-    return true;
-  }
-};
-
-// 实体创建系统：在Startup阶段批量创建实体
-class EntityCreationSystem : public System {
- public:
-  EntityCreationSystem() : System("EntityCreationSystem") {}
-
-  bool init() override {
-    m_passes.push_back(Pass::create_start<stage::Startup>(
-        "CreateEntities",
-        [](EntityCreator creator, ComponentWriter<Position, Velocity, Transform, Health, HeavyDataA, HeavyDataB, HeavyDataC> writer) {
-          // 批量创建10000个实体
-          for (int i = 0; i < 10000; ++i) {
-            auto e = creator.create();
-            writer.add<Position>(e, static_cast<float>(i), static_cast<float>(i % 100), 0.0f);
-            writer.add<Velocity>(e, 1.0f + (i % 5) * 0.1f, 0.5f + (i % 3) * 0.2f, 0.0f);
-            writer.add<Transform>(e);
-            writer.add<Health>(e, 100, 100);
-            writer.add<HeavyDataA>(e);
-            writer.add<HeavyDataB>(e);
-            writer.add<HeavyDataC>(e);
-          }
-          std::cout << "[EntityCreationSystem] Created 10,000 entities\n";
+    m_passes.push_back(
+        Pass::create_start<stage::Init>("InitResources", [](ResourceWriter<GlobalTime> timeWriter, ResourceWriter<GameStats> statsWriter) {
+          timeWriter.create(GlobalTime{0.016f, 0});
+          statsWriter.create(GameStats{0, 0, 0});
+          std::cout << "[InitSystem] Resources initialized.\n";
         }));
     return true;
   }
 };
 
-// 运动系统：更新位置和变换
+// 生成系统：负责初始批量生成和每帧动态生成实体
+class SpawnerSystem : public System {
+ public:
+  SpawnerSystem() : System("SpawnerSystem") {}
+
+  static void SpawnEntities(EntityCreator& creator,
+                            ComponentWriter<Position, Velocity, Health, Lifetime, ComputeDataA, ComputeDataB, ComputeDataC, ComputeDataD>& writer,
+                            int count, GameStats& stats) {
+    for (int i = 0; i < count; ++i) {
+      auto e = creator.create();
+      float offset = static_cast<float>(i);
+
+      writer.add<Position>(e, offset, offset * 0.5f, 0.0f);
+      writer.add<Velocity>(e, std::sin(offset), std::cos(offset), 0.0f);
+      writer.add<Health>(e, 100.0f, 100.0f);
+      // 实体存活的帧数，介于 50 到 150 帧之间
+      writer.add<Lifetime>(e, 50 + (i % 100));
+
+      writer.add<ComputeDataA>(e);
+      writer.add<ComputeDataB>(e);
+      writer.add<ComputeDataC>(e);
+      writer.add<ComputeDataD>(e);
+    }
+    stats.activeEntities += count;
+    stats.totalSpawned += count;
+  }
+
+  bool init() override {
+    // Startup阶段：一次性生成 300,000 个实体
+    m_passes.push_back(Pass::create_start<stage::Startup>(
+        "InitialSpawn", [](EntityCreator creator,
+                           ComponentWriter<Position, Velocity, Health, Lifetime, ComputeDataA, ComputeDataB, ComputeDataC, ComputeDataD> writer,
+                           ResourceWriter<GameStats> stats) {
+          SpawnEntities(creator, writer, 300000, stats.get());
+          std::cout << "[SpawnerSystem] Initialized 300,000 entities.\n";
+        }));
+
+    // PreUpdate阶段：每帧动态生成 5,000 个新实体 (模拟弹幕/粒子)
+    m_passes.push_back(Pass::create_update<stage::PreUpdate>(
+        "DynamicSpawn", [](EntityCreator creator,
+                           ComponentWriter<Position, Velocity, Health, Lifetime, ComputeDataA, ComputeDataB, ComputeDataC, ComputeDataD> writer,
+                           ResourceWriter<GameStats> stats) { SpawnEntities(creator, writer, 5000, stats.get()); }));
+    return true;
+  }
+};
+
+// 核心移动系统
 class MovementSystem : public System {
  public:
   MovementSystem() : System("MovementSystem") {}
 
   bool init() override {
-    // 第一阶段：更新位置
+    // 互斥锁逻辑: 读 Velocity，写 Position。
     m_passes.push_back(Pass::create_update<stage::Update>(
-        "UpdatePositions", [](ComponentWriter<Position> posWriter, ComponentReader<Velocity> velReader, ResourceReader<TimeResource> timeRes) {
-          float dt = timeRes.get().deltaTime;
+        "UpdateMovement", [](ComponentWriter<Position> posWriter, ComponentReader<Velocity> velReader, ResourceReader<GlobalTime> timeRes) {
+          float dt = timeRes.get().dt;
           for (auto e : posWriter.view()) {
             if (velReader.have<Velocity>(e)) {
               auto& pos = posWriter.get<Position>(e);
               const auto& vel = velReader.get<Velocity>(e);
-              pos.x += vel.dx * dt;
-              pos.y += vel.dy * dt;
-              pos.z += vel.dz * dt;
+              pos.x += vel.vx * dt;
+              pos.y += vel.vy * dt;
+              pos.z += vel.vz * dt;
+            }
+          }
+        }));
+    return true;
+  }
+};
+
+// --- 下面四个 Compute System 完美展示 Taskflow 的并行能力 ---
+// 它们都只读 Position/Velocity，但分别写入独立的 A/B/C/D 组件，无互斥冲突。
+
+class ParallelComputeSystem : public System {
+ public:
+  ParallelComputeSystem() : System("ParallelComputeSystem") {}
+
+  bool init() override {
+    // Compute A (模拟矩阵变换)
+    m_passes.push_back(
+        Pass::create_update<stage::Update>("ComputeA", [](ComponentWriter<ComputeDataA> compWriter, ComponentReader<Position, Velocity> reader) {
+          for (auto e : compWriter.view()) {
+            if (reader.have_all<Position, Velocity>(e)) {
+              auto& data = compWriter.get<ComputeDataA>(e);
+              const auto& pos = reader.get<Position>(e);
+              // 插入耗时计算
+              for (int i = 0; i < 16; ++i) {
+                data.matrix[i] = std::sin(pos.x * i) + std::cos(pos.y * i);
+              }
             }
           }
         }));
 
-    // 第二阶段：更新变换矩阵
+    // Compute B (模拟光照剔除计算)
     m_passes.push_back(
-        Pass::create_update<stage::Update>("UpdateTransforms", [](ComponentWriter<Transform> transformWriter, ComponentReader<Position> posReader) {
-          for (auto e : transformWriter.view()) {
-            if (posReader.have<Position>(e)) {
-              auto& transform = transformWriter.get<Transform>(e);
-              const auto& pos = posReader.get<Position>(e);
-              transform.matrix[12] = pos.x;
-              transform.matrix[13] = pos.y;
-              transform.matrix[14] = pos.z;
+        Pass::create_update<stage::Update>("ComputeB", [](ComponentWriter<ComputeDataB> compWriter, ComponentReader<Position, Velocity> reader) {
+          for (auto e : compWriter.view()) {
+            if (reader.have_all<Position, Velocity>(e)) {
+              auto& data = compWriter.get<ComputeDataB>(e);
+              const auto& vel = reader.get<Velocity>(e);
+              for (int i = 0; i < 16; ++i) {
+                data.distanceMap[i] = std::sqrt(std::abs(vel.vx * i + vel.vy));
+              }
             }
           }
         }));
 
-    return true;
-  }
-};
-
-// 高负载计算系统A：处理HeavyDataA
-class HeavyComputeSystemA : public System {
- public:
-  HeavyComputeSystemA() : System("HeavyComputeSystemA") {}
-
-  bool init() override {
-    m_passes.push_back(Pass::create_update<stage::Update>("ProcessHeavyDataA", [](ComponentWriter<HeavyDataA> writer) {
-      static std::random_device rd;
-      static std::mt19937 gen(rd());
-      static std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
-
-      for (auto e : writer.view()) {
-        auto& data = writer.get<HeavyDataA>(e);
-        for (int i = 0; i < 64; ++i) {
-          data.data[i] = std::sin(data.data[i] + dis(gen) * 0.01f);
-        }
-      }
-    }));
-    return true;
-  }
-};
-
-// 高负载计算系统B：处理HeavyDataB
-class HeavyComputeSystemB : public System {
- public:
-  HeavyComputeSystemB() : System("HeavyComputeSystemB") {}
-
-  bool init() override {
-    m_passes.push_back(Pass::create_update<stage::Update>("ProcessHeavyDataB", [](ComponentWriter<HeavyDataB> writer) {
-      static std::random_device rd;
-      static std::mt19937 gen(rd());
-      static std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
-
-      for (auto e : writer.view()) {
-        auto& data = writer.get<HeavyDataB>(e);
-        for (int i = 0; i < 64; ++i) {
-          data.data[i] = std::cos(data.data[i] + dis(gen) * 0.01f);
-        }
-      }
-    }));
-    return true;
-  }
-};
-
-// 高负载计算系统C：处理HeavyDataC
-class HeavyComputeSystemC : public System {
- public:
-  HeavyComputeSystemC() : System("HeavyComputeSystemC") {}
-
-  bool init() override {
-    m_passes.push_back(Pass::create_update<stage::Update>("ProcessHeavyDataC", [](ComponentWriter<HeavyDataC> writer) {
-      static std::random_device rd;
-      static std::mt19937 gen(rd());
-      static std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
-
-      for (auto e : writer.view()) {
-        auto& data = writer.get<HeavyDataC>(e);
-        for (int i = 0; i < 64; ++i) {
-          data.data[i] = std::tan(data.data[i] + dis(gen) * 0.01f);
-        }
-      }
-    }));
-    return true;
-  }
-};
-
-// 事件发射系统：在PreUpdate阶段发射事件
-class EventEmitSystem : public System {
- public:
-  EventEmitSystem() : System("EventEmitSystem") {}
-
-  bool init() override {
-    m_passes.push_back(Pass::create_update<stage::PreUpdate>(
-        "EmitCollisionEvents", [](EventWriter<CollisionEvent> eventWriter, ResourceReader<FrameCounter> frameCounter) {
-          // 每帧发射一些碰撞事件
-          for (int i = 0; i < 100; ++i) {
-            eventWriter.get().push_back({static_cast<uint32_t>((frameCounter.get().frameCount + i) % 10000),
-                                         static_cast<uint32_t>((frameCounter.get().frameCount + i + 1) % 10000), 10.0f + static_cast<float>(i)});
+    // Compute C (模拟布料/骨骼动画)
+    m_passes.push_back(
+        Pass::create_update<stage::Update>("ComputeC", [](ComponentWriter<ComputeDataC> compWriter, ComponentReader<Position, Velocity> reader) {
+          for (auto e : compWriter.view()) {
+            if (reader.have_all<Position, Velocity>(e)) {
+              auto& data = compWriter.get<ComputeDataC>(e);
+              const auto& pos = reader.get<Position>(e);
+              for (int i = 0; i < 16; ++i) {
+                data.colorGrad[i] = std::tan(pos.x + i * 0.01f);
+              }
+            }
           }
-          std::cout << "[EventEmitSystem] Emitted 100 collision events\n";
         }));
 
+    // Compute D (模拟AI感知逻辑)
     m_passes.push_back(
-        Pass::create_update<stage::PreUpdate>("EmitParticleEvents", [](EventWriter<ParticleEvent> eventWriter, ComponentReader<Position> posReader) {
-          // 为每个有位置的实体发射粒子事件
+        Pass::create_update<stage::Update>("ComputeD", [](ComponentWriter<ComputeDataD> compWriter, ComponentReader<Position, Velocity> reader) {
+          for (auto e : compWriter.view()) {
+            if (reader.have_all<Position, Velocity>(e)) {
+              auto& data = compWriter.get<ComputeDataD>(e);
+              const auto& pos = reader.get<Position>(e);
+              for (int i = 0; i < 16; ++i) {
+                data.physicsSim[i] = std::exp(-std::abs(pos.y * 0.001f));
+              }
+            }
+          }
+        }));
+    return true;
+  }
+};
+
+// 战斗系统：随机对实体产生伤害事件
+class CombatSystem : public System {
+ public:
+  CombatSystem() : System("CombatSystem") {}
+
+  bool init() override {
+    // 发射伤害事件 (PostUpdate 阶段)
+    m_passes.push_back(Pass::create_update<stage::PostUpdate>(
+        "EmitDamageEvents", [](EventWriter<DamageEvent> eventWriter, ComponentReader<Health> healthReader, ResourceReader<GlobalTime> timeRes) {
+          int frame = timeRes.get().frameCount;
           int count = 0;
-          for (auto e : posReader.view()) {
-            if (count++ >= 500)
-              break;  // 限制数量
-            const auto& pos = posReader.get<Position>(e);
-            eventWriter.get().push_back({static_cast<uint32_t>(e), pos.x, pos.y, pos.z});
+          // 模拟每帧对小部分实体产生伤害
+          for (auto e : healthReader.view()) {
+            if (static_cast<uint32_t>(e) % 100 == (frame % 100)) {
+              eventWriter.get().push_back({e, 25.0f});
+              if (++count > 2000)
+                break;  // 限制最多2000个事件
+            }
           }
-          std::cout << "[EventEmitSystem] Emitted " << count << " particle events\n";
         }));
 
-    return true;
-  }
-};
-
-// 事件处理系统：在PostUpdate阶段处理事件
-class EventProcessSystem : public System {
- public:
-  EventProcessSystem() : System("EventProcessSystem") {}
-
-  bool init() override {
-    m_passes.push_back(Pass::create_update<stage::PostUpdate>("ProcessCollisionEvents", [](EventReader<CollisionEvent> eventReader) {
-      int processed = 0;
-      for (const auto& event : eventReader.get()) {
-        // 模拟碰撞处理逻辑
-        processed++;
-      }
-      std::cout << "[EventProcessSystem] Processed " << processed << " collision events\n";
-    }));
-
-    m_passes.push_back(Pass::create_update<stage::PostUpdate>("ProcessParticleEvents", [](EventReader<ParticleEvent> eventReader) {
-      int processed = 0;
-      for (const auto& event : eventReader.get()) {
-        // 模拟粒子处理逻辑
-        processed++;
-      }
-      std::cout << "[EventProcessSystem] Processed " << processed << " particle events\n";
-    }));
-
-    return true;
-  }
-};
-
-// 统计系统：在Last阶段输出统计信息
-class StatisticsSystem : public System {
- public:
-  StatisticsSystem() : System("StatisticsSystem") {}
-
-  bool init() override {
-    m_passes.push_back(Pass::create_update<stage::Last>(
-        "UpdateStatistics",
-        [](ResourceWriter<TimeResource> timeResWriter, ResourceWriter<FrameCounter> frameCounterWriter, ComponentReader<Position> posReader) {
-          // 更新时间和帧计数器
-          auto& timeRes = timeResWriter.get();
-          auto& frameCounter = frameCounterWriter.get();
-
-          timeRes.totalTime += timeRes.deltaTime;
-          frameCounter.frameCount++;
-
-          if (frameCounter.frameCount % 10 == 0) {
-            std::cout << "[StatisticsSystem] Frame: " << frameCounter.frameCount << ", Total time: " << timeRes.totalTime
-                      << ", Active entities: " << posReader.view().size() << "\n";
+    // 处理伤害事件 (PostUpdate 阶段，需在 Emit 之后，框架的任务流会自动处理同阶段基于资源的依赖)
+    m_passes.push_back(
+        Pass::create_update<stage::PostUpdate>("ProcessDamage", [](EventReader<DamageEvent> eventReader, ComponentWriter<Health> healthWriter) {
+          for (const auto& ev : eventReader.get()) {
+            if (healthWriter.have<Health>(ev.target)) {
+              auto& hp = healthWriter.get<Health>(ev.target);
+              hp.current -= ev.amount;
+            }
           }
+        }));
+    return true;
+  }
+};
+
+// 生命周期系统：扣减寿命并清理死亡实体
+class LifeCycleSystem : public System {
+ public:
+  LifeCycleSystem() : System("LifeCycleSystem") {}
+
+  bool init() override {
+    // Last 阶段执行，具有最高互斥级 EntityDestroyer
+    m_passes.push_back(
+        Pass::create_update<stage::Last>("DeathAndCleanup", [](EntityDestroyer destroyer, ComponentWriter<Lifetime> lifeWriter,
+                                                               ComponentReader<Health> healthReader, ResourceWriter<GameStats> statsWriter) {
+          int destroyedThisFrame = 0;
+          auto view = lifeWriter.view();
+
+          // 为了安全销毁，先收集要销毁的实体（避免在迭代 EnTT view 时破坏结构）
+          std::vector<entt::entity> toDestroy;
+          toDestroy.reserve(10000);
+
+          for (auto e : view) {
+            auto& life = lifeWriter.get<Lifetime>(e);
+            life.ticks--;
+
+            bool dead = false;
+            if (life.ticks <= 0) {
+              dead = true;
+            } else if (healthReader.have<Health>(e)) {
+              if (healthReader.get<Health>(e).current <= 0.0f) {
+                dead = true;
+              }
+            }
+
+            if (dead) {
+              toDestroy.push_back(e);
+            }
+          }
+
+          // 批量销毁
+          for (auto e : toDestroy) {
+            destroyer.destroy(e);
+            destroyedThisFrame++;
+          }
+
+          auto& stats = statsWriter.get();
+          stats.totalDestroyed += destroyedThisFrame;
+          stats.activeEntities -= destroyedThisFrame;
+        }));
+    return true;
+  }
+};
+
+// 统计与监控系统
+class MonitorSystem : public System {
+ public:
+  MonitorSystem() : System("MonitorSystem") {}
+
+  bool init() override {
+    m_passes.push_back(
+        Pass::create_update<stage::Cleanup>("TickAndLog", [](ResourceWriter<GlobalTime> timeWriter, ResourceReader<GameStats> statsReader) {
+          auto& time = timeWriter.get();
+          time.frameCount++;
         }));
     return true;
   }
 };
 
 // ==========================================
-// 3. 主程序：测试框架功能
+// 3. 性能测试入口主程序
 // ==========================================
 
 int main() {
-  std::cout << "=== FantasyEngine ECS Framework Test ===\n";
+  std::cout << "===========================================\n";
+  std::cout << " FantasyEngine ECS - High Performance Test\n";
+  std::cout << "===========================================\n";
 
   try {
-    // 创建World实例
     World world;
 
-    // 创建并添加多个系统
-    auto initSystem = stl::make_shared<InitSystem>();
-    auto entityCreationSystem = stl::make_shared<EntityCreationSystem>();
-    auto movementSystem = stl::make_shared<MovementSystem>();
-    auto heavySystemA = stl::make_shared<HeavyComputeSystemA>();
-    auto heavySystemB = stl::make_shared<HeavyComputeSystemB>();
-    auto heavySystemC = stl::make_shared<HeavyComputeSystemC>();
-    auto eventEmitSystem = stl::make_shared<EventEmitSystem>();
-    auto eventProcessSystem = stl::make_shared<EventProcessSystem>();
-    auto statisticsSystem = stl::make_shared<StatisticsSystem>();
+    // 注册所有系统
+    world.add_system(stl::make_shared<InitSystem>());
+    world.add_system(stl::make_shared<SpawnerSystem>());
+    world.add_system(stl::make_shared<MovementSystem>());
+    world.add_system(stl::make_shared<ParallelComputeSystem>());
+    world.add_system(stl::make_shared<CombatSystem>());
+    world.add_system(stl::make_shared<LifeCycleSystem>());
+    world.add_system(stl::make_shared<MonitorSystem>());
 
-    // 添加系统到World
-    world.add_system(initSystem);
-    world.add_system(entityCreationSystem);
-    world.add_system(movementSystem);
-    world.add_system(heavySystemA);
-    world.add_system(heavySystemB);
-    world.add_system(heavySystemC);
-    world.add_system(eventEmitSystem);
-    world.add_system(eventProcessSystem);
-    world.add_system(statisticsSystem);
-
-    // 编译任务流
-    std::cout << "\n=== Compiling taskflow ===\n";
+    // 编译任务图 (Taskflow 自动通过互斥锁推导执行顺序与并发层级)
+    std::cout << "\n[1] Compiling execution graph...\n";
     auto compileStart = std::chrono::high_resolution_clock::now();
     world.compile();
     auto compileEnd = std::chrono::high_resolution_clock::now();
-    auto compileTime = std::chrono::duration_cast<std::chrono::milliseconds>(compileEnd - compileStart);
-    std::cout << "Taskflow compilation time: " << compileTime.count() << "ms\n";
+    std::cout << "    -> Compiled in " << std::chrono::duration_cast<std::chrono::milliseconds>(compileEnd - compileStart).count() << " ms.\n";
 
-    // 可选：导出任务图用于可视化
-    world.dump_graph("taskflow_graph.dot");
+    // 输出任务流图纸，可在 Graphviz (dot) 中查看其精美的并行结构
+    world.dump_graph("performance_test_graph");
+    std::cout << "    -> Dumped graph to performance_test_graph_run.dot\n";
 
-    // 设置World
+    // 执行 Setup 阶段 (如 InitialSpawn 等)
+    std::cout << "\n[2] Running Setup Phase...\n";
     world.setup();
 
-    // 运行多帧测试
-    std::cout << "\n=== Running frame simulation ===\n";
-    const int FRAME_COUNT = 30;
+    // 核心 Benchmark 循环
+    const int TEST_FRAMES = 500;
+    std::cout << "\n[3] Running Benchmark for " << TEST_FRAMES << " frames...\n\n";
 
-    std::vector<long long> frameTimes;
-    frameTimes.reserve(FRAME_COUNT);
+    std::vector<double> frameTimes;
+    frameTimes.reserve(TEST_FRAMES);
 
-    for (int frame = 0; frame < FRAME_COUNT; ++frame) {
+    auto testStartTime = std::chrono::high_resolution_clock::now();
+
+    for (int frame = 0; frame < TEST_FRAMES; ++frame) {
       auto frameStart = std::chrono::high_resolution_clock::now();
 
-      // 执行一帧
-      world.run();
+      world.run();  // 执行一帧
 
       auto frameEnd = std::chrono::high_resolution_clock::now();
-      auto frameTime = std::chrono::duration_cast<std::chrono::microseconds>(frameEnd - frameStart);
-      frameTimes.push_back(frameTime.count());
+      double frameTimeMs = std::chrono::duration<double, std::milli>(frameEnd - frameStart).count();
+      frameTimes.push_back(frameTimeMs);
 
-      // 每10帧输出一次性能统计
-      if (frame % 10 == 9) {
-        long long totalTime = 0;
-        for (auto time : frameTimes) {
-          totalTime += time;
-        }
-        double avgFrameTime = static_cast<double>(totalTime) / frameTimes.size();
-
-        std::cout << "[Performance] Frame " << frame + 1 << " - Avg frame time: " << avgFrameTime << "μs"
-                  << " (" << 1000000.0 / avgFrameTime << " FPS)\n";
+      // 每 50 帧打印一次状态监控
+      if ((frame + 1) % 50 == 0) {
+        // 通过 World 的系统机制临时拿取全局统计信息 (直接取有些违背ECS的封装，这里作为测试用特例)
+        // 为简便起见，这里仅输出当前的性能状态。
+        std::cout << "    [Frame " << std::setw(3) << (frame + 1) << "] "
+                  << "Time: " << std::fixed << std::setprecision(2) << frameTimeMs << " ms "
+                  << "(" << std::setw(5) << static_cast<int>(1000.0 / frameTimeMs) << " FPS)\n";
       }
-
-      // 模拟帧间延迟
-      std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 
-    // 性能分析
-    std::cout << "\n=== Performance Analysis ===\n";
+    auto testEndTime = std::chrono::high_resolution_clock::now();
+    double totalTestTime = std::chrono::duration<double>(testEndTime - testStartTime).count();
 
-    long long minTime = *std::min_element(frameTimes.begin(), frameTimes.end());
-    long long maxTime = *std::max_element(frameTimes.begin(), frameTimes.end());
-    long long totalTime = 0;
+    // 分析 Benchmark 结果
+    std::cout << "\n===========================================\n";
+    std::cout << "             BENCHMARK RESULTS             \n";
+    std::cout << "===========================================\n";
 
-    for (auto time : frameTimes) {
-      totalTime += time;
+    double minTime = frameTimes[0], maxTime = frameTimes[0], sumTime = 0.0;
+    for (double t : frameTimes) {
+      if (t < minTime)
+        minTime = t;
+      if (t > maxTime)
+        maxTime = t;
+      sumTime += t;
     }
+    double avgTime = sumTime / TEST_FRAMES;
 
-    double avgFrameTime = static_cast<double>(totalTime) / frameTimes.size();
-    double fps = 1000000.0 / avgFrameTime;
-
-    std::cout << "Total frames: " << FRAME_COUNT << "\n";
-    std::cout << "Min frame time: " << minTime << "μs\n";
-    std::cout << "Max frame time: " << maxTime << "μs\n";
-    std::cout << "Avg frame time: " << avgFrameTime << "μs\n";
-    std::cout << "Avg FPS: " << fps << "\n";
-    std::cout << "Total execution time: " << totalTime / 1000.0 << "ms\n";
-
-    std::cout << "\n=== Test completed successfully ===\n";
+    std::cout << " Total Frames     : " << TEST_FRAMES << "\n";
+    std::cout << " Total Time (s)   : " << std::fixed << std::setprecision(3) << totalTestTime << " s\n";
+    std::cout << " Max Frame Time   : " << maxTime << " ms\n";
+    std::cout << " Min Frame Time   : " << minTime << " ms\n";
+    std::cout << " Avg Frame Time   : " << avgTime << " ms\n";
+    std::cout << " Avg FPS          : " << (1000.0 / avgTime) << "\n";
+    std::cout << "===========================================\n";
 
   } catch (const std::exception& e) {
-    std::cerr << "Error: " << e.what() << "\n";
-    return 1;
+    std::cerr << "\n[FATAL ERROR] " << e.what() << "\n";
+    return EXIT_FAILURE;
   }
 
-  return 0;
+  return EXIT_SUCCESS;
 }
