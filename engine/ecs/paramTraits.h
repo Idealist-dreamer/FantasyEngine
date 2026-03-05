@@ -2,11 +2,10 @@
 
 #include <type_traits>
 
-#include "paramTypes.h"
 #include "meta.h"
+#include "paramTypes.h"
 
 namespace fe::engine::ecs {
-
 // ============================================================================
 // Entity Type Traits
 // ============================================================================
@@ -76,22 +75,22 @@ struct is_event_writer<EventWriter<T>> : std::true_type {
 };
 
 // ============================================================================
-// Context (Resource) Type Traits
+// Context (context) Type Traits
 // ============================================================================
 
 template <typename T>
-struct is_resource_reader : std::false_type {};
+struct is_context_reader : std::false_type {};
 
 template <typename T>
-struct is_resource_reader<ContextReader<T>> : std::true_type {
+struct is_context_reader<ContextReader<T>> : std::true_type {
   using type = T;
 };
 
 template <typename T>
-struct is_resource_writer : std::false_type {};
+struct is_context_writer : std::false_type {};
 
 template <typename T>
-struct is_resource_writer<ContextWriter<T>> : std::true_type {
+struct is_context_writer<ContextWriter<T>> : std::true_type {
   using type = T;
 };
 
@@ -124,7 +123,7 @@ template <typename T>
 concept IsEventWriter = is_event_writer<meta::clean_t<T>>::value;
 
 template <typename T>
-concept IsContextParam = is_resource_reader<meta::clean_t<T>>::value || is_resource_writer<meta::clean_t<T>>::value;
+concept IsContextParam = is_context_reader<meta::clean_t<T>>::value || is_context_writer<meta::clean_t<T>>::value;
 
 // ============================================================================
 // Parameter passing mode markers

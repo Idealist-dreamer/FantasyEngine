@@ -4,7 +4,6 @@
 #include <tuple>
 
 namespace fe::engine::ecs::meta {
-
 // Basic type cleanup
 template <typename T>
 using clean_t = std::remove_cv_t<std::remove_reference_t<T>>;

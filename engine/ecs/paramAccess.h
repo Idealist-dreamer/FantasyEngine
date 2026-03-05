@@ -1,11 +1,10 @@
 #pragma once
 
+#include "meta.h"
 #include "paramTypes.h"
 #include "paramTraits.h"
-#include "meta.h"
 
 namespace fe::engine::ecs {
-
 // ============================================================================
 // Parameter accessor
 // Centralizes all parameter fetch logic, distinguishes pass-by-value vs pass-by-reference
@@ -66,7 +65,7 @@ struct ParamAccess {
     return meta::clean_t<EW>(*it->second.template get<T>());
   }
 
-  // Context (Resource): pass by value
+  // Context (context): pass by value
   template <IsContextParam R>
   static auto get(stl::unordered_map<std::type_index, ContextStorage>& resMgr) {
     using RawT = meta::clean_t<R>;

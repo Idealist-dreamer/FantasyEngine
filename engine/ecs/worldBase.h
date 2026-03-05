@@ -32,8 +32,8 @@ class WorldBase {
   template <typename T, typename... Args>
   void register_context(Args&&... args) {
     auto tid = std::type_index(typeid(T));
-    if (m_resource_manager.find(tid) == m_resource_manager.end()) {
-      m_resource_manager.insert({tid, ContextStorage::create<T>(std::forward<Args>(args)...)});
+    if (m_context_manager.find(tid) == m_context_manager.end()) {
+      m_context_manager.insert({tid, ContextStorage::create<T>(std::forward<Args>(args)...)});
     }
   }
 
@@ -112,7 +112,7 @@ class WorldBase {
  protected:
   Registry m_registry;
 
-  stl::unordered_map<std::type_index, ContextStorage> m_resource_manager;
+  stl::unordered_map<std::type_index, ContextStorage> m_context_manager;
 
   stl::unordered_map<std::type_index, ContextStorage> m_event_manager1;
   stl::unordered_map<std::type_index, ContextStorage> m_event_manager2;

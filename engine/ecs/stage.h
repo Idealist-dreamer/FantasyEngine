@@ -9,7 +9,6 @@
 #include "engine/base/pch.h"
 
 namespace fe::engine::ecs::stage {
-
 struct IsStage {};
 struct None {};
 

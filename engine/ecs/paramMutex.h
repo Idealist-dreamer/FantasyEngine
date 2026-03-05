@@ -83,10 +83,10 @@ struct Mutex {
   static Mutex write_component();
 
   template <typename T>
-  static Mutex read_resource();
+  static Mutex read_context();
 
   template <typename T>
-  static Mutex write_resource();
+  static Mutex write_context();
 
   template <typename T>
   static Mutex read_event();
@@ -127,14 +127,14 @@ Mutex Mutex::write_component() {
 }
 
 template <typename T>
-Mutex Mutex::read_resource() {
+Mutex Mutex::read_context() {
   Mutex mutex(MutexType::ContextRead);
   mutex.m_tag = typeid(T).hash_code();
   return mutex;
 }
 
 template <typename T>
-Mutex Mutex::write_resource() {
+Mutex Mutex::write_context() {
   Mutex mutex(MutexType::ContextWrite);
   mutex.m_tag = typeid(T).hash_code();
   return mutex;

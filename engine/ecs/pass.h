@@ -1,11 +1,11 @@
 #pragma once
 
+#include "meta.h"
 #include "stage.h"
 #include "worldBase.h"
 #include "paramMutex.h"
 #include "paramPrepare.h"
 #include "paramAccess.h"
-#include "meta.h"
 
 namespace fe::engine::ecs {
 
@@ -57,11 +57,11 @@ class Pass {
   // Fix: Check original type T (preserving const) for Context Reader/Writer distinction
   template <typename T>
   static auto get_param(WorldBase& world, uint32_t passId) {
-    // Check Resource types first (preserving const)
-    if constexpr (is_resource_reader<T>::value) {
-      return ParamAccess::get<T>(world.m_resource_manager);
-    } else if constexpr (is_resource_writer<T>::value) {
-      return ParamAccess::get<T>(world.m_resource_manager);
+    // Check context types first (preserving const)
+    if constexpr (is_context_reader<T>::value) {
+      return ParamAccess::get<T>(world.m_context_manager);
+    } else if constexpr (is_context_writer<T>::value) {
+      return ParamAccess::get<T>(world.m_context_manager);
     } else {
       using RawT = meta::clean_t<T>;
       if constexpr (is_entity_command_buffer<RawT>::value) {

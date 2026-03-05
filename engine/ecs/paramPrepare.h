@@ -1,12 +1,11 @@
 #pragma once
 
+#include "meta.h"
 #include "paramTypes.h"
 #include "paramTraits.h"
 #include "paramMutex.h"
-#include "meta.h"
 
 namespace fe::engine::ecs {
-
 class WorldBase;
 
 // ============================================================================
@@ -25,17 +24,17 @@ struct MutexCollector {
 
   // Fix: Check original type T (preserving const) for Context Reader/Writer distinction
   // Reason: ContextReader = const Context<T>, clean_t removes const
-  // causing is_resource_reader to fail, misidentifying as writer
+  // causing is_context_reader to fail, misidentifying as writer
   template <typename T>
   static stl::vector<Mutex> get_for_type() {
     using CleanT = meta::clean_t<T>;
     stl::vector<Mutex> result;
 
     // Check original type first (preserving const) for Context Reader/Writer
-    if constexpr (is_resource_reader<T>::value) {
-      result.push_back(Mutex::read_resource<typename is_resource_reader<T>::type>());
-    } else if constexpr (is_resource_writer<T>::value) {
-      result.push_back(Mutex::write_resource<typename is_resource_writer<T>::type>());
+    if constexpr (is_context_reader<T>::value) {
+      result.push_back(Mutex::read_context<typename is_context_reader<T>::type>());
+    } else if constexpr (is_context_writer<T>::value) {
+      result.push_back(Mutex::write_context<typename is_context_writer<T>::type>());
     } else if constexpr (is_entity_query<CleanT>::value) {
       result.push_back(Mutex::query_entity());
     } else if constexpr (is_entity_creator<CleanT>::value) {
@@ -102,27 +101,18 @@ struct PreparerCollector {
   template <typename T>
   static void collect(stl::vector<std::function<void(WorldBase&)>>& out) {
     // Check original type first (preserving const) for Context Reader/Writer
-    if constexpr (is_resource_reader<T>::value || is_resource_writer<T>::value) {
-      using U = std::conditional_t<is_resource_reader<T>::value,
-                                   typename is_resource_reader<T>::type,
-                                   typename is_resource_writer<T>::type>;
-      out.push_back([](WorldBase& w) {
-        w.m_resource_manager.insert({std::type_index(typeid(U)), ContextStorage()});
-      });
+    if constexpr (is_context_reader<T>::value || is_context_writer<T>::value) {
+      using U = std::conditional_t<is_context_reader<T>::value, typename is_context_reader<T>::type, typename is_context_writer<T>::type>;
+      out.push_back([](WorldBase& w) { w.m_context_manager.insert({std::type_index(typeid(U)), ContextStorage()}); });
     } else {
       using RawT = meta::clean_t<T>;
 
       if constexpr (is_component_writer<RawT>::value) {
-        out.push_back([](WorldBase& w) {
-          StoragePreparer::ForTuple<typename is_component_writer<RawT>::component_types>::run(w.m_registry);
-        });
+        out.push_back([](WorldBase& w) { StoragePreparer::ForTuple<typename is_component_writer<RawT>::component_types>::run(w.m_registry); });
       } else if constexpr (is_component_reader<RawT>::value) {
-        out.push_back([](WorldBase& w) {
-          StoragePreparer::ForTuple<typename is_component_reader<RawT>::component_types>::run(w.m_registry);
-        });
+        out.push_back([](WorldBase& w) { StoragePreparer::ForTuple<typename is_component_reader<RawT>::component_types>::run(w.m_registry); });
       } else if constexpr (is_event_reader<RawT>::value || is_event_writer<RawT>::value) {
-        using EvT = std::conditional_t<is_event_reader<RawT>::value, typename is_event_reader<RawT>::type,
-                                       typename is_event_writer<RawT>::type>;
+        using EvT = std::conditional_t<is_event_reader<RawT>::value, typename is_event_reader<RawT>::type, typename is_event_writer<RawT>::type>;
         out.push_back([](WorldBase& w) {
           auto tid = std::type_index(typeid(EvT));
           if (w.m_event_manager1.find(tid) == w.m_event_manager1.end()) {
