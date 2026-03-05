@@ -102,14 +102,29 @@ void World::compile() {
     stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>> barriers;
     stl::unordered_set<stage::StageHash> used_stages;
 
-    // Collect all used stages
+    stl::vector<stage::StageHash> queue;
     for (auto pass : passes) {
-      used_stages.insert(pass->m_stage);
-      for (auto hash : stage::g_stage_before_map[pass->m_stage]) {
-        used_stages.insert(hash);
+      if (used_stages.insert(pass->m_stage).second) {
+        queue.push_back(pass->m_stage);
       }
-      for (auto hash : stage::g_stage_after_map[pass->m_stage]) {
-        used_stages.insert(hash);
+    }
+
+    for (size_t head = 0; head < queue.size(); ++head) {
+      auto current = queue[head];
+      for (auto next : stage::g_stage_after_map[current]) {
+        if (used_stages.insert(next).second) {
+          queue.push_back(next);
+        }
+      }
+    }
+
+    queue.assign(used_stages.begin(), used_stages.end());
+    for (size_t head = 0; head < queue.size(); ++head) {
+      auto current = queue[head];
+      for (auto prev : stage::g_stage_before_map[current]) {
+        if (used_stages.insert(prev).second) {
+          queue.push_back(prev);
+        }
       }
     }
 
