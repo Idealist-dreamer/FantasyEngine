@@ -262,6 +262,7 @@ int main() {
 
     std::cout << "[1] Compiling execution graph...\n";
     world.compile();
+    world.dump_graph("./");
 
     std::cout << "[2] Running Setup Phase...\n";
     world.setup();

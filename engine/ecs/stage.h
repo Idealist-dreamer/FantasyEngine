@@ -72,15 +72,46 @@ class Cleanup : public after<Last> {};
 using StageHash = size_t;
 inline stl::unordered_map<size_t, stl::string> g_stage_name_registry;
 
-inline stl::unordered_map<StageHash, stl::vector<StageHash>> g_stage_befor_map;
+inline stl::unordered_map<StageHash, stl::vector<StageHash>> g_stage_before_map;
 inline stl::unordered_map<StageHash, stl::vector<StageHash>> g_stage_after_map;
 
 template <typename T>
 void init_stage_info() {
+  static bool initialized = false;
+  if (initialized)
+    return;
+
+  initialized = true;
+
   auto stage_hash = typeid(T).hash_code();
-  g_stage_befor_map[stage_hash] = get_previous_hashes<T>();
-  g_stage_after_map[stage_hash] = get_next_hashes<T>();
-  g_stage_name_registry.insert({typeid(T).hash_code(), std::type_index(typeid(T)).name()});
+  g_stage_name_registry.insert({stage_hash, std::type_index(typeid(T)).name()});
+
+  auto befores = get_previous_hashes<T>();
+  auto afters = get_next_hashes<T>();
+
+  for (auto prev_hash : befores) {
+    auto& my_befores = g_stage_before_map[stage_hash];
+    if (std::find(my_befores.begin(), my_befores.end(), prev_hash) == my_befores.end()) {
+      my_befores.push_back(prev_hash);
+    }
+
+    auto& prev_afters = g_stage_after_map[prev_hash];
+    if (std::find(prev_afters.begin(), prev_afters.end(), stage_hash) == prev_afters.end()) {
+      prev_afters.push_back(stage_hash);
+    }
+  }
+
+  for (auto next_hash : afters) {
+    auto& my_afters = g_stage_after_map[stage_hash];
+    if (std::find(my_afters.begin(), my_afters.end(), next_hash) == my_afters.end()) {
+      my_afters.push_back(next_hash);
+    }
+
+    auto& next_befores = g_stage_before_map[next_hash];
+    if (std::find(next_befores.begin(), next_befores.end(), stage_hash) == next_befores.end()) {
+      next_befores.push_back(stage_hash);
+    }
+  }
 }
 
 // Note: typeid(T).hash_code() is not constexpr in standard C++
