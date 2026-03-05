@@ -1,0 +1,329 @@
+#pragma once
+
+#include "common.h"
+#include "context.h"
+
+namespace fe::engine::ecs {
+
+// ============================================================================
+// Entity access types
+// ============================================================================
+
+struct EntityQuery {
+  EntityQuery(Registry& reg) : m_reg(reg) {}
+
+  bool valid(entt::entity e) const { return m_reg.valid(e); }
+  auto view() const { return m_reg.view<entt::entity>(); }
+
+ protected:
+  Registry& m_reg;
+};
+
+struct EntityCreator : EntityQuery {
+  EntityCreator(Registry& reg) : EntityQuery(reg) {}
+
+  entt::entity create() { return m_reg.create(); }
+  auto view() { return m_reg.view<entt::entity>(); }
+};
+
+struct EntityDestroyer : EntityCreator {
+  EntityDestroyer(Registry& reg) : EntityCreator(reg) {}
+
+  void destroy(entt::entity e) { m_reg.destroy(e); }
+};
+
+struct EntityCommandBuffer {
+  using EntityHandle = uint32_t;
+
+  EntityCommandBuffer() = default;
+
+  EntityHandle create() {
+    EntityHandle handle = static_cast<EntityHandle>(m_entity_map.size());
+    m_entity_map[handle] = entt::null;
+    return handle;
+  }
+
+  bool valid(EntityHandle handle) const {
+    auto it = m_entity_map.find(handle);
+    return it != m_entity_map.end() && it->second != entt::null;
+  }
+
+  entt::entity get(EntityHandle handle) const {
+    auto it = m_entity_map.find(handle);
+    FE_ASSERT(it != m_entity_map.end());
+    return it->second;
+  }
+
+  void destroy(entt::entity e) { m_destroyed_entities.push_back(e); }
+
+  void reset() {
+    m_entity_map.clear();
+    m_destroyed_entities.clear();
+  }
+
+ private:
+  stl::unordered_map<EntityHandle, entt::entity> m_entity_map;
+  stl::vector<entt::entity> m_destroyed_entities;
+
+  friend class World;
+};
+
+// ============================================================================
+// Component access types
+// ============================================================================
+
+template <typename... Components>
+class ComponentReader {
+ public:
+  template <typename T>
+  static constexpr void check_auth() {
+    static_assert((is_compatible<T, Components>::value || ...),
+                  "ECS Access Denied: Component or variant not authorized in pack.");
+  }
+
+  template <typename... Ts>
+  static constexpr void check_auth_all() {
+    (check_auth<Ts>(), ...);
+  }
+
+  explicit ComponentReader(Registry& reg) : m_reg(reg) {}
+
+  template <typename T>
+  bool have(entt::entity e) const {
+    check_auth<T>();
+    return m_reg.all_of<T>(e);
+  }
+
+  template <typename... T>
+  bool have_all(entt::entity e) const {
+    check_auth_all<T...>();
+    return m_reg.all_of<T...>(e);
+  }
+
+  template <typename... T>
+  bool have_any(entt::entity e) const {
+    check_auth_all<T...>();
+    return m_reg.any_of<T...>(e);
+  }
+
+  template <typename T>
+  const T* try_get(entt::entity e) const {
+    check_auth<T>();
+    return m_reg.try_get<T>(e);
+  }
+
+  template <typename T>
+  const T& get(entt::entity e) const {
+    check_auth<T>();
+    return m_reg.get<T>(e);
+  }
+
+  auto view() const { return m_reg.view<Components...>(); }
+
+  template <typename... Req, typename = std::enable_if_t<(sizeof...(Req) > 0)>>
+  auto view() const {
+    (check_auth<Req>(), ...);
+    return m_reg.view<Req...>();
+  }
+
+  template <typename... Get, typename... Exclude>
+  auto view(entt::exclude_t<Exclude...>) const {
+    check_auth_all<Get...>();
+    check_auth_all<Exclude...>();
+    return m_reg.view<Get...>(entt::exclude<Exclude...>);
+  }
+
+  template <typename... Owned, typename... Get, typename... Exclude>
+  auto group(entt::get_t<Get...> = {}, entt::exclude_t<Exclude...> = {}) const {
+    check_auth_all<Owned...>();
+    check_auth_all<Get...>();
+    check_auth_all<Exclude...>();
+    return m_reg.group<Owned...>(entt::get<Get...>, entt::exclude<Exclude...>);
+  }
+
+ protected:
+  Registry& m_reg;
+};
+
+template <typename... Components>
+class ComponentWriter : public ComponentReader<Components...> {
+  using Base = ComponentReader<Components...>;
+
+ public:
+  using Base::check_auth;
+  using Base::check_auth_all;
+  using Base::get;
+  using Base::group;
+  using Base::have;
+  using Base::have_all;
+  using Base::have_any;
+  using Base::m_reg;
+  using Base::try_get;
+  using Base::view;
+
+  explicit ComponentWriter(Registry& reg) : Base(reg) {}
+
+  template <typename T>
+  T& get(entt::entity e) {
+    check_auth<T>();
+    return m_reg.get<T>(e);
+  }
+
+  auto view() { return m_reg.view<Components...>(); }
+
+  template <typename... Req, typename = std::enable_if_t<(sizeof...(Req) > 0)>>
+  auto view() {
+    (check_auth<Req>(), ...);
+    return m_reg.view<Req...>();
+  }
+
+  template <typename... Get, typename... Exclude>
+  auto view(entt::exclude_t<Exclude...>) {
+    check_auth_all<Get...>();
+    check_auth_all<Exclude...>();
+    return m_reg.view<Get...>(entt::exclude<Exclude...>);
+  }
+
+  template <typename... Owned, typename... Get, typename... Exclude>
+  auto group(entt::get_t<Get...> = {}, entt::exclude_t<Exclude...> = {}) {
+    check_auth_all<Owned...>();
+    check_auth_all<Get...>();
+    check_auth_all<Exclude...>();
+    return m_reg.group<Owned...>(entt::get<Get...>, entt::exclude<Exclude...>);
+  }
+
+  template <typename T, typename Compare>
+  void sort(Compare comp) {
+    check_auth<T>();
+    m_reg.sort<T>(comp);
+  }
+
+  template <typename ToSort, typename SortBy>
+  void sort() {
+    check_auth_all<ToSort, SortBy>();
+    m_reg.sort<ToSort, SortBy>();
+  }
+
+  template <typename T, typename... Args>
+  T& add(entt::entity e, Args&&... args) {
+    check_auth<T>();
+    return m_reg.emplace_or_replace<T>(e, std::forward<Args>(args)...);
+  }
+
+  template <typename T>
+  bool remove(entt::entity e) {
+    check_auth<T>();
+    return m_reg.remove<T>(e) > 0;
+  }
+
+  template <typename T>
+  void clear() {
+    check_auth<T>();
+    m_reg.clear<T>();
+  }
+
+  template <typename T>
+  void tag_add(entt::entity e) {
+    add<AddComponentTag<T>>(e);
+  }
+
+  template <typename T>
+  void tag_change(entt::entity e) {
+    add<ChangeComponentTag<T>>(e);
+  }
+
+  template <typename T>
+  void tag_remove(entt::entity e) {
+    add<RemoveComponentTag<T>>(e);
+  }
+
+  template <typename T, typename... Args>
+  void add_delayed(Entity e, Args&&... args) {
+    check_auth<T>();
+    if (!have<T>(e)) {
+      m_reg.template remove<ChangeComponentDelayed<T>, RemoveComponentDelayed<T>>(e);
+      m_reg.emplace_or_replace<AddComponentDelayed<T>>(e, T{std::forward<Args>(args)...});
+    }
+  }
+
+  template <typename T, typename... Args>
+  void change_delayed(Entity e, Args&&... args) {
+    check_auth<T>();
+    if (m_reg.try_get<T>(e) && !m_reg.all_of<RemoveComponentDelayed<T>>(e)) {
+      m_reg.emplace_or_replace<ChangeComponentDelayed<T>>(e, T{std::forward<Args>(args)...});
+    } else if (auto* add_ptr = m_reg.try_get<AddComponentDelayed<T>>(e)) {
+      add_ptr->m_data = T(std::forward<Args>(args)...);
+    }
+  }
+
+  template <typename T>
+  void remove_delayed(Entity e) {
+    check_auth<T>();
+    if (m_reg.try_get<T>(e)) {
+      m_reg.template remove<AddComponentDelayed<T>, ChangeComponentDelayed<T>>(e);
+      m_reg.emplace_or_replace<RemoveComponentDelayed<T>>(e);
+    }
+  }
+};
+
+// ============================================================================
+// Event access types
+// ============================================================================
+
+template <typename T>
+class EventReader {
+ public:
+  explicit EventReader(stl::vector<T>& events) : m_events(events) {}
+
+  const stl::vector<T>& get() const { return m_events; }
+
+ protected:
+  stl::vector<T>& m_events;
+};
+
+template <typename T>
+class EventWriter : public EventReader<T> {
+ public:
+  using EventReader<T>::get;
+  using EventReader<T>::m_events;
+
+  explicit EventWriter(stl::vector<T>& events) : EventReader<T>(events) {}
+
+  stl::vector<T>& get() { return m_events; }
+};
+
+// ============================================================================
+// Context (Resource) access types
+// ============================================================================
+
+template <typename T>
+struct Context {
+  using type = T;
+
+  explicit Context(ContextStorage& res) : m_resource(res) {}
+
+  bool valid() const { return m_resource.valid(); }
+
+  T& get() { return *m_resource.get<T>(); }
+  const T& get() const { return *m_resource.get<T>(); }
+
+  void destroy() { m_resource.destroy(); }
+
+  template <typename... Args>
+  void create(Args&&... args) {
+    m_resource = ContextStorage::create<T>(std::forward<Args>(args)...);
+  }
+
+  void create(T* ptr, bool need_free = true) { m_resource = ContextStorage::create<T>(ptr, need_free); }
+
+ private:
+  ContextStorage& m_resource;
+};
+
+template <typename T>
+using ContextReader = const Context<T>;
+
+template <typename T>
+using ContextWriter = Context<T>;
+
+}  // namespace fe::engine::ecs
