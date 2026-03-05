@@ -56,8 +56,15 @@ class WorldBase {
     }
   }
 
+  // Member function pointer overloads for reactive callbacks
   template <typename R, typename First, typename... Args>
   static constexpr First get_first_arg(R (*)(First, Args...));
+
+  template <typename R, typename C, typename First, typename... Args>
+  static constexpr First get_first_arg(R (C::*)(First, Args...) const);
+
+  template <typename R, typename C, typename First, typename... Args>
+  static constexpr First get_first_arg(R (C::*)(First, Args...));
 
   template <auto Candidate>
   static constexpr void check_signature() {

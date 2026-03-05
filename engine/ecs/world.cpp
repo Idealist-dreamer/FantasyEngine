@@ -97,6 +97,61 @@ void World::compile() {
     return;
   }
 
+  // Create Stage barrier tasks to ensure dependency chain doesn't break on empty stages
+  auto create_stage_barriers = [](tf::Taskflow& tf, const stl::vector<Pass*>& passes) 
+      -> stl::map<stage::StageHash, tf::Task> {
+    stl::map<stage::StageHash, tf::Task> barriers;
+    stl::unordered_set<stage::StageHash> used_stages;
+    
+    // Collect all used stages
+    for (auto pass : passes) {
+      used_stages.insert(pass->m_stage);
+      for (auto hash : pass->m_before_stage) {
+        used_stages.insert(hash);
+      }
+      for (auto hash : pass->m_after_stage) {
+        used_stages.insert(hash);
+      }
+    }
+    
+    // Create barrier task for each stage
+    for (auto stage_hash : used_stages) {
+      barriers[stage_hash] = tf.emplace([](){}).name("Barrier_" + std::to_string(stage_hash));
+    }
+    
+    return barriers;
+  };
+
+  stl::map<stage::StageHash, tf::Task> setup_barriers = create_stage_barriers(setup_taskflow, setup_passes);
+  stl::map<stage::StageHash, tf::Task> run_barriers = create_stage_barriers(run_taskflow, run_passes);
+
+  // Build dependencies between stage barriers
+  auto link_stage_barriers = [](stl::map<stage::StageHash, tf::Task>& barriers, const stl::vector<Pass*>& passes) {
+    for (auto pass : passes) {
+      auto stage_hash = pass->m_stage;
+      
+      // Current stage barrier must precede current pass
+      if (barriers.find(stage_hash) != barriers.end()) {
+        barriers[stage_hash].precede(barriers[stage_hash]);  // placeholder
+      }
+      
+      // Current pass must run after its "after" stage barriers
+      for (auto after_hash : pass->m_after_stage) {
+        if (barriers.find(after_hash) != barriers.end() && barriers.find(stage_hash) != barriers.end()) {
+          barriers[after_hash].precede(barriers[stage_hash]);
+        }
+      }
+      
+      // Current stage barrier must precede its "before" stage barriers
+      for (auto before_hash : pass->m_before_stage) {
+        if (barriers.find(before_hash) != barriers.end() && barriers.find(stage_hash) != barriers.end()) {
+          barriers[stage_hash].precede(barriers[before_hash]);
+        }
+      }
+    }
+  };
+
+  // Create Pass tasks
   stl::map<Pass*, tf::Task> task_node_map;
   for (auto pass : setup_passes) {
     task_node_map[pass] = setup_taskflow.emplace([pass, this]() { pass->m_execute(); }).name(pass->m_name.c_str());
@@ -105,7 +160,27 @@ void World::compile() {
     task_node_map[pass] = run_taskflow.emplace([pass, this]() { pass->m_execute(); }).name(pass->m_name.c_str());
   }
 
-  auto mutex_pass_fun = [&task_node_map](const stl::vector<Pass*>& pass_array) {
+  // Link Pass tasks to their corresponding Stage barriers
+  auto link_pass_to_barriers = [](stl::map<Pass*, tf::Task>& task_map, 
+                                    stl::map<stage::StageHash, tf::Task>& barriers,
+                                    const stl::vector<Pass*>& passes) {
+    for (auto pass : passes) {
+      auto& task = task_map[pass];
+      auto stage_hash = pass->m_stage;
+      
+      // Pass must execute after its Stage barrier
+      if (barriers.find(stage_hash) != barriers.end()) {
+        barriers[stage_hash].precede(task);
+      }
+    }
+  };
+
+  link_pass_to_barriers(task_node_map, setup_barriers, setup_passes);
+  link_pass_to_barriers(task_node_map, run_barriers, run_passes);
+
+  auto mutex_pass_fun = [&task_node_map, &setup_barriers, &run_barriers]
+                        (const stl::vector<Pass*>& pass_array, 
+                         stl::map<stage::StageHash, tf::Task>& barriers) {
     auto count = pass_array.size();
     for (size_t i = 0; i < count; ++i) {
       for (size_t j = i + 1; j < count; ++j) {
@@ -115,16 +190,7 @@ void World::compile() {
         auto& task_a = task_node_map[pass_a];
         auto& task_b = task_node_map[pass_b];
 
-        if (pass_a->m_before_stage.find(pass_b->m_stage) != pass_a->m_before_stage.end() ||
-            pass_b->m_after_stage.find(pass_a->m_stage) != pass_b->m_after_stage.end()) {
-          task_b.precede(task_a);
-          continue;
-        }
-        if (pass_a->m_after_stage.find(pass_b->m_stage) != pass_a->m_after_stage.end() ||
-            pass_b->m_before_stage.find(pass_a->m_stage) != pass_b->m_before_stage.end()) {
-          task_a.precede(task_b);
-          continue;
-        }
+        // Stage dependencies handled via barriers; Pass only checks Mutex conflicts
 
         bool is_conflict = false;
         for (auto& mutex_a : pass_a->m_mutexes) {
@@ -150,8 +216,8 @@ void World::compile() {
     }
   };
 
-  mutex_pass_fun(setup_passes);
-  mutex_pass_fun(run_passes);
+  mutex_pass_fun(setup_passes, setup_barriers);
+  mutex_pass_fun(run_passes, run_barriers);
 }
 
 void World::setup() {

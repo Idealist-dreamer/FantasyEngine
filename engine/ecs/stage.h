@@ -72,8 +72,9 @@ class Cleanup : public after<Last> {};
 
 using StageHash = size_t;
 
+// Note: typeid(T).hash_code() is not constexpr in standard C++
 template <typename T>
-[[nodiscard]] constexpr StageHash get_stage_hash() noexcept {
+[[nodiscard]] StageHash get_stage_hash() noexcept {
   static_assert(std::is_base_of_v<IsStage, T>, "T must be a Stage");
   return typeid(T).hash_code();
 }

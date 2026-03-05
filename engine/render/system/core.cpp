@@ -11,7 +11,7 @@ RenderCore::~RenderCore() {}
 void createRenderCore(GraphicsCore* gc) {}
 
 bool RenderCore::init() {
-  ecs::Pass pass("createRenderCore", false);
+  // ecs::Pass pass("createRenderCore", false);
   return true;
 }
 

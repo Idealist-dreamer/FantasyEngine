@@ -61,10 +61,10 @@ struct Mutex {
       return otherSide == MutexType::ContextWrite && m_tag == other.m_tag;
     }
 
-    if (checkOneOther(m_type, other.m_type, MutexType::EventRead, otherSide)) {
-      return otherSide == MutexType::EventWrite && m_tag == other.m_tag;
-    }
-
+    // Event read/write don't conflict due to double buffering:
+    // EventReader reads m_event_manager1 (previous frame)
+    // EventWriter writes m_event_manager2 (current frame)
+    // Only EventWrite vs EventWrite needs conflict detection
     if (checkOneOther(m_type, other.m_type, MutexType::EventWrite, otherSide)) {
       return otherSide == MutexType::EventWrite && m_tag == other.m_tag;
     }
