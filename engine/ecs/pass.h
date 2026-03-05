@@ -84,7 +84,7 @@ class Pass {
   template <typename Func, typename... Args>
   void init_impl(Func&& func, std::tuple<Args...>*) {
     m_mutexes = MutexCollector::merge(MutexCollector::get_for_type<Args>()...);
-    m_preparers = PreparerCollector::get<Args...>();
+    m_preparers = PreparerCollector::get<Args...>(m_id);
 
     uint32_t passId = m_id;
 

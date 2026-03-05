@@ -99,7 +99,7 @@ struct StoragePreparer {
 
 struct PreparerCollector {
   template <typename T>
-  static void collect(stl::vector<std::function<void(WorldBase&)>>& out) {
+  static void collect(stl::vector<std::function<void(WorldBase&)>>& out, uint32_t passId) {
     // Check original type first (preserving const) for Context Reader/Writer
     if constexpr (is_context_reader<T>::value || is_context_writer<T>::value) {
       using U = std::conditional_t<is_context_reader<T>::value, typename is_context_reader<T>::type, typename is_context_writer<T>::type>;
@@ -107,7 +107,13 @@ struct PreparerCollector {
     } else {
       using RawT = meta::clean_t<T>;
 
-      if constexpr (is_component_writer<RawT>::value) {
+      if constexpr (is_entity_command_buffer<RawT>::value) {
+        out.push_back([passId](WorldBase& w) {
+          if (w.m_entity_command_buffers.find(passId) == w.m_entity_command_buffers.end()) {
+            w.m_entity_command_buffers.insert({passId, EntityCommandBuffer()});
+          }
+        });
+      } else if constexpr (is_component_writer<RawT>::value) {
         out.push_back([](WorldBase& w) { StoragePreparer::ForTuple<typename is_component_writer<RawT>::component_types>::run(w.m_registry); });
       } else if constexpr (is_component_reader<RawT>::value) {
         out.push_back([](WorldBase& w) { StoragePreparer::ForTuple<typename is_component_reader<RawT>::component_types>::run(w.m_registry); });
@@ -132,9 +138,9 @@ struct PreparerCollector {
   }
 
   template <typename... Args>
-  static stl::vector<std::function<void(WorldBase&)>> get() {
+  static stl::vector<std::function<void(WorldBase&)>> get(uint32_t passId) {
     stl::vector<std::function<void(WorldBase&)>> preparers;
-    (collect<Args>(preparers), ...);
+    (collect<Args>(preparers, passId), ...);
     return preparers;
   }
 };

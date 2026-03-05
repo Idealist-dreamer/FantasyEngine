@@ -304,6 +304,7 @@ void World::Cleanup() {
     for (auto& e : ecb.m_destroyed_entities) {
       m_registry.destroy(e);
     }
+    ecb.m_destroyed_entities.clear();
   }
 }
 
