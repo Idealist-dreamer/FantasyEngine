@@ -56,6 +56,21 @@ class ComponentReader {
     return m_reg.view<Req...>();
   }
 
+  template <typename... Get, typename... Exclude>
+  auto view(entt::exclude_t<Exclude...>) const {
+    check_auth_all<Get...>();
+    check_auth_all<Exclude...>();
+    return m_reg.view<Get...>(entt::exclude<Exclude...>);
+  }
+
+  template <typename... Owned, typename... Get, typename... Exclude>
+  auto group(entt::get_t<Get...> = {}, entt::exclude_t<Exclude...> = {}) const {
+    check_auth_all<Owned...>();
+    check_auth_all<Get...>();
+    check_auth_all<Exclude...>();
+    return m_reg.group<Owned...>(entt::get<Get...>, entt::exclude<Exclude...>);
+  }
+
  protected:
   Registry& m_reg;
 };
@@ -66,7 +81,9 @@ class ComponentWriter : public ComponentReader<Components...> {
 
  public:
   using Base::check_auth;
+  using Base::check_auth_all;
   using Base::get;
+  using Base::group;
   using Base::have;
   using Base::have_all;
   using Base::have_any;
@@ -88,6 +105,33 @@ class ComponentWriter : public ComponentReader<Components...> {
   auto view() {
     (check_auth<Req>(), ...);
     return m_reg.view<Req...>();
+  }
+
+  template <typename... Get, typename... Exclude>
+  auto view(entt::exclude_t<Exclude...>) {
+    check_auth_all<Get...>();
+    check_auth_all<Exclude...>();
+    return m_reg.view<Get...>(entt::exclude<Exclude...>);
+  }
+
+  template <typename... Owned, typename... Get, typename... Exclude>
+  auto group(entt::get_t<Get...> = {}, entt::exclude_t<Exclude...> = {}) {
+    check_auth_all<Owned...>();
+    check_auth_all<Get...>();
+    check_auth_all<Exclude...>();
+    return m_reg.group<Owned...>(entt::get<Get...>, entt::exclude<Exclude...>);
+  }
+
+  template <typename T, typename Compare>
+  void sort(Compare comp) {
+    check_auth<T>();
+    m_reg.sort<T>(comp);
+  }
+
+  template <typename ToSort, typename SortBy>
+  void sort() {
+    check_auth_all<ToSort, SortBy>();
+    m_reg.sort<ToSort, SortBy>();
   }
 
   template <typename T, typename... Args>

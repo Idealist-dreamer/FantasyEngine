@@ -1,14 +1,14 @@
 #pragma once
 
 #include "common.h"
-#include "resource.h"
+#include "context.h"
 
 namespace fe::engine::ecs {
 template <typename T>
-struct Resource {
+struct Context {
   using type = T;
 
-  Resource(ResourceStorage& res) : m_resource(res) {}
+  Context(ContextStorage& res) : m_resource(res) {}
 
   bool valid() const { return m_resource.valid(); }
 
@@ -19,20 +19,20 @@ struct Resource {
 
   template <typename... Args>
   void create(Args&&... args) {
-    m_resource = ResourceStorage::create<T>(std::forward<Args>(args)...);
+    m_resource = ContextStorage::create<T>(std::forward<Args>(args)...);
   }
 
-  void create(T* ptr, bool need_free = true) { m_resource = ResourceStorage::create<T>(ptr, need_free); }
+  void create(T* ptr, bool need_free = true) { m_resource = ContextStorage::create<T>(ptr, need_free); }
 
  private:
-  ResourceStorage& m_resource;
+  ContextStorage& m_resource;
 };
 
 template <typename T>
-using ResourceReader = const Resource<T>;
+using ContextReader = const Context<T>;
 
 template <typename T>
-using ResourceWriter = Resource<T>;
+using ContextWriter = Context<T>;
 }  // namespace fe::engine::ecs
 
 namespace fe::engine::ecs {
@@ -40,7 +40,7 @@ template <typename T>
 struct is_resource_reader : std::false_type {};
 
 template <typename T>
-struct is_resource_reader<ResourceReader<T>> : std::true_type {
+struct is_resource_reader<ContextReader<T>> : std::true_type {
   using type = T;
 };
 
@@ -48,7 +48,7 @@ template <typename T>
 struct is_resource_writer : std::false_type {};
 
 template <typename T>
-struct is_resource_writer<ResourceWriter<T>> : std::true_type {
+struct is_resource_writer<ContextWriter<T>> : std::true_type {
   using type = T;
 };
 }  // namespace fe::engine::ecs

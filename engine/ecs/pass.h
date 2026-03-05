@@ -12,9 +12,10 @@ class WorldBase;
 enum Priority : uint32_t { First = 0x00000000, High = 0x00001000, Mid = 0x00002000, Low = 0x00003000 };
 
 class Pass {
- public:
   using CallType = std::function<void()>;
+  static inline uint32_t sId = 0;
 
+ public:
   Pass(const stl::string& name, bool isRepeat = true, uint32_t priority = uint32_t(Priority::Low))
       : m_name(name), m_repeat(isRepeat), m_priority(priority) {}
   ~Pass() = default;
@@ -71,7 +72,6 @@ class Pass {
     };
   }
 
-  static inline uint32_t sId = 0;
   const uint32_t m_id = sId++;
 
   stl::string m_name;

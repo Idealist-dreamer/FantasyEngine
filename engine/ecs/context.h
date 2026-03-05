@@ -6,14 +6,14 @@
 #include "engine/base/memory/allocator.h"
 
 namespace fe::engine::ecs {
-struct ResourceStorage {
-  ResourceStorage() = default;
-  ~ResourceStorage() { destroy(); }
+struct ContextStorage {
+  ContextStorage() = default;
+  ~ContextStorage() { destroy(); }
 
-  ResourceStorage(const ResourceStorage&) = delete;
-  ResourceStorage& operator=(const ResourceStorage&) = delete;
+  ContextStorage(const ContextStorage&) = delete;
+  ContextStorage& operator=(const ContextStorage&) = delete;
 
-  ResourceStorage(ResourceStorage&& other) noexcept : m_ptr(other.m_ptr), m_deleter(other.m_deleter) {
+  ContextStorage(ContextStorage&& other) noexcept : m_ptr(other.m_ptr), m_deleter(other.m_deleter) {
     other.m_ptr = nullptr;
     other.m_deleter = nullptr;
 
@@ -23,7 +23,7 @@ struct ResourceStorage {
 #endif
   }
 
-  ResourceStorage& operator=(ResourceStorage&& other) noexcept {
+  ContextStorage& operator=(ContextStorage&& other) noexcept {
     if (this != &other) {
       destroy();
       m_ptr = other.m_ptr;
@@ -72,8 +72,8 @@ struct ResourceStorage {
   }
 
   template <typename T, typename... Args>
-  static ResourceStorage create(Args&&... args) {
-    ResourceStorage res;
+  static ContextStorage create(Args&&... args) {
+    ContextStorage res;
     res.m_ptr = memory::Allocator::create<T>(std::forward<Args>(args)...);
     res.m_deleter = [](void* p) {
       if (p) {
@@ -87,8 +87,8 @@ struct ResourceStorage {
   }
 
   template <typename T>
-  static ResourceStorage create(T* ptr, bool need_free = true) {
-    ResourceStorage res;
+  static ContextStorage create(T* ptr, bool need_free = true) {
+    ContextStorage res;
     res.m_ptr = ptr;
     if (need_free) {
       res.m_deleter = [](void* p) {

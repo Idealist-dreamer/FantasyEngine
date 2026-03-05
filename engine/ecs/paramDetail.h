@@ -1,6 +1,7 @@
 #pragma once
 
 #include "worldBase.h"
+#include "paramMutex.h"
 
 #include <type_traits>
 
@@ -101,8 +102,8 @@ class Detail {
         auto tid = std::type_index(typeid(EvT));
 
         if (w.m_event_manager1.find(tid) == w.m_event_manager1.end()) {
-          w.m_event_manager1.insert({tid, ResourceStorage::create<EvT>()});
-          w.m_event_manager2.insert({tid, ResourceStorage::create<EvT>()});
+          w.m_event_manager1.insert({tid, ContextStorage::create<EvT>()});
+          w.m_event_manager2.insert({tid, ContextStorage::create<EvT>()});
 
           w.m_event_swap[tid] = [](WorldBase& wb) {
             auto inner_tid = std::type_index(typeid(EvT));
@@ -116,7 +117,7 @@ class Detail {
       });
     } else if constexpr (is_resource_reader<RawT>::value || is_resource_writer<RawT>::value) {
       using U = typename RawT::type;
-      out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(U)), ResourceStorage()}); });
+      out.push_back([](WorldBase& w) { w.m_resource_manager.insert({std::type_index(typeid(U)), ContextStorage()}); });
     }
   }
 

@@ -11,8 +11,8 @@ enum class MutexType : uint8_t {
   EntityDestroy,
   ComponentRead,
   ComponentWrite,
-  ResourceRead,
-  ResourceWrite,
+  ContextRead,
+  ContextWrite,
   EventRead,
   EventWrite,
 };
@@ -53,12 +53,12 @@ struct Mutex {
       return otherSide == MutexType::ComponentWrite && m_tag == other.m_tag;
     }
 
-    if (checkOneOther(m_type, other.m_type, MutexType::ResourceRead, otherSide)) {
-      return otherSide == MutexType::ResourceWrite && m_tag == other.m_tag;
+    if (checkOneOther(m_type, other.m_type, MutexType::ContextRead, otherSide)) {
+      return otherSide == MutexType::ContextWrite && m_tag == other.m_tag;
     }
 
-    if (checkOneOther(m_type, other.m_type, MutexType::ResourceWrite, otherSide)) {
-      return otherSide == MutexType::ResourceWrite && m_tag == other.m_tag;
+    if (checkOneOther(m_type, other.m_type, MutexType::ContextWrite, otherSide)) {
+      return otherSide == MutexType::ContextWrite && m_tag == other.m_tag;
     }
 
     if (checkOneOther(m_type, other.m_type, MutexType::EventRead, otherSide)) {
@@ -128,14 +128,14 @@ Mutex Mutex::write_component() {
 
 template <typename T>
 Mutex Mutex::read_resource() {
-  Mutex mutex(MutexType::ResourceRead);
+  Mutex mutex(MutexType::ContextRead);
   mutex.m_tag = typeid(T).hash_code();
   return mutex;
 }
 
 template <typename T>
 Mutex Mutex::write_resource() {
-  Mutex mutex(MutexType::ResourceWrite);
+  Mutex mutex(MutexType::ContextWrite);
   mutex.m_tag = typeid(T).hash_code();
   return mutex;
 }

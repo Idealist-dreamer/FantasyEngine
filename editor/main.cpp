@@ -14,7 +14,7 @@
 #include "engine/ecs/stage.h"
 #include "engine/ecs/accessComponent.h"
 #include "engine/ecs/accessEntity.h"
-#include "engine/ecs/accessResource.h"
+#include "engine/ecs/accessContext.h"
 #include "engine/ecs/accessEvent.h"
 
 using namespace fe::engine::ecs;
@@ -69,7 +69,7 @@ class CoreInitSystem : public System {
  public:
   CoreInitSystem() : System("CoreInitSystem") {}
   bool init() override {
-    m_passes.push_back(Pass::create_start<stage::Init>("InitResources", [](ResourceWriter<GlobalTime> time, ResourceWriter<GameStats> stats) {
+    m_passes.push_back(Pass::create_start<stage::Init>("InitContexts", [](ContextWriter<GlobalTime> time, ContextWriter<GameStats> stats) {
       if (!time.valid())
         time.create(GlobalTime{0.016f, 0});
       if (!stats.valid())
@@ -85,7 +85,7 @@ class SpawnerSystem : public System {
   bool init() override {
     m_passes.push_back(Pass::create_start<stage::Startup>(
         "Initial_Mass_Spawn", [](EntityCreator creator, ComponentWriter<Transform, Velocity, BoidState, RenderState, Health, ParticleData> writer,
-                                 ResourceWriter<GameStats> stats) {
+                                 ContextWriter<GameStats> stats) {
           g_setup_executions.fetch_add(1, std::memory_order_relaxed);
           if (!stats.valid())
             stats.create(GameStats{0, 0});
@@ -154,7 +154,7 @@ class PhysicsSystem : public System {
   PhysicsSystem() : System("PhysicsSystem") {}
   bool init() override {
     m_passes.push_back(Pass::create_update<stage::Update>(
-        "Phys_UpdateAgents", [](ComponentWriter<Transform> w_trans, ComponentReader<Velocity> r_vel, ResourceReader<GlobalTime> time) {
+        "Phys_UpdateAgents", [](ComponentWriter<Transform> w_trans, ComponentReader<Velocity> r_vel, ContextReader<GlobalTime> time) {
           float dt = time.valid() ? time.get().dt : 0.016f;
           uint64_t iters = 0;
           for (auto e : w_trans.view<Transform>()) {
@@ -171,7 +171,7 @@ class PhysicsSystem : public System {
         }));
 
     m_passes.push_back(
-        Pass::create_update<stage::Update>("Phys_UpdateParticles", [](ComponentWriter<ParticleData> w_part, ResourceReader<GlobalTime> time) {
+        Pass::create_update<stage::Update>("Phys_UpdateParticles", [](ComponentWriter<ParticleData> w_part, ContextReader<GlobalTime> time) {
           float dt = time.valid() ? time.get().dt : 0.016f;
           uint64_t iters = 0;
           for (auto e : w_part.view<ParticleData>()) {
@@ -226,7 +226,7 @@ class BenchmarkMonitorSystem : public System {
   BenchmarkMonitorSystem() : System("BenchmarkMonitorSystem") {}
   bool init() override {
     m_passes.push_back(
-        Pass::create_update<stage::Cleanup>("Checksum_Eval", [](ComponentReader<RenderState, ParticleData> reader, ResourceWriter<GlobalTime> time) {
+        Pass::create_update<stage::Cleanup>("Checksum_Eval", [](ComponentReader<RenderState, ParticleData> reader, ContextWriter<GlobalTime> time) {
           if (!time.valid())
             time.create(GlobalTime{0.016f, 0});
 
