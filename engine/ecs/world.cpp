@@ -171,7 +171,28 @@ void World::compile() {
   link_pass_to_barriers(task_node_map, setup_barriers, setup_passes);
   link_pass_to_barriers(task_node_map, run_barriers, run_passes);
 
-  auto mutex_pass_fun = [&task_node_map, &setup_barriers, &run_barriers](const stl::vector<Pass*>& pass_array) {
+  auto is_stage_reachable = [](stage::StageHash start, stage::StageHash target) -> bool {
+    if (start == target)
+      return false;
+    stl::unordered_set<stage::StageHash> visited;
+    stl::vector<stage::StageHash> queue{start};
+    visited.insert(start);
+    for (size_t head = 0; head < queue.size(); ++head) {
+      auto curr = queue[head];
+      if (curr == target)
+        return true;
+      auto it = stage::g_stage_after_map.find(curr);
+      if (it != stage::g_stage_after_map.end()) {
+        for (auto next : it->second) {
+          if (visited.insert(next).second)
+            queue.push_back(next);
+        }
+      }
+    }
+    return false;
+  };
+
+  auto mutex_pass_fun = [&task_node_map, &is_stage_reachable](const stl::vector<Pass*>& pass_array) {
     auto count = pass_array.size();
     for (size_t i = 0; i < count; ++i) {
       for (size_t j = i + 1; j < count; ++j) {
@@ -181,8 +202,6 @@ void World::compile() {
         auto& task_a = task_node_map[pass_a];
         auto& task_b = task_node_map[pass_b];
 
-        // Stage dependencies handled via barriers; Pass only checks Mutex conflicts
-
         bool is_conflict = false;
         for (auto& mutex_a : pass_a->m_mutexes) {
           for (auto& mutex_b : pass_b->m_mutexes) {
@@ -191,16 +210,20 @@ void World::compile() {
               break;
             }
           }
-          if (is_conflict) {
+          if (is_conflict)
             break;
-          }
         }
 
         if (is_conflict) {
-          if (pass_a->m_priority <= pass_b->m_priority) {
-            task_a.precede(task_b);
-          } else {
-            task_b.precede(task_a);
+          bool a_before_b = is_stage_reachable(pass_a->m_stage, pass_b->m_stage);
+          bool b_before_a = is_stage_reachable(pass_b->m_stage, pass_a->m_stage);
+
+          if (!a_before_b && !b_before_a) {
+            if (pass_a->m_priority <= pass_b->m_priority) {
+              task_a.precede(task_b);
+            } else {
+              task_b.precede(task_a);
+            }
           }
         }
       }

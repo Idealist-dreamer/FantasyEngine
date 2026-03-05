@@ -72,11 +72,22 @@ class Cleanup : public after<Last> {};
 using StageHash = size_t;
 inline stl::unordered_map<size_t, stl::string> g_stage_name_registry;
 
+inline stl::unordered_map<StageHash, stl::vector<StageHash>> g_stage_befor_map;
+inline stl::unordered_map<StageHash, stl::vector<StageHash>> g_stage_after_map;
+
+template <typename T>
+void init_stage_info() {
+  auto stage_hash = typeid(T).hash_code();
+  g_stage_befor_map[stage_hash] = get_previous_hashes<T>();
+  g_stage_after_map[stage_hash] = get_next_hashes<T>();
+  g_stage_name_registry.insert({typeid(T).hash_code(), std::type_index(typeid(T)).name()});
+}
+
 // Note: typeid(T).hash_code() is not constexpr in standard C++
 template <typename T>
 [[nodiscard]] StageHash get_stage_hash() noexcept {
   static_assert(std::is_base_of_v<IsStage, T>, "T must be a Stage");
-  g_stage_name_registry.insert({typeid(T).hash_code(), std::type_index(typeid(T)).name()});
+  init_stage_info<T>();
   return typeid(T).hash_code();
 }
 
@@ -86,9 +97,6 @@ void fill_hashes(stl::vector<StageHash>& vec, std::index_sequence<Is...>) {
   (vec.push_back(get_stage_hash<std::tuple_element_t<Is, Tuple>>()), ...);
 }
 }  // namespace detail
-
-inline stl::unordered_map<StageHash, stl::vector<StageHash>> g_stage_befor_map;
-inline stl::unordered_map<StageHash, stl::vector<StageHash>> g_stage_after_map;
 
 template <typename T>
 [[nodiscard]] stl::vector<StageHash> get_previous_hashes() {
@@ -106,13 +114,6 @@ template <typename T>
   result.reserve(std::tuple_size_v<NList>);
   detail::fill_hashes<NList>(result, std::make_index_sequence<std::tuple_size_v<NList>>{});
   return result;
-}
-
-template <typename T>
-void init_stage_info() {
-  auto stage_hash = get_stage_hash<T>();
-  g_stage_befor_map[stage_hash] = get_previous_hashes<T>();
-  g_stage_after_map[stage_hash] = get_next_hashes<T>();
 }
 
 }  // namespace fe::engine::ecs::stage
