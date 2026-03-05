@@ -45,10 +45,6 @@ class Pass {
   template <typename T>
   Pass& set_stage() {
     m_stage = stage::get_stage_hash<T>();
-    auto prev_hashes = stage::get_previous_hashes<T>();
-    auto next_hashes = stage::get_next_hashes<T>();
-    m_before_stage.insert(prev_hashes.begin(), prev_hashes.end());
-    m_after_stage.insert(next_hashes.begin(), next_hashes.end());
     return *this;
   }
 
@@ -106,8 +102,6 @@ class Pass {
   uint32_t m_priority = 0;
 
   stage::StageHash m_stage = 0;
-  stl::unordered_set<stage::StageHash> m_before_stage;
-  stl::unordered_set<stage::StageHash> m_after_stage;
 
   CallType m_execute;
   std::function<CallType(WorldBase&)> m_binder;

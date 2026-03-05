@@ -105,10 +105,10 @@ void World::compile() {
     // Collect all used stages
     for (auto pass : passes) {
       used_stages.insert(pass->m_stage);
-      for (auto hash : pass->m_before_stage) {
+      for (auto hash : stage::g_stage_befor_map[pass->m_stage]) {
         used_stages.insert(hash);
       }
-      for (auto hash : pass->m_after_stage) {
+      for (auto hash : stage::g_stage_after_map[pass->m_stage]) {
         used_stages.insert(hash);
       }
     }
@@ -118,9 +118,24 @@ void World::compile() {
 
     // Create barrier task for each stage
     for (auto stage_hash : used_stages) {
-
       barriers[stage_hash].first = tf.emplace([]() {}).name((stage::g_stage_name_registry[stage_hash] + begin_str).c_str());
       barriers[stage_hash].second = tf.emplace([]() {}).name((stage::g_stage_name_registry[stage_hash] + end_str).c_str());
+    }
+
+    for (auto stage_hash : used_stages) {
+      auto& before_stages = stage::g_stage_befor_map[stage_hash];
+      for (auto& before_hash : before_stages) {
+        if (barriers.find(before_hash) != barriers.end()) {
+          barriers[before_hash].second.precede(barriers[stage_hash].first);
+        }
+      }
+
+      auto& after_stages = stage::g_stage_after_map[stage_hash];
+      for (auto& after_hash : after_stages) {
+        if (barriers.find(after_hash) != barriers.end()) {
+          barriers[after_hash].first.succeed(barriers[stage_hash].second);
+        }
+      }
     }
 
     return barriers;

@@ -87,6 +87,9 @@ void fill_hashes(stl::vector<StageHash>& vec, std::index_sequence<Is...>) {
 }
 }  // namespace detail
 
+inline stl::unordered_map<StageHash, stl::vector<StageHash>> g_stage_befor_map;
+inline stl::unordered_map<StageHash, stl::vector<StageHash>> g_stage_after_map;
+
 template <typename T>
 [[nodiscard]] stl::vector<StageHash> get_previous_hashes() {
   using PList = typename T::previous_list;
@@ -103,6 +106,13 @@ template <typename T>
   result.reserve(std::tuple_size_v<NList>);
   detail::fill_hashes<NList>(result, std::make_index_sequence<std::tuple_size_v<NList>>{});
   return result;
+}
+
+template <typename T>
+void init_stage_info() {
+  auto stage_hash = get_stage_hash<T>();
+  g_stage_befor_map[stage_hash] = get_previous_hashes<T>();
+  g_stage_after_map[stage_hash] = get_next_hashes<T>();
 }
 
 }  // namespace fe::engine::ecs::stage
