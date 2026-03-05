@@ -12,10 +12,7 @@
 #include "engine/ecs/system.h"
 #include "engine/ecs/pass.h"
 #include "engine/ecs/stage.h"
-#include "engine/ecs/accessComponent.h"
-#include "engine/ecs/accessEntity.h"
-#include "engine/ecs/accessContext.h"
-#include "engine/ecs/accessEvent.h"
+#include "engine/ecs/paramTypes.h"
 
 using namespace fe::engine::ecs;
 using namespace fe::engine;

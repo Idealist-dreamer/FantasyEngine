@@ -68,7 +68,7 @@ struct ParamAccess {
 
   // Context (Resource): pass by value
   template <IsContextParam R>
-  static auto get(const stl::unordered_map<std::type_index, ContextStorage>& resMgr) {
+  static auto get(stl::unordered_map<std::type_index, ContextStorage>& resMgr) {
     using RawT = meta::clean_t<R>;
     using U = typename RawT::type;
     auto it = resMgr.find(std::type_index(typeid(U)));

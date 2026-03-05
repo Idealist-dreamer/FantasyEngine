@@ -2,12 +2,20 @@
 
 #include <type_traits>
 #include <tuple>
+#include <typeindex>
+#include <vector>
+#include <algorithm>
 
 #include "engine/base/pch.h"
 
 namespace fe::engine::ecs::stage {
+
 struct IsStage {};
 struct None {};
+
+// ============================================================================
+// ensure_tuple: ensures type is wrapped as a tuple
+// ============================================================================
 
 template <typename T>
 struct ensure_tuple {
@@ -24,12 +32,19 @@ struct ensure_tuple<None> {
   using type = std::tuple<>;
 };
 
+template <typename T>
+using ensure_tuple_t = typename ensure_tuple<T>::type;
+
+// ============================================================================
+// Stage definitions
+// ============================================================================
+
 template <typename P = None, typename N = None, typename Repeat = std::true_type>
 class Stage : public IsStage {
  public:
   using is_repeat = Repeat;
-  using previous_list = typename ensure_tuple<P>::type;
-  using next_list = typename ensure_tuple<N>::type;
+  using previous_list = ensure_tuple_t<P>;
+  using next_list = ensure_tuple_t<N>;
 };
 
 template <typename... Targets>
@@ -38,6 +53,7 @@ using after = Stage<std::tuple<Targets...>, None, std::conjunction<typename Targ
 template <typename... Targets>
 using before = Stage<None, std::tuple<Targets...>, std::conjunction<typename Targets::is_repeat...>>;
 
+// Built-in Stage definitions
 class Init : public Stage<None, None, std::false_type> {};
 class PreStartup : public after<Init> {};
 class Startup : public after<PreStartup> {};
@@ -49,13 +65,11 @@ class Update : public after<PreUpdate> {};
 class PostUpdate : public after<Update> {};
 class Last : public after<PostUpdate> {};
 class Cleanup : public after<Last> {};
-}  // namespace fe::engine::ecs::stage
 
-#include <typeindex>
-#include <vector>
-#include <algorithm>
+// ============================================================================
+// Stage Hash utilities
+// ============================================================================
 
-namespace fe::engine::ecs::stage {
 using StageHash = size_t;
 
 template <typename T>

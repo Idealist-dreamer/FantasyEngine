@@ -2,34 +2,11 @@
 
 #include "common.h"
 #include "context.h"
-
-#include "accessEntity.h"
-#include "accessComponent.h"
-#include "accessEvent.h"
-#include "accessContext.h"
+#include "paramTypes.h"
+#include "paramTraits.h"
+#include "paramAccess.h"
 
 namespace fe::engine::ecs {
-template <typename T>
-concept IsEntityQuery = is_entity_query<std::remove_cvref_t<T>>::value;
-template <typename T>
-concept IsEntityCreator = is_entity_creator<std::remove_cvref_t<T>>::value;
-template <typename T>
-concept IsEntityDestroyer = is_entity_destroyer<std::remove_cvref_t<T>>::value;
-template <typename T>
-concept IsEntityCommandBuffer = is_entity_command_buffer<std::remove_cvref_t<T>>::value;
-
-template <typename T>
-concept IsComponentReader = is_component_reader<std::remove_cvref_t<T>>::value;
-template <typename T>
-concept IsComponentWriter = is_component_writer<std::remove_cvref_t<T>>::value;
-
-template <typename T>
-concept IsEventReader = is_event_reader<std::remove_cvref_t<T>>::value;
-template <typename T>
-concept IsEventWriter = is_event_writer<std::remove_cvref_t<T>>::value;
-
-template <typename T>
-concept IsContextParam = is_resource_reader<T>::value || is_resource_writer<T>::value;
 
 class WorldBase {
  public:
@@ -43,13 +20,13 @@ class WorldBase {
 
   template <typename T>
   void register_component() {
-    m_registry.storage<T>();
-    m_registry.storage<AddComponentTag<T>>();
-    m_registry.storage<ChangeComponentTag<T>>();
-    m_registry.storage<RemoveComponentTag<T>>();
-    m_registry.storage<AddComponentDelayed<T>>();
-    m_registry.storage<ChangeComponentDelayed<T>>();
-    m_registry.storage<RemoveComponentDelayed<T>>();
+    m_registry.template storage<T>();
+    m_registry.template storage<AddComponentTag<T>>();
+    m_registry.template storage<ChangeComponentTag<T>>();
+    m_registry.template storage<RemoveComponentTag<T>>();
+    m_registry.template storage<AddComponentDelayed<T>>();
+    m_registry.template storage<ChangeComponentDelayed<T>>();
+    m_registry.template storage<RemoveComponentDelayed<T>>();
   }
 
   template <typename T, typename... Args>
@@ -70,8 +47,8 @@ class WorldBase {
 
       m_event_swap[tid] = [](WorldBase& wb) {
         auto inner_tid = std::type_index(typeid(stl::vector<T>));
-        auto& data1 = *(wb.m_event_manager1[inner_tid].get<stl::vector<T>>());
-        auto& data2 = *(wb.m_event_manager2[inner_tid].get<stl::vector<T>>());
+        auto& data1 = *(wb.m_event_manager1[inner_tid].template get<stl::vector<T>>());
+        auto& data2 = *(wb.m_event_manager2[inner_tid].template get<stl::vector<T>>());
 
         data1.clear();
         data1.swap(data2);
@@ -84,10 +61,7 @@ class WorldBase {
 
   template <auto Candidate>
   static constexpr void check_signature() {
-    // 直接推导第一个参数类型
     using FirstArg = decltype(get_first_arg(Candidate));
-
-    // 验证是否为 const Registry&
     static_assert(std::is_same_v<FirstArg, const Registry&>,
                   "Reactive callback MUST use 'const Registry&' as the first argument to ensure thread safety.");
   }
@@ -129,59 +103,6 @@ class WorldBase {
   }
 
  protected:
-  template <IsEntityQuery EQ>
-  auto get_param(uint32_t passId) {
-    return std::remove_cvref_t<EQ>(m_registry);
-  }
-  template <IsEntityCreator EC>
-  auto get_param(uint32_t passId) {
-    return std::remove_cvref_t<EC>(m_registry);
-  }
-  template <IsEntityDestroyer ED>
-  auto get_param(uint32_t passId) {
-    return std::remove_cvref_t<ED>(m_registry);
-  }
-  template <IsEntityCommandBuffer EB>
-  decltype(auto) get_param(uint32_t passId) {
-    return (m_entity_command_buffers[passId]);
-  }
-
-  template <IsComponentReader CR>
-  auto get_param(uint32_t passId) {
-    return std::remove_cvref_t<CR>(m_registry);
-  }
-  template <IsComponentWriter CW>
-  auto get_param(uint32_t passId) {
-    return std::remove_cvref_t<CW>(m_registry);
-  }
-
-  template <IsEventReader ER>
-  auto get_param(uint32_t passId) {
-    using T = typename is_event_reader<std::remove_cvref_t<ER>>::type;
-    auto it = m_event_manager1.find(std::type_index(typeid(T)));
-    FE_ASSERT(it != m_event_manager1.end() && "Event type not registered!");
-    return std::remove_cvref_t<ER>(*it->second.get<T>());
-  }
-  template <IsEventWriter EW>
-  auto get_param(uint32_t passId) {
-    using T = typename is_event_writer<std::remove_cvref_t<EW>>::type;
-    auto it = m_event_manager2.find(std::type_index(typeid(T)));
-    FE_ASSERT(it != m_event_manager2.end() && "Event type not registered!");
-    return std::remove_cvref_t<EW>(*it->second.get<T>());
-  }
-
-  template <IsContextParam R>
-  auto get_param(uint32_t passId) {
-    using RawT = std::remove_cvref_t<R>;
-    using U = typename RawT::type;
-
-    auto it = m_resource_manager.find(std::type_index(typeid(U)));
-    FE_ASSERT(it != m_resource_manager.end() && "Context not registered!");
-
-    return RawT(it->second);
-  }
-
- protected:
   Registry m_registry;
 
   stl::unordered_map<std::type_index, ContextStorage> m_resource_manager;
@@ -193,7 +114,9 @@ class WorldBase {
 
   stl::unordered_map<uint32_t, EntityCommandBuffer> m_entity_command_buffers;
 
-  friend class Detail;
   friend class Pass;
+  friend class World;
+  friend struct PreparerCollector;
 };
+
 }  // namespace fe::engine::ecs

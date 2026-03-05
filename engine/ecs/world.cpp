@@ -1,6 +1,6 @@
 #include "world.h"
 
-#include "paramDetail.h"
+#include "paramPrepare.h"
 
 #include <taskflow/taskflow.hpp>
 
@@ -70,10 +70,6 @@ void World::compile() {
         }
       }
     }
-  }
-
-  for (auto preparer : Detail::get_default_preparers()) {
-    preparer(*this);
   }
 
   for (auto pass : setup_passes) {

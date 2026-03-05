@@ -2,12 +2,12 @@
 
 #include "stage.h"
 #include "worldBase.h"
-
 #include "paramMutex.h"
-#include "paramDetail.h"
+#include "paramPrepare.h"
+#include "paramAccess.h"
+#include "meta.h"
 
 namespace fe::engine::ecs {
-class WorldBase;
 
 enum Priority : uint32_t { First = 0x00000000, High = 0x00001000, Mid = 0x00002000, Low = 0x00003000 };
 
@@ -18,7 +18,6 @@ class Pass {
  public:
   Pass(const stl::string& name, bool isRepeat = true, uint32_t priority = uint32_t(Priority::Low))
       : m_name(name), m_repeat(isRepeat), m_priority(priority) {}
-  ~Pass() = default;
 
   template <typename Stage, typename Func>
   static Pass create_start(const stl::string& name, Func&& func, uint32_t priority = uint32_t(Priority::Low)) {
@@ -39,41 +38,65 @@ class Pass {
   template <typename Func>
   void init(Func&& func) {
     using CleanFunc = std::remove_cvref_t<Func>;
-    using ArgsTuple = typename function_traits<CleanFunc>::args_tuple;
-
-    init_impl<CleanFunc>(std::forward<Func>(func), (ArgsTuple*)nullptr);
+    using ArgsTuple = typename meta::function_traits<CleanFunc>::args_tuple;
+    init_impl<CleanFunc>(std::forward<Func>(func), static_cast<ArgsTuple*>(nullptr));
   }
 
   template <typename T>
   Pass& set_stage() {
     m_stage = stage::get_stage_hash<T>();
-
     auto prev_hashes = stage::get_previous_hashes<T>();
     auto next_hashes = stage::get_next_hashes<T>();
-
     m_before_stage.insert(prev_hashes.begin(), prev_hashes.end());
     m_after_stage.insert(next_hashes.begin(), next_hashes.end());
-
     return *this;
   }
 
  private:
+  // Parameter fetch helper: distinguishes pass-by-value vs pass-by-reference
+  template <typename T>
+  static auto get_param(WorldBase& world, uint32_t passId) {
+    using RawT = meta::clean_t<T>;
+    if constexpr (is_entity_command_buffer<RawT>::value) {
+      // EntityCommandBuffer: return by reference
+      return std::ref(ParamAccess::get<T>(world.m_entity_command_buffers, passId));
+    } else if constexpr (is_entity_query<RawT>::value) {
+      return ParamAccess::get<T>(world.m_registry);
+    } else if constexpr (is_entity_creator<RawT>::value) {
+      return ParamAccess::get<T>(world.m_registry);
+    } else if constexpr (is_entity_destroyer<RawT>::value) {
+      return ParamAccess::get<T>(world.m_registry);
+    } else if constexpr (is_component_reader<RawT>::value) {
+      return ParamAccess::get<T>(world.m_registry);
+    } else if constexpr (is_component_writer<RawT>::value) {
+      return ParamAccess::get<T>(world.m_registry);
+    } else if constexpr (is_event_reader<RawT>::value) {
+      return ParamAccess::get<T>(world.m_event_manager1);
+    } else if constexpr (is_event_writer<RawT>::value) {
+      return ParamAccess::get<T>(world.m_event_manager2);
+    } else if constexpr (is_resource_reader<RawT>::value) {
+      return ParamAccess::get<T>(world.m_resource_manager);
+    } else if constexpr (is_resource_writer<RawT>::value) {
+      return ParamAccess::get<T>(world.m_resource_manager);
+    }
+  }
+
   template <typename Func, typename... Args>
   void init_impl(Func&& func, std::tuple<Args...>*) {
-    m_mutexes = Detail::merge_mutex_vectors(Detail::get_mutexes_for_type<Args>()...);
-    m_preparers = Detail::get_preparers<Args...>();
+    m_mutexes = MutexCollector::merge(MutexCollector::get_for_type<Args>()...);
+    m_preparers = PreparerCollector::get<Args...>();
 
     uint32_t passId = m_id;
 
     m_binder = [func = std::forward<Func>(func), passId](WorldBase& world) mutable -> CallType {
-      return [func, params = std::make_tuple(world.get_param<Args>(passId)...)]() mutable {
+      // Use std::reference_wrapper to ensure correct reference passing
+      return [func, params = std::make_tuple(get_param<Args>(world, passId)...)]() mutable {
         std::apply(func, params);
       };
     };
   }
 
   const uint32_t m_id = sId++;
-
   stl::string m_name;
   bool m_repeat = true;
   uint32_t m_priority = 0;
@@ -90,4 +113,5 @@ class Pass {
 
   friend class World;
 };
+
 }  // namespace fe::engine::ecs
