@@ -70,11 +70,13 @@ class Cleanup : public after<Last> {};
 // ============================================================================
 
 using StageHash = size_t;
+inline stl::unordered_map<size_t, stl::string> g_stage_name_registry;
 
 // Note: typeid(T).hash_code() is not constexpr in standard C++
 template <typename T>
 [[nodiscard]] StageHash get_stage_hash() noexcept {
   static_assert(std::is_base_of_v<IsStage, T>, "T must be a Stage");
+  g_stage_name_registry.insert({typeid(T).hash_code(), std::type_index(typeid(T)).name()});
   return typeid(T).hash_code();
 }
 

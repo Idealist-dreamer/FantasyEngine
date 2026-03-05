@@ -113,10 +113,14 @@ void World::compile() {
       }
     }
 
+    stl::string begin_str = "_Begin";
+    stl::string end_str = "_End";
+
     // Create barrier task for each stage
     for (auto stage_hash : used_stages) {
-      barriers[stage_hash].first = tf.emplace([]() {}).name("Barrier_Begin" + std::to_string(stage_hash));
-      barriers[stage_hash].second = tf.emplace([]() {}).name("Barrier_End" + std::to_string(stage_hash));
+
+      barriers[stage_hash].first = tf.emplace([]() {}).name((stage::g_stage_name_registry[stage_hash] + begin_str).c_str());
+      barriers[stage_hash].second = tf.emplace([]() {}).name((stage::g_stage_name_registry[stage_hash] + end_str).c_str());
     }
 
     return barriers;
