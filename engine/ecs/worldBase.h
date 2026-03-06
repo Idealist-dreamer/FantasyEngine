@@ -123,8 +123,6 @@ class WorldBase {
 
   stl::unordered_map<uint32_t, EntityCommandBuffer> m_entity_command_buffers;
 
-  AssetManager m_asset_manager;
-
   friend class Pass;
   friend class World;
   friend struct PreparerCollector;
