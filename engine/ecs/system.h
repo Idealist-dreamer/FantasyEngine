@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pass.h"
+#include "serialization.h"
 
 namespace fe::engine::ecs {
 
@@ -9,12 +10,15 @@ class System {
   System(const stl::string& name) : m_name(name) {}
   virtual ~System() = default;
 
-  void setWorld(WorldBase& world) { m_world = &world; }
+  void set_world(WorldBase& world) { m_world = &world; }
 
   virtual bool init() = 0;
 
-  const stl::string& name() const { return m_name; }
-  const stl::vector<Pass>& passes() const { return m_passes; }
+  virtual void serialize_save(JsonOutputArchive&) {}
+  virtual void serialize_load(JsonInputArchive&) {}
+
+  virtual void serialize_save(BinaryOutputArchive&) {}
+  virtual void serialize_load(BinaryInputArchive&) {}
 
  protected:
   stl::string m_name;

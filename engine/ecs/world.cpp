@@ -56,7 +56,7 @@ void World::compile() {
   }
 
   for (auto& [name, sys] : sys_map) {
-    sys->setWorld(*this);
+    sys->set_world(*this);
 
     if (sys->init()) {
       for (auto& pass : sys->m_passes) {

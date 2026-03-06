@@ -1,6 +1,68 @@
 #pragma once
 
 #include <cereal/cereal.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/archives/xml.hpp>
+
+#include <cereal/types/vector.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/map.hpp>
+#include <cereal/types/set.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/array.hpp>
+
+#include <iostream>
+#include <type_traits>
+
+namespace fe::engine::ecs {
+
+#define CORE_NVP(val) ::cereal::make_nvp(#val, val)
+#define CORE_BINARY_DATA(ptr, size) ::cereal::binary_data(ptr, size)
+
+template <typename TArchive>
+class Output {
+ public:
+  explicit Output(std::ostream& os) : ar_(os) {}
+
+  template <typename... Args>
+  void operator()(Args&&... args) {
+    ar_(std::forward<Args>(args)...);
+  }
+
+ private:
+  TArchive ar_;
+};
+
+template <typename TArchive>
+class Input {
+ public:
+  explicit Input(std::istream& is) : ar_(is) {}
+
+  template <typename... Args>
+  bool operator()(Args&&... args) {
+    try {
+      ar_(std::forward<Args>(args)...);
+      return true;
+    } catch (const cereal::Exception& e) {
+      return false;
+    }
+  }
+
+ private:
+  TArchive ar_;
+};
+
+using BinaryOutputArchive = Output<cereal::BinaryOutputArchive>;
+using BinaryInputArchive = Input<cereal::BinaryInputArchive>;
+
+using JsonOutputArchive = Output<cereal::JSONOutputArchive>;
+using JsonInputArchive = Input<cereal::JSONInputArchive>;
+
+}  // namespace fe::engine::ecs
+
+#ifdef FE_USE_EASTL
+#include <cereal/cereal.hpp>
 #include <cereal/details/helpers.hpp>
 
 #include "engine/base/container/stl.h"
@@ -36,14 +98,16 @@ inline void load(Archive& ar, eastl::vector<T, Allocator>& vector) {
 }
 
 // --- String 适配 (始终使用 BinaryData 优化) ---
-template <class Archive, class T, class Traits, class Allocator>
-inline void save(Archive& ar, eastl::basic_string<T, Traits, Allocator> const& str) {
+template <class Archive, class T, class Allocator>
+inline void save(Archive& ar, eastl::basic_string<T, Allocator> const& str) {
+  // 使用 cereal 风格的 size 记录
   ar(make_size_tag(static_cast<size_type>(str.size())));
+  // 写入二进制数据
   ar(binary_data(str.data(), str.size() * sizeof(T)));
 }
 
-template <class Archive, class T, class Traits, class Allocator>
-inline void load(Archive& ar, eastl::basic_string<T, Traits, Allocator>& str) {
+template <class Archive, class T, class Allocator>
+inline void load(Archive& ar, eastl::basic_string<T, Allocator>& str) {
   size_type size;
   ar(make_size_tag(size));
   str.resize(static_cast<size_t>(size));
@@ -80,3 +144,4 @@ inline void serialize(Archive& ar, eastl::unique_ptr<T, D>& ptr) {
 }
 
 }  // namespace cereal
+#endif

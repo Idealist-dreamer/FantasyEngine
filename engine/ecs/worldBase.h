@@ -2,6 +2,8 @@
 
 #include "common.h"
 #include "context.h"
+#include "asset.h"
+
 #include "paramTypes.h"
 #include "paramTraits.h"
 #include "paramAccess.h"
@@ -120,6 +122,8 @@ class WorldBase {
   stl::unordered_map<std::type_index, void (*)(WorldBase&)> m_event_swap;
 
   stl::unordered_map<uint32_t, EntityCommandBuffer> m_entity_command_buffers;
+
+  AssetManager m_asset_manager;
 
   friend class Pass;
   friend class World;
