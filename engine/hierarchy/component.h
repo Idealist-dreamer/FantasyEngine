@@ -4,9 +4,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include "common.h"
+#include "engine/base/macros.h"
 
 namespace fe::engine::ecs {
+
 struct Transform {
   glm::vec3 position{0.0f, 0.0f, 0.0f};
   glm::quat rotation{1.0f, 0.0f, 0.0f, 0.0f};
@@ -24,4 +25,7 @@ struct ModelMatrix {
   glm::mat4 value;
 };
 
+struct Hierarchy {
+  entt::entity parent{entt::null};
+};
 }  // namespace fe::engine::ecs

@@ -75,4 +75,23 @@ inline constexpr bool is_lvalue_reference_return_v = is_lvalue_reference_return<
 template <typename>
 inline constexpr bool always_false_v = false;
 
+// ============================================================================
+// Component pack subset check
+// ============================================================================
+
+// Check if T is in pack<Components...>
+template <typename T, typename... Components>
+constexpr bool is_in_pack_v = (std::is_same_v<T, Components> || ...);
+
+// Check if all TargetTypes are in SourceTypes pack
+template <typename TargetPack, typename SourcePack>
+struct is_subset_of_impl;
+
+template <typename... Targets, typename... Sources>
+struct is_subset_of_impl<std::tuple<Targets...>, std::tuple<Sources...>>
+    : std::bool_constant<(is_in_pack_v<Targets, Sources...> && ...)> {};
+
+template <typename TargetPack, typename SourcePack>
+constexpr bool is_subset_of_v = is_subset_of_impl<TargetPack, SourcePack>::value;
+
 }  // namespace fe::engine::ecs::meta

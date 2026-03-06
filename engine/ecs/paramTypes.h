@@ -1,5 +1,6 @@
 #pragma once
 
+#include "meta.h"
 #include "common.h"
 #include "context.h"
 
@@ -82,6 +83,8 @@ using get_t = entt::get_t<T...>;
 
 template <typename... Components>
 class ComponentReader {
+  using ComponentTuple = std::tuple<Components...>;
+
  public:
   template <typename T>
   static constexpr void check_auth() {
@@ -94,6 +97,11 @@ class ComponentReader {
   }
 
   explicit ComponentReader(Registry& reg) : m_reg(reg) {}
+
+  // Subset conversion constructor
+  template <typename... OtherComponents, typename OtherTuple = std::tuple<OtherComponents...>,
+            typename = std::enable_if_t<meta::is_subset_of_v<ComponentTuple, OtherTuple>>>
+  ComponentReader(const ComponentReader<OtherComponents...>& other) : m_reg(other.m_reg) {}
 
   template <typename T>
   bool have(Entity e) const {
@@ -150,11 +158,18 @@ class ComponentReader {
 
  protected:
   Registry& m_reg;
+
+  // Allow different ComponentReader/Writer instantiations to access m_reg
+  template <typename...>
+  friend class ComponentReader;
+  template <typename...>
+  friend class ComponentWriter;
 };
 
 template <typename... Components>
 class ComponentWriter : public ComponentReader<Components...> {
   using Base = ComponentReader<Components...>;
+  using ComponentTuple = std::tuple<Components...>;
 
  public:
   using Base::check_auth;
@@ -170,8 +185,23 @@ class ComponentWriter : public ComponentReader<Components...> {
 
   explicit ComponentWriter(Registry& reg) : Base(reg) {}
 
+  // Subset conversion constructor
+  template <typename... OtherComponents, typename OtherTuple = std::tuple<OtherComponents...>,
+            typename = std::enable_if_t<meta::is_subset_of_v<ComponentTuple, OtherTuple>>>
+  ComponentWriter(ComponentWriter<OtherComponents...>& other) : Base(other.m_reg) {}
+
+  template <typename... OtherComponents, typename OtherTuple = std::tuple<OtherComponents...>,
+            typename = std::enable_if_t<meta::is_subset_of_v<ComponentTuple, OtherTuple>>>
+  ComponentWriter(const ComponentWriter<OtherComponents...>& other) : Base(other.m_reg) {}
+
   template <typename T>
   T& get(Entity e) {
+    check_auth<T>();
+    return m_reg.get<T>(e);
+  }
+
+  template <typename T>
+  T& get_or_emplace(Entity e) {
     check_auth<T>();
     return m_reg.get<T>(e);
   }
