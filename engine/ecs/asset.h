@@ -5,9 +5,9 @@
 namespace fe::engine::ecs {
 enum struct AssetType { unKnown = 0, gltf, shader };
 
-struct AssetId {
+struct AssetHandle {
   AssetType type;
-  uint32_t value;
+  uint32_t id;
 };
 
 struct Asset {
@@ -52,27 +52,27 @@ class AssetManager {
   AssetManager() = default;
   ~AssetManager() = default;
 
-  bool have_asset(AssetId handle) const {
-    return m_asset_map.find(handle.type) != m_asset_map.end() && m_asset_map.at(handle.type).find(handle.value) != m_asset_map.at(handle.type).end();
+  bool have_asset(AssetHandle handle) const {
+    return m_asset_map.find(handle.type) != m_asset_map.end() && m_asset_map.at(handle.type).find(handle.id) != m_asset_map.at(handle.type).end();
   }
 
-  Asset& get_asset(AssetId handle) {
+  Asset& get_asset(AssetHandle handle) {
     FE_ASSERT(have_asset(handle));
-    return m_asset_map.at(handle.type).at(handle.value);
+    return m_asset_map.at(handle.type).at(handle.id);
   }
 
   stl::unordered_map<uint32_t, Asset>& get_type_asset(AssetType type) { return m_asset_map.at(type); }
 
-  AssetId add_asset(AssetType type, Asset asset) {
+  AssetHandle add_asset(AssetType type, Asset asset) {
     auto& asset_map = m_asset_map[type];
     auto value = static_cast<uint32_t>(asset_map.size());
     asset_map.insert({value, asset});
     return {type, value};
   }
 
-  void change_asset(AssetId handle, Asset asset) {
+  void change_asset(AssetHandle handle, Asset asset) {
     FE_ASSERT(have_asset(handle));
-    m_asset_map.at(handle.type).at(handle.value) = asset;
+    m_asset_map.at(handle.type).at(handle.id) = asset;
   }
 
  private:
