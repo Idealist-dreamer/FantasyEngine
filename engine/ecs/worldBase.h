@@ -3,6 +3,7 @@
 #include "common.h"
 #include "context.h"
 #include "asset.h"
+#include "external.h"
 
 #include "paramTypes.h"
 #include "paramTraits.h"

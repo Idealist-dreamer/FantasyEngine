@@ -58,7 +58,7 @@ class Pass {
   // Parameter fetch helper: distinguishes pass-by-value vs pass-by-reference
   // Fix: Check original type T (preserving const) for Context Reader/Writer distinction
   template <typename T>
-  static auto get_param(Visitor<WorldBase> visitor, uint32_t passId) {
+  static auto get_param(Visitor<WorldBase>& visitor, uint32_t passId) {
     // Check context types first (preserving const)
     if constexpr (is_context_reader<T>::value) {
       return ParamAccess::get<T>(visitor->m_context_manager);
@@ -94,19 +94,19 @@ class Pass {
 
     uint32_t passId = m_id;
 
-    m_binder = [func = std::forward<Func>(func), passId](WorldBase& world) mutable -> CallType {
+    m_binder = [func = std::forward<Func>(func), passId](Visitor<WorldBase>& visitor) mutable -> CallType {
       // Use std::reference_wrapper to ensure correct reference passing
-      return [func, params = std::make_tuple(get_param<Args>(world, passId)...)]() mutable {
+      return [func, params = std::make_tuple(get_param<Args>(visitor, passId)...)]() mutable {
         std::apply(func, params);
       };
     };
   }
 
   CallType m_execute;
-  std::function<CallType(WorldBase&)> m_binder;
+  std::function<CallType(Visitor<WorldBase>&)> m_binder;
 
   stl::vector<Mutex> m_mutexes;
-  stl::vector<std::function<void(WorldBase&)>> m_preparers;
+  stl::vector<std::function<void(Visitor<WorldBase>&)>> m_preparers;
 
   friend class World;
 };

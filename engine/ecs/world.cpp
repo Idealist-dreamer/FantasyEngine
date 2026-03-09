@@ -74,20 +74,20 @@ void World::compile() {
 
   for (auto pass : setup_passes) {
     for (auto& preparer : pass->m_preparers) {
-      preparer(*this);
+      preparer(visitor);
     }
   }
   for (auto pass : run_passes) {
     for (auto& preparer : pass->m_preparers) {
-      preparer(*this);
+      preparer(visitor);
     }
   }
 
   for (auto pass : setup_passes) {
-    pass->m_execute = pass->m_binder(*this);
+    pass->m_execute = pass->m_binder(visitor);
   }
   for (auto pass : run_passes) {
-    pass->m_execute = pass->m_binder(*this);
+    pass->m_execute = pass->m_binder(visitor);
   }
 
   setup_taskflow.clear();
