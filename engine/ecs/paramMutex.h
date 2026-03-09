@@ -1,8 +1,11 @@
 #pragma once
 
-#include "engine/base/pch.h"
+#include "engine/base/macros.h"
+#include "engine/base/container/stl.h"
+#include "engine/base/utility/common.h"
+#include "engine/base/utility/assert.h"
 
-namespace fe::engine::ecs {
+namespace fe::engine {
 enum class MutexType : uint8_t {
   None = 0,
   Exclusive,
@@ -95,10 +98,10 @@ struct Mutex {
   static Mutex write_event();
 };
 
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine
 
 // Impl
-namespace fe::engine::ecs {
+namespace fe::engine {
 FE_FINLINE Mutex Mutex::query_entity() {
   Mutex mutex(MutexType::EntityQuery);
   return mutex;
@@ -154,4 +157,4 @@ Mutex Mutex::write_event() {
   return mutex;
 }
 
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine

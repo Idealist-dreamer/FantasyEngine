@@ -4,7 +4,7 @@
 #include "common.h"
 #include "context.h"
 
-namespace fe::engine::ecs {
+namespace fe::engine {
 // ============================================================================
 // Entity access types
 // ============================================================================
@@ -60,10 +60,7 @@ struct EntityCommandBuffer {
 
   void destroy(Entity e) { m_destroyed_entities.push_back(e); }
 
-  void reset() {
-    m_entity_map.clear();
-    m_destroyed_entities.clear();
-  }
+  void clear() { m_entity_map.clear(); }
 
  private:
   stl::vector<Entity> m_entity_map;
@@ -363,4 +360,4 @@ using ContextReader = const Context<T>;
 template <typename T>
 using ContextWriter = Context<T>;
 
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine

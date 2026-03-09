@@ -6,9 +6,9 @@
 #include <vector>
 #include <algorithm>
 
-#include "engine/base/pch.h"
+#include "engine/base/container/stl.h"
 
-namespace fe::engine::ecs::stage {
+namespace fe::engine::stage {
 struct IsStage {};
 struct None {};
 
@@ -147,4 +147,4 @@ template <typename T>
   return result;
 }
 
-}  // namespace fe::engine::ecs::stage
+}  // namespace fe::engine::stage

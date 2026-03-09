@@ -1,11 +1,9 @@
 #pragma once
 
-#include <typeindex>
+#include "external.h"
 
-#include "engine/base/macros.h"
-#include "engine/base/memory/allocator.h"
+namespace fe::engine {
 
-namespace fe::engine::ecs {
 struct ContextStorage {
   ContextStorage() = default;
   ~ContextStorage() { destroy(); }
@@ -74,10 +72,10 @@ struct ContextStorage {
   template <typename T, typename... Args>
   static ContextStorage create(Args&&... args) {
     ContextStorage res;
-    res.m_ptr = memory::Allocator::create<T>(std::forward<Args>(args)...);
+    res.m_ptr = Allocator::create<T>(std::forward<Args>(args)...);
     res.m_deleter = [](void* p) {
       if (p) {
-        memory::Allocator::destroy<T>(static_cast<T*>(p));
+        Allocator::destroy<T>(static_cast<T*>(p));
       }
     };
 #if defined(FE_DEBUG)
@@ -87,13 +85,13 @@ struct ContextStorage {
   }
 
   template <typename T>
-  static ContextStorage create(T* ptr, bool need_free = true) {
+  static ContextStorage create(T* ptr, bool need_free = false) {
     ContextStorage res;
     res.m_ptr = ptr;
     if (need_free) {
       res.m_deleter = [](void* p) {
         if (p) {
-          memory::Allocator::destroy<T>(static_cast<T*>(p));
+          Allocator::destroy<T>(static_cast<T*>(p));
         }
       };
     }
@@ -110,4 +108,4 @@ struct ContextStorage {
   std::type_index m_type_info = typeid(void);
 #endif
 };
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine

@@ -7,7 +7,7 @@
 namespace fe::engine::hierarchy {
 
 class HierarchyOps {
-  using ComWriter = ecs::ComponentWriter<Hierarchy, Transform>;
+  using ComWriter = ComponentWriter<Hierarchy, Transform>;
   ComWriter& m_writer;
 
  public:

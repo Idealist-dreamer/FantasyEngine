@@ -4,7 +4,7 @@
 
 #include <taskflow/taskflow.hpp>
 
-namespace fe::engine::ecs {
+namespace fe::engine {
 struct World::Impl {
   stl::deque<Pass> m_default_passes;
 
@@ -55,10 +55,10 @@ void World::compile() {
     }
   }
 
-  for (auto& [name, sys] : sys_map) {
-    sys->set_world(*this);
+  auto visitor = Visitor<WorldBase>(*this);
 
-    if (sys->init()) {
+  for (auto& [name, sys] : sys_map) {
+    if (sys->init(visitor)) {
       for (auto& pass : sys->m_passes) {
         FE_ASSERT(pass_name_set.find(pass.m_name) == pass_name_set.end());
         pass_name_set.insert(pass.m_name);
@@ -324,4 +324,4 @@ void World::Cleanup() {
   }
 }
 
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine

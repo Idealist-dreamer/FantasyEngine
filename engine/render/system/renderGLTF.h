@@ -4,7 +4,7 @@
 
 namespace fe::engine::render {
 
-class RenderCore : public System {
+class RenderGLTF : public System {
  public:
   RenderCore();
   ~RenderCore();

@@ -1,7 +1,9 @@
 #pragma once
+
 #include <chrono>
 
-namespace fe::engine::utility {
+namespace fe::engine {
+
 class Timer {
  public:
   using Clock = std::chrono::steady_clock;
@@ -28,4 +30,4 @@ class Timer {
   TimePoint m_start;
 };
 
-}  // namespace fe::engine::utility
+}  // namespace fe::engine

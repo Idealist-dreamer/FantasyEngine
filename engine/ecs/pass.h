@@ -7,13 +7,13 @@
 #include "paramPrepare.h"
 #include "paramAccess.h"
 
-namespace fe::engine::ecs {
+namespace fe::engine {
 
 enum Priority : uint32_t { First = 0x00000000, High = 0x00001000, Mid = 0x00002000, Low = 0x00003000 };
 
 class Pass {
   using CallType = std::function<void()>;
-  static inline uint32_t sId = 0;
+  static inline uint32_t s_next_id = 0;
 
  public:
   Pass(const stl::string& name, bool isRepeat = true, uint32_t priority = uint32_t(Priority::Low))
@@ -48,35 +48,41 @@ class Pass {
     return *this;
   }
 
+  const uint32_t m_id = s_next_id++;
+  stl::string m_name;
+  bool m_repeat = true;
+  uint32_t m_priority = 0;
+  stage::StageHash m_stage = 0;
+
  private:
   // Parameter fetch helper: distinguishes pass-by-value vs pass-by-reference
   // Fix: Check original type T (preserving const) for Context Reader/Writer distinction
   template <typename T>
-  static auto get_param(WorldBase& world, uint32_t passId) {
+  static auto get_param(Visitor<WorldBase> visitor, uint32_t passId) {
     // Check context types first (preserving const)
     if constexpr (is_context_reader<T>::value) {
-      return ParamAccess::get<T>(world.m_context_manager);
+      return ParamAccess::get<T>(visitor->m_context_manager);
     } else if constexpr (is_context_writer<T>::value) {
-      return ParamAccess::get<T>(world.m_context_manager);
+      return ParamAccess::get<T>(visitor->m_context_manager);
     } else {
       using RawT = meta::clean_t<T>;
       if constexpr (is_entity_command_buffer<RawT>::value) {
         // EntityCommandBuffer: return by reference
-        return std::ref(ParamAccess::get<T>(world.m_entity_command_buffers, passId));
+        return std::ref(ParamAccess::get<T>(visitor->m_entity_command_buffers, passId));
       } else if constexpr (is_entity_query<RawT>::value) {
-        return ParamAccess::get<T>(world.m_registry);
+        return ParamAccess::get<T>(visitor->m_registry);
       } else if constexpr (is_entity_creator<RawT>::value) {
-        return ParamAccess::get<T>(world.m_registry);
+        return ParamAccess::get<T>(visitor->m_registry);
       } else if constexpr (is_entity_destroyer<RawT>::value) {
-        return ParamAccess::get<T>(world.m_registry);
+        return ParamAccess::get<T>(visitor->m_registry);
       } else if constexpr (is_component_reader<RawT>::value) {
-        return ParamAccess::get<T>(world.m_registry);
+        return ParamAccess::get<T>(visitor->m_registry);
       } else if constexpr (is_component_writer<RawT>::value) {
-        return ParamAccess::get<T>(world.m_registry);
+        return ParamAccess::get<T>(visitor->m_registry);
       } else if constexpr (is_event_reader<RawT>::value) {
-        return ParamAccess::get<T>(world.m_event_manager1);
+        return ParamAccess::get<T>(visitor->m_event_manager1);
       } else if constexpr (is_event_writer<RawT>::value) {
-        return ParamAccess::get<T>(world.m_event_manager2);
+        return ParamAccess::get<T>(visitor->m_event_manager2);
       }
     }
   }
@@ -96,13 +102,6 @@ class Pass {
     };
   }
 
-  const uint32_t m_id = sId++;
-  stl::string m_name;
-  bool m_repeat = true;
-  uint32_t m_priority = 0;
-
-  stage::StageHash m_stage = 0;
-
   CallType m_execute;
   std::function<CallType(WorldBase&)> m_binder;
 
@@ -112,4 +111,4 @@ class Pass {
   friend class World;
 };
 
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine

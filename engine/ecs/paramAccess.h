@@ -4,7 +4,7 @@
 #include "paramTypes.h"
 #include "paramTraits.h"
 
-namespace fe::engine::ecs {
+namespace fe::engine {
 // ============================================================================
 // Parameter accessor
 // Centralizes all parameter fetch logic, distinguishes pass-by-value vs pass-by-reference
@@ -76,4 +76,4 @@ struct ParamAccess {
   }
 };
 
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine

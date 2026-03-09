@@ -7,15 +7,14 @@
     },
     "configurePresets": [
         {
-            "name": "WindowsBase",
+            "name": "windows-base",
             "hidden": true,
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/${presetName}/GenerateCacheFile",
+            "binaryDir": "${sourceDir}/build/${presetName}/generateCacheFile",
             "installDir": "${sourceDir}/Install/${presetName}",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "cl.exe",
                 "CMAKE_CXX_COMPILER": "cl.exe",
-                "CMAKE_JOB_POOLS": "compile=4;link=2",
                 "CMAKE_BUILD_PARALLEL_LEVEL": "4",
                 "RUNTIME_ARCHIVE_LIBRARY_BASE_DIRECTORY": "${sourceDir}/Build/${presetName}",
                 "VCPKG_ROOT": "$env{FE_VCPKG_ROOT}",
@@ -24,13 +23,17 @@
                 "QT_ROOT": "$env{FE_QT_ROOT}",
                 "QT_VERSION_MAJOR": "6",
                 "SDK_ROOT": "$env{FE_SDK_ROOT}",
-                "DX12_Agility_VERSION": "616"
+                "DX12_Agility_VERSION": "616",
+                "CMAKE_CXX_FLAGS": "/MP /Zc:__cplusplus",
+                "CMAKE_C_FLAGS": "/MP",
+                "CMAKE_CXX_FLAGS_DEBUG": "/Z7 /Od /RTC1",
+                "CMAKE_C_FLAGS_DEBUG": "/Z7 /Od /RTC1"
             }
         },
         {
-            "name": "Win64-Debug",
-            "displayName": "Win64-Debug",
-            "inherits": "WindowsBase",
+            "name": "win64-debug",
+            "displayName": "windows-x64-debug",
+            "inherits": "windows-base",
             "architecture": {
                 "value": "x64",
                 "strategy": "external"
@@ -40,9 +43,9 @@
             }
         },
         {
-            "name": "Win64-Release",
-            "displayName": "Win64-Release",
-            "inherits": "WindowsBase",
+            "name": "win64-release",
+            "displayName": "windows-x64-release",
+            "inherits": "windows-base",
             "architecture": {
                 "value": "x64",
                 "strategy": "external"
@@ -50,6 +53,18 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "win64-debug",
+            "configurePreset": "win64-debug",
+            "jobs": 8
+        },
+        {
+            "name": "win64-release",
+            "configurePreset": "win64-release",
+            "jobs": 8
         }
     ]
 }

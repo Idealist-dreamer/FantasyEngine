@@ -5,7 +5,7 @@
 #include "meta.h"
 #include "paramTypes.h"
 
-namespace fe::engine::ecs {
+namespace fe::engine {
 // ============================================================================
 // Entity Type Traits
 // ============================================================================
@@ -136,4 +136,4 @@ struct param_pass_by_value : std::bool_constant<!is_entity_command_buffer<meta::
 template <typename T>
 inline constexpr bool param_pass_by_value_v = param_pass_by_value<T>::value;
 
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine

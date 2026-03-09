@@ -1,6 +1,5 @@
 #pragma once
 
-#include "engine/base/pch.h"
 #include "engine/ecs/system.h"
 
 #include "engine/render/rhi/GraphicsCore.h"

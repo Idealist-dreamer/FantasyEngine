@@ -2,7 +2,7 @@
 
 #include <entt/entt.hpp>
 
-namespace fe::engine::ecs {
+namespace fe::engine {
 using Entity = entt::entity;
 using Registry = entt::registry;
 
@@ -66,4 +66,4 @@ using base_type_t = typename get_base_type<T>::type;
 
 template <typename Requested, typename Declared>
 struct is_compatible : std::is_same<std::remove_const_t<base_type_t<Requested>>, std::remove_const_t<base_type_t<Declared>>> {};
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine

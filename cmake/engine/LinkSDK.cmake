@@ -14,7 +14,11 @@ function(fe_link_engine_sdks TARGET_NAME)
     find_package(directx12-agility CONFIG REQUIRED)
     find_package(PkgConfig REQUIRED)
     find_package(cereal CONFIG REQUIRED)
+    find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
+    find_package(spdlog CONFIG REQUIRED)
     pkg_check_modules(LUAJIT REQUIRED IMPORTED_TARGET luajit)
+
+    target_include_directories(${TARGET_NAME} PRIVATE ${TINYGLTF_INCLUDE_DIRS})
 
     target_link_libraries(${TARGET_NAME} PUBLIC
         assimp::assimp
@@ -23,6 +27,7 @@ function(fe_link_engine_sdks TARGET_NAME)
         EnTT::EnTT
         mimalloc
         EASTL
+        spdlog::spdlog
         flatbuffers::flatbuffers
 
         Microsoft::WinPixEventRuntime

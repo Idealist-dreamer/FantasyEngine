@@ -1,15 +1,16 @@
 #pragma once
 
-#include <utility>
 #include <new>
+#include <utility>
 #include <cstddef>
 
 #include "engine/base/macros.h"
 
-namespace fe::engine::memory {
-constexpr size_t kDefaultAlignment = alignof(std::max_align_t);
+namespace fe::engine {
 
 class Allocator {
+  static constexpr size_t kDefaultAlignment = alignof(std::max_align_t);
+
  public:
   FE_FINLINE static void* malloc(size_t size) noexcept;
   FE_FINLINE static void* zalloc(size_t size) noexcept;
@@ -103,7 +104,7 @@ class Allocator {
   }
 };
 
-}  // namespace fe::engine::memory
+}  // namespace fe::engine
 
 #include "allocator.inl"
 #include "overNewDele.h"

@@ -5,7 +5,7 @@
 #include "paramTraits.h"
 #include "paramMutex.h"
 
-namespace fe::engine::ecs {
+namespace fe::engine {
 class WorldBase;
 
 // ============================================================================
@@ -145,4 +145,4 @@ struct PreparerCollector {
   }
 };
 
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine

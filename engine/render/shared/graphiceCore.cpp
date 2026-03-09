@@ -167,7 +167,7 @@ void GraphicsCore::Initialize(GCInitInfo info) {
 
       m_Device = pDevice.Detach();
 
-      utility::printf(L"Selected GPU:  %s (%u MB)\n", desc.Description, desc.DedicatedVideoMemory >> 20);
+      printf(L"Selected GPU:  %s (%u MB)\n", desc.Description, desc.DedicatedVideoMemory >> 20);
     }
   } else {
     FE_ASSERT_SUCCEEDED(dxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&pAdapter)));
@@ -175,7 +175,7 @@ void GraphicsCore::Initialize(GCInitInfo info) {
   }
 
   if (info.requireDXRSupport && !IsDirectXRaytracingSupported(m_Device.Get())) {
-    utility::printf("Unable to find a DXR-capable device. Halting.\n");
+    printf("Unable to find a DXR-capable device. Halting.\n");
     __debugbreak();
   }
 

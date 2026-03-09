@@ -1,9 +1,8 @@
 #pragma once
 
 #include "system.h"
-#include "stage.h"
 
-namespace fe::engine::ecs {
+namespace fe::engine {
 class World : public WorldBase {
  public:
   World();
@@ -18,8 +17,6 @@ class World : public WorldBase {
   void dump_graph(const stl::string& path);
 
  private:
-  FE_DECLARE_PRIVATE
-
   void Init();
   void PreStartup();
   void Startup();
@@ -32,5 +29,7 @@ class World : public WorldBase {
 
   void Last();
   void Cleanup();
+
+  FE_DECLARE_PRIVATE
 };
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine

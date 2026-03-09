@@ -15,7 +15,7 @@
 #include <iostream>
 #include <type_traits>
 
-namespace fe::engine::ecs {
+namespace fe::engine {
 
 #define CORE_NVP(val) ::cereal::make_nvp(#val, val)
 #define CORE_BINARY_DATA(ptr, size) ::cereal::binary_data(ptr, size)
@@ -59,7 +59,7 @@ using BinaryInputArchive = Input<cereal::BinaryInputArchive>;
 using JsonOutputArchive = Output<cereal::JSONOutputArchive>;
 using JsonInputArchive = Input<cereal::JSONInputArchive>;
 
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine
 
 #ifdef FE_USE_EASTL
 #include <cereal/cereal.hpp>
@@ -69,10 +69,8 @@ using JsonInputArchive = Input<cereal::JSONInputArchive>;
 
 namespace cereal {
 
-// --- 通用：处理容器大小 ---
 using size_type = uint64_t;
 
-// --- Vector 适配 (含 POD 性能优化) ---
 template <class Archive, class T, class Allocator>
 inline void save(Archive& ar, eastl::vector<T, Allocator> const& vector) {
   ar(make_size_tag(static_cast<size_type>(vector.size())));
@@ -97,12 +95,9 @@ inline void load(Archive& ar, eastl::vector<T, Allocator>& vector) {
   }
 }
 
-// --- String 适配 (始终使用 BinaryData 优化) ---
 template <class Archive, class T, class Allocator>
 inline void save(Archive& ar, eastl::basic_string<T, Allocator> const& str) {
-  // 使用 cereal 风格的 size 记录
   ar(make_size_tag(static_cast<size_type>(str.size())));
-  // 写入二进制数据
   ar(binary_data(str.data(), str.size() * sizeof(T)));
 }
 
@@ -114,7 +109,6 @@ inline void load(Archive& ar, eastl::basic_string<T, Allocator>& str) {
   ar(binary_data(str.data(), static_cast<size_t>(size) * sizeof(T)));
 }
 
-// --- Map/Set 适配 (通用迭代) ---
 template <class Archive, typename... Args>
 inline void save(Archive& ar, eastl::map<Args...> const& container) {
   ar(make_size_tag(static_cast<size_type>(container.size())));
@@ -134,7 +128,6 @@ inline void load(Archive& ar, eastl::map<Args...>& container) {
   }
 }
 
-// --- Smart Pointers (UniquePtr 示例) ---
 template <class Archive, class T, class D>
 inline void serialize(Archive& ar, eastl::unique_ptr<T, D>& ptr) {
   T* rawPtr = ptr.get();

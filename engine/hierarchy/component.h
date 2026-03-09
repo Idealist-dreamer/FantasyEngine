@@ -6,7 +6,7 @@
 
 #include "engine/base/macros.h"
 
-namespace fe::engine::ecs {
+namespace fe::engine {
 
 struct Transform {
   glm::vec3 position{0.0f, 0.0f, 0.0f};
@@ -28,4 +28,4 @@ struct ModelMatrix {
 struct Hierarchy {
   entt::entity parent{entt::null};
 };
-}  // namespace fe::engine::ecs
+}  // namespace fe::engine

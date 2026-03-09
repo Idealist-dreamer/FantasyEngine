@@ -1,11 +1,12 @@
 #pragma once
 
-#include "engine/platform/os.h"
-
 #include <cstdarg>
 #include <string>
 
-namespace fe::engine::utility {
+#include "engine/base/platform/os.h"
+
+namespace fe::engine {
+
 #ifdef _CONSOLE
 FE_FINLINE void print(const char* msg) {
   printf("%s", msg);
@@ -94,4 +95,4 @@ FE_FINLINE void printSubMessage(const wchar_t* format, ...) {
 }
 FE_FINLINE void printSubMessage(void) {}
 
-}  // namespace fe::engine::utility
+}  // namespace fe::engine

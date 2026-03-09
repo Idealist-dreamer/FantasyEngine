@@ -1,7 +1,5 @@
 #pragma once
 
-#include "engine/base/pch.h"
-
 namespace fe::engine {
 
 struct FrameInfo {
