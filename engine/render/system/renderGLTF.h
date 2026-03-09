@@ -6,8 +6,8 @@ namespace fe::engine::render {
 
 class RenderGLTF : public System {
  public:
-  RenderCore();
-  ~RenderCore();
+  RenderGLTF();
+  ~RenderGLTF();
 
   bool init(Visitor<WorldBase>& visitor) override;
 
