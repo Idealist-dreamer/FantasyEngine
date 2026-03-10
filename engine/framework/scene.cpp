@@ -333,7 +333,7 @@ void Scene::load(const stl::string& path) {
     return;
   }
 
-  m_registry.clear();
+  m_registry = Registry{};
 
   if (is_json(path)) {
     cereal::JSONInputArchive concreteAr(is);

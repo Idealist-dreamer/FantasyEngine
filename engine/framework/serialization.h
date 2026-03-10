@@ -26,8 +26,12 @@ using AnyArchive = std::variant<cereal::BinaryOutputArchive*, cereal::JSONOutput
 class Archive {
  public:
   explicit Archive(AnyArchive ar, Registry* reg = nullptr) : ar_(ar), reg_(reg) {
-    if (reg_ && is_input()) {
-      loader_ = stl::make_unique<entt::continuous_loader>(*reg_);
+    if (reg_) {
+      if (is_output()) {
+        snapshot_ = std::make_unique<entt::snapshot>(*reg_);
+      } else {
+        loader_ = std::make_unique<entt::snapshot_loader>(*reg_);
+      }
     }
   }
 
@@ -44,15 +48,13 @@ class Archive {
   void entities() {
     if (!reg_)
       return;
-
     std::visit(
         [this](auto* concreteAr) {
           using ArType = std::remove_pointer_t<decltype(concreteAr)>;
           if constexpr (std::is_same_v<ArType, cereal::BinaryOutputArchive> || std::is_same_v<ArType, cereal::JSONOutputArchive>) {
-            entt::snapshot{*reg_}.get<entt::entity>(*concreteAr);
-          } else {
-            if (loader_)
-              loader_->get<entt::entity>(*concreteAr);
+            snapshot_->template get<entt::entity>(*concreteAr);
+          } else if constexpr (std::is_same_v<ArType, cereal::BinaryInputArchive> || std::is_same_v<ArType, cereal::JSONInputArchive>) {
+            loader_->template get<entt::entity>(*concreteAr);
           }
         },
         ar_);
@@ -65,11 +67,17 @@ class Archive {
     std::visit(
         [this](auto* concreteAr) {
           using ArType = std::remove_pointer_t<decltype(concreteAr)>;
+
           if constexpr (std::is_same_v<ArType, cereal::BinaryOutputArchive> || std::is_same_v<ArType, cereal::JSONOutputArchive>) {
-            (entt::snapshot{*reg_}.get<Components>(*concreteAr), ...);
+            if constexpr (sizeof...(Components) > 0) {
+              // 【核心修复】：使用 C++17 折叠表达式，从语言标准层面强硬保证从左向右的执行顺序，
+              // 彻底告别 dummy 数组可能造成的编译器 UB 或乱序，杜绝数据流错位读取！
+              (snapshot_->template get<Components>(*concreteAr), ...);
+            }
           } else {
-            if (loader_) {
-              (loader_->get<Components>(*concreteAr), ...);
+            if constexpr (sizeof...(Components) > 0) {
+              // 同上，强制反序列化按保存时的精确一致顺序进行
+              (loader_->template get<Components>(*concreteAr), ...);
             }
           }
         },
@@ -84,7 +92,9 @@ class Archive {
  private:
   AnyArchive ar_;
   Registry* reg_ = nullptr;
-  stl::unique_ptr<entt::continuous_loader> loader_;
+
+  std::unique_ptr<entt::snapshot> snapshot_;
+  std::unique_ptr<entt::snapshot_loader> loader_;
 };
 
 }  // namespace fe::engine

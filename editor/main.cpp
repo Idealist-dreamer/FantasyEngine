@@ -7,11 +7,70 @@
 #include <iomanip>
 #include <atomic>
 #include <random>
+#include <fstream>
+#include <filesystem>
 
 #include "engine/engine.h"
 
 using namespace fe::engine;
 using namespace fe::engine;
+
+// ==========================================
+// 全局测试压力配置 (Debug/Release 自动切换)
+// ==========================================
+struct TestConfig {
+  // 实体数量
+  int AGENT_COUNT;
+  int PARTICLE_COUNT;
+
+  // 帧数配置
+  int BENCHMARK_FRAMES;      // 性能测试帧数
+  int SAVELOAD_INIT_FRAMES;  // 存档测试初始帧数
+  int SAVELOAD_CONT_FRAMES;  // 存档测试继续帧数
+
+  // 抽样验证
+  int MAX_SAMPLES;  // 组件数据抽样数量
+
+  // 模式标识
+  bool isDebug;
+
+  static TestConfig create() {
+    TestConfig cfg;
+#ifdef _DEBUG
+    cfg.isDebug = true;
+    // Debug 模式：大幅降低压力，快速迭代
+    cfg.AGENT_COUNT = 1000;
+    cfg.PARTICLE_COUNT = 2000;
+    cfg.BENCHMARK_FRAMES = 50;
+    cfg.SAVELOAD_INIT_FRAMES = 10;
+    cfg.SAVELOAD_CONT_FRAMES = 5;
+    cfg.MAX_SAMPLES = 10;
+#else
+    cfg.isDebug = false;
+    // Release 模式：完整压力测试
+    cfg.AGENT_COUNT = 150000;
+    cfg.PARTICLE_COUNT = 300000;
+    cfg.BENCHMARK_FRAMES = 500;
+    cfg.SAVELOAD_INIT_FRAMES = 100;
+    cfg.SAVELOAD_CONT_FRAMES = 50;
+    cfg.MAX_SAMPLES = 100;
+#endif
+    return cfg;
+  }
+
+  void print() const {
+    std::cout << "Test Configuration (" << (isDebug ? "DEBUG" : "RELEASE") << "):\n";
+    std::cout << "  Agents        : " << AGENT_COUNT << "\n";
+    std::cout << "  Particles     : " << PARTICLE_COUNT << "\n";
+    std::cout << "  Benchmark     : " << BENCHMARK_FRAMES << " frames\n";
+    std::cout << "  SaveLoad Init : " << SAVELOAD_INIT_FRAMES << " frames\n";
+    std::cout << "  SaveLoad Cont : " << SAVELOAD_CONT_FRAMES << " frames\n";
+    std::cout << "  Max Samples   : " << MAX_SAMPLES << "\n";
+  }
+};
+
+// 全局配置实例
+inline TestConfig g_config = TestConfig::create();
 
 // ==========================================
 // 权威验证级全局探针 (绝对防止编译器优化)
@@ -21,46 +80,116 @@ inline std::atomic<uint64_t> g_total_loop_iterations{0};
 inline std::atomic<uint64_t> g_global_state_hash{0};
 
 // ==========================================
-// 1. 数据层定义
+// 1. 数据层定义 (含序列化支持)
 // ==========================================
 struct Transform {
   float pos[3];
   float rot[3];
+
+  template <class Archive>
+  void serialize(Archive& ar) {
+    ar(pos[0], pos[1], pos[2], rot[0], rot[1], rot[2]);
+  }
 };
+
 struct Velocity {
   float v[3];
+
+  template <class Archive>
+  void serialize(Archive& ar) {
+    ar(v[0], v[1], v[2]);
+  }
 };
+
 struct BoidState {
   float target[3];
   float speedMultiplier;
+
+  template <class Archive>
+  void serialize(Archive& ar) {
+    ar(target[0], target[1], target[2], speedMultiplier);
+  }
 };
+
 struct RenderState {
   float matrix[16];
+
+  template <class Archive>
+  void save(Archive& ar) const {
+    // 必须退化类型，去除可能附带的 & 或 const 约束，以精确匹配 Archive 原型
+    using ArType = std::decay_t<Archive>;
+
+    if constexpr (std::is_same_v<ArType, cereal::JSONOutputArchive> || std::is_same_v<ArType, cereal::XMLOutputArchive>) {
+      for (int i = 0; i < 16; ++i) {
+        ar(matrix[i]);
+      }
+    } else {
+      ar(cereal::binary_data(matrix, sizeof(matrix)));
+    }
+  }
+
+  template <class Archive>
+  void load(Archive& ar) {
+    using ArType = std::decay_t<Archive>;
+
+    if constexpr (std::is_same_v<ArType, cereal::JSONInputArchive> || std::is_same_v<ArType, cereal::XMLInputArchive>) {
+      for (int i = 0; i < 16; ++i) {
+        ar(matrix[i]);
+      }
+    } else {
+      ar(cereal::binary_data(matrix, sizeof(matrix)));
+    }
+  }
 };
+
 struct ParticleData {
   float pos[3];
   float vel[3];
   float life;
+
+  template <class Archive>
+  void serialize(Archive& ar) {
+    ar(pos[0], pos[1], pos[2], vel[0], vel[1], vel[2], life);
+  }
 };
+
 struct Health {
   float current;
+
+  template <class Archive>
+  void serialize(Archive& ar) {
+    ar(current);
+  }
 };
+
 struct GlobalTime {
   float dt;
   uint32_t frameCount;
+
+  template <class Archive>
+  void serialize(Archive& ar) {
+    ar(dt, frameCount);
+  }
 };
+
 struct GameStats {
   uint32_t activeEntities;
   uint32_t totalSpawned;
+
+  template <class Archive>
+  void serialize(Archive& ar) {
+    ar(activeEntities, totalSpawned);
+  }
 };
 
 // ==========================================
-// 2. 逻辑层定义
+// 2. 逻辑层定义 (含序列化支持)
 // ==========================================
 
 class CoreInitSystem : public System {
  public:
   CoreInitSystem() : System("CoreInitSystem") {}
+
   bool init(SceneBase& scene) override {
     m_passes.push_back(Pass::create_start<stage::Init>("InitContexts", [](ContextWriter<GlobalTime> time, ContextWriter<GameStats> stats) {
       if (!time.valid())
@@ -70,11 +199,60 @@ class CoreInitSystem : public System {
     }));
     return true;
   }
+
+  void save(SceneBase& scene, Archive& ar) override {
+    auto timeIt = scene.m_context_manager.find(typeid(GlobalTime));
+    auto statsIt = scene.m_context_manager.find(typeid(GameStats));
+
+    if (timeIt != scene.m_context_manager.end() && timeIt->second.valid()) {
+      auto* time = timeIt->second.get<GlobalTime>();
+      if (time) {
+        ar(FE_MAKE_NVP(*time));
+      }
+    }
+    if (statsIt != scene.m_context_manager.end() && statsIt->second.valid()) {
+      auto* stats = statsIt->second.get<GameStats>();
+      if (stats) {
+        ar(FE_MAKE_NVP(*stats));
+      }
+    }
+  }
+
+  void load(SceneBase& scene, Archive& ar) override {
+    // 重建上下文（如果不存在）
+    auto timeIt = scene.m_context_manager.find(typeid(GlobalTime));
+    if (timeIt == scene.m_context_manager.end()) {
+      scene.m_context_manager.emplace(typeid(GlobalTime), Any::create<GlobalTime>(0.016f, 0));
+    }
+
+    auto statsIt = scene.m_context_manager.find(typeid(GameStats));
+    if (statsIt == scene.m_context_manager.end()) {
+      scene.m_context_manager.emplace(typeid(GameStats), Any::create<GameStats>(0, 0));
+    }
+
+    // 安全获取上下文指针
+    auto& timeAny = scene.m_context_manager.at(typeid(GlobalTime));
+    auto& statsAny = scene.m_context_manager.at(typeid(GameStats));
+
+    if (!timeAny.valid() || !statsAny.valid()) {
+      std::cerr << "[CoreInitSystem::load] Context creation failed!\n";
+      return;
+    }
+
+    auto* time = timeAny.get<GlobalTime>();
+    auto* stats = statsAny.get<GameStats>();
+
+    if (time && stats) {
+      ar(FE_MAKE_NVP(*time));
+      ar(FE_MAKE_NVP(*stats));
+    }
+  }
 };
 
 class SpawnerSystem : public System {
  public:
   SpawnerSystem() : System("SpawnerSystem") {}
+
   bool init(SceneBase& scene) override {
     m_passes.push_back(Pass::create_start<stage::Startup>(
         "Initial_Mass_Spawn", [](EntityCreator creator, ComponentWriter<Transform, Velocity, BoidState, RenderState, Health, ParticleData> writer,
@@ -83,8 +261,9 @@ class SpawnerSystem : public System {
           if (!stats.valid())
             stats.create(GameStats{0, 0});
 
-          const int AGENT_COUNT = 150000;
-          const int PARTICLE_COUNT = 300000;
+          // 使用全局配置
+          const int AGENT_COUNT = g_config.AGENT_COUNT;
+          const int PARTICLE_COUNT = g_config.PARTICLE_COUNT;
 
           // 引入伪随机，打破数据规律，防止 SIMD 极简优化
           std::mt19937 rng(42);
@@ -108,6 +287,16 @@ class SpawnerSystem : public System {
           stats.get().totalSpawned += (AGENT_COUNT + PARTICLE_COUNT);
         }));
     return true;
+  }
+
+  void save(SceneBase& scene, Archive& ar) override {
+    // 序列化所有组件类型
+    ar.components<Transform, Velocity, BoidState, RenderState, Health, ParticleData>();
+  }
+
+  void load(SceneBase& scene, Archive& ar) override {
+    // 反序列化所有组件类型
+    ar.components<Transform, Velocity, BoidState, RenderState, Health, ParticleData>();
   }
 };
 
@@ -239,12 +428,343 @@ class BenchmarkMonitorSystem : public System {
 };
 
 // ==========================================
-// 3. 严格受控测试启动点
+// 3. 存档完整性验证工具
+// ==========================================
+struct SaveDataSnapshot {
+  uint32_t entityCount{0};
+  uint32_t transformCount{0};
+  uint32_t velocityCount{0};
+  uint32_t boidStateCount{0};
+  uint32_t renderStateCount{0};
+  uint32_t particleCount{0};
+  uint32_t healthCount{0};
+  float globalTimeDt{0};
+  uint32_t frameCount{0};
+  uint32_t activeEntities{0};
+  uint32_t totalSpawned{0};
+
+  // 计算校验和用于数据完整性验证
+  size_t computeChecksum() const {
+    size_t hash = 0;
+    hash ^= std::hash<uint32_t>{}(entityCount);
+    hash ^= std::hash<uint32_t>{}(transformCount) << 1;
+    hash ^= std::hash<uint32_t>{}(velocityCount) << 2;
+    hash ^= std::hash<uint32_t>{}(boidStateCount) << 3;
+    hash ^= std::hash<uint32_t>{}(renderStateCount) << 4;
+    hash ^= std::hash<uint32_t>{}(particleCount) << 5;
+    hash ^= std::hash<uint32_t>{}(healthCount) << 6;
+    hash ^= std::hash<float>{}(globalTimeDt) << 7;
+    hash ^= std::hash<uint32_t>{}(frameCount) << 8;
+    hash ^= std::hash<uint32_t>{}(activeEntities) << 9;
+    hash ^= std::hash<uint32_t>{}(totalSpawned) << 10;
+    return hash;
+  }
+
+  void print() const {
+    std::cout << "  Entity Count      : " << entityCount << "\n";
+    std::cout << "  Transform Count   : " << transformCount << "\n";
+    std::cout << "  Velocity Count    : " << velocityCount << "\n";
+    std::cout << "  BoidState Count   : " << boidStateCount << "\n";
+    std::cout << "  RenderState Count : " << renderStateCount << "\n";
+    std::cout << "  Particle Count    : " << particleCount << "\n";
+    std::cout << "  Health Count      : " << healthCount << "\n";
+    std::cout << "  GlobalTime.dt     : " << globalTimeDt << "\n";
+    std::cout << "  Frame Count       : " << frameCount << "\n";
+    std::cout << "  Active Entities   : " << activeEntities << "\n";
+    std::cout << "  Total Spawned     : " << totalSpawned << "\n";
+  }
+
+  bool operator==(const SaveDataSnapshot& other) const {
+    return entityCount == other.entityCount && transformCount == other.transformCount && velocityCount == other.velocityCount &&
+           boidStateCount == other.boidStateCount && renderStateCount == other.renderStateCount && particleCount == other.particleCount &&
+           healthCount == other.healthCount && std::abs(globalTimeDt - other.globalTimeDt) < 0.0001f && frameCount == other.frameCount &&
+           activeEntities == other.activeEntities && totalSpawned == other.totalSpawned;
+  }
+};
+
+SaveDataSnapshot captureSnapshot(SceneBase& scene) {
+  SaveDataSnapshot snapshot;
+  // 使用 Transform 视图大小作为实体计数的参考（因为所有 Agent 都有 Transform）
+  snapshot.entityCount = static_cast<uint32_t>(scene.m_registry.view<entt::entity>().size() + scene.m_registry.view<ParticleData>().size());
+  snapshot.transformCount = static_cast<uint32_t>(scene.m_registry.view<Transform>().size());
+  snapshot.velocityCount = static_cast<uint32_t>(scene.m_registry.view<Velocity>().size());
+  snapshot.boidStateCount = static_cast<uint32_t>(scene.m_registry.view<BoidState>().size());
+  snapshot.renderStateCount = static_cast<uint32_t>(scene.m_registry.view<RenderState>().size());
+  snapshot.particleCount = static_cast<uint32_t>(scene.m_registry.view<ParticleData>().size());
+  snapshot.healthCount = static_cast<uint32_t>(scene.m_registry.view<Health>().size());
+
+  auto timeIt = scene.m_context_manager.find(typeid(GlobalTime));
+  if (timeIt != scene.m_context_manager.end()) {
+    auto* time = timeIt->second.get<GlobalTime>();
+    if (time) {
+      snapshot.globalTimeDt = time->dt;
+      snapshot.frameCount = time->frameCount;
+    }
+  }
+
+  auto statsIt = scene.m_context_manager.find(typeid(GameStats));
+  if (statsIt != scene.m_context_manager.end()) {
+    auto* stats = statsIt->second.get<GameStats>();
+    if (stats) {
+      snapshot.activeEntities = stats->activeEntities;
+      snapshot.totalSpawned = stats->totalSpawned;
+    }
+  }
+
+  return snapshot;
+}
+
+// ==========================================
+// 4. 存档/加载测试场景
+// ==========================================
+void runSaveLoadTest() {
+  std::cout << "\n===========================================\n";
+  std::cout << "      Save/Load System Test Suite         \n";
+  std::cout << "===========================================\n\n";
+
+  const stl::string savePathBinary = "./test_save.bin";
+  const stl::string savePathJson = "./test_save.json";
+
+  // ----------------------------------------
+  // Phase 1: 创建初始场景并运行若干帧
+  // ----------------------------------------
+  std::cout << "[Phase 1] Creating initial scene...\n";
+
+  Scene scene1;
+  scene1.add_system(stl::make_shared<CoreInitSystem>());
+  scene1.add_system(stl::make_shared<SpawnerSystem>());
+  scene1.add_system(stl::make_shared<AISystem>());
+  scene1.add_system(stl::make_shared<PhysicsSystem>());
+  scene1.add_system(stl::make_shared<RenderComputeSystem>());
+  scene1.add_system(stl::make_shared<BenchmarkMonitorSystem>());
+
+  scene1.compile();
+  scene1.setup();
+
+  // 运行若干帧
+  const int INITIAL_FRAMES = g_config.SAVELOAD_INIT_FRAMES;
+  std::cout << "[Phase 1] Running " << INITIAL_FRAMES << " frames...\n";
+  for (int i = 0; i < INITIAL_FRAMES; ++i) {
+    scene1.run();
+  }
+
+  // 捕获快照
+  SaveDataSnapshot snapshot1 = captureSnapshot(scene1.base());
+  std::cout << "[Phase 1] Snapshot captured:\n";
+  snapshot1.print();
+
+  // ----------------------------------------
+  // Phase 2: 保存到二进制文件
+  // ----------------------------------------
+  std::cout << "\n[Phase 2] Saving to binary file: " << savePathBinary.c_str() << "\n";
+  scene1.save(savePathBinary);
+
+  // 验证文件是否存在
+  if (!std::filesystem::exists(savePathBinary.c_str())) {
+    std::cerr << "[FAIL] Binary save file was not created!\n";
+    return;
+  }
+
+  auto binaryFileSize = std::filesystem::file_size(savePathBinary.c_str());
+  std::cout << "[Phase 2] Binary file size: " << binaryFileSize << " bytes\n";
+
+  // ----------------------------------------
+  // Phase 3: 保存到JSON文件
+  // ----------------------------------------
+  std::cout << "\n[Phase 3] Saving to JSON file: " << savePathJson.c_str() << "\n";
+  scene1.save(savePathJson);
+
+  if (!std::filesystem::exists(savePathJson.c_str())) {
+    std::cerr << "[FAIL] JSON save file was not created!\n";
+    return;
+  }
+
+  auto jsonFileSize = std::filesystem::file_size(savePathJson.c_str());
+  std::cout << "[Phase 3] JSON file size: " << jsonFileSize << " bytes\n";
+
+  // ----------------------------------------
+  // Phase 4: 从二进制文件加载到新场景
+  // ----------------------------------------
+  std::cout << "\n[Phase 4] Loading from binary file into new scene...\n";
+
+  Scene scene2;
+  scene2.add_system(stl::make_shared<CoreInitSystem>());
+  scene2.add_system(stl::make_shared<SpawnerSystem>());
+  scene2.add_system(stl::make_shared<AISystem>());
+  scene2.add_system(stl::make_shared<PhysicsSystem>());
+  scene2.add_system(stl::make_shared<RenderComputeSystem>());
+  scene2.add_system(stl::make_shared<BenchmarkMonitorSystem>());
+
+  scene2.compile();
+  scene2.load(savePathBinary);
+
+  SaveDataSnapshot snapshot2 = captureSnapshot(scene2.base());
+  std::cout << "[Phase 4] Snapshot after binary load:\n";
+  snapshot2.print();
+
+  // 验证二进制加载
+  bool binaryLoadSuccess = (snapshot1 == snapshot2);
+  std::cout << "\n[Phase 4] Binary Load Verification: " << (binaryLoadSuccess ? "PASSED" : "FAILED") << "\n";
+
+  if (!binaryLoadSuccess) {
+    std::cout << "  Expected:\n";
+    snapshot1.print();
+    std::cout << "  Got:\n";
+    snapshot2.print();
+  }
+
+  // ----------------------------------------
+  // Phase 5: 从JSON文件加载到新场景
+  // ----------------------------------------
+  std::cout << "\n[Phase 5] Loading from JSON file into new scene...\n";
+
+  Scene scene3;
+  scene3.add_system(stl::make_shared<CoreInitSystem>());
+  scene3.add_system(stl::make_shared<SpawnerSystem>());
+  scene3.add_system(stl::make_shared<AISystem>());
+  scene3.add_system(stl::make_shared<PhysicsSystem>());
+  scene3.add_system(stl::make_shared<RenderComputeSystem>());
+  scene3.add_system(stl::make_shared<BenchmarkMonitorSystem>());
+
+  scene3.compile();
+  scene3.load(savePathJson);
+
+  SaveDataSnapshot snapshot3 = captureSnapshot(scene3.base());
+  std::cout << "[Phase 5] Snapshot after JSON load:\n";
+  snapshot3.print();
+
+  // 验证JSON加载
+  bool jsonLoadSuccess = (snapshot1 == snapshot3);
+  std::cout << "\n[Phase 5] JSON Load Verification: " << (jsonLoadSuccess ? "PASSED" : "FAILED") << "\n";
+
+  // ----------------------------------------
+  // Phase 6: 继续运行加载的场景，验证功能正常
+  // ----------------------------------------
+  std::cout << "\n[Phase 6] Continuing simulation from loaded scene...\n";
+
+  const int CONTINUE_FRAMES = g_config.SAVELOAD_CONT_FRAMES;
+  for (int i = 0; i < CONTINUE_FRAMES; ++i) {
+    scene2.run();
+  }
+
+  SaveDataSnapshot snapshot4 = captureSnapshot(scene2.base());
+  std::cout << "[Phase 6] Snapshot after " << CONTINUE_FRAMES << " more frames:\n";
+  snapshot4.print();
+
+  // 验证帧数是否正确增加
+  bool frameContinuity = (snapshot4.frameCount == snapshot1.frameCount + CONTINUE_FRAMES);
+  std::cout << "\n[Phase 6] Frame Continuity Check: " << (frameContinuity ? "PASSED" : "FAILED") << "\n";
+  if (!frameContinuity) {
+    std::cout << "  Expected frame count: " << snapshot1.frameCount + CONTINUE_FRAMES << "\n";
+    std::cout << "  Actual frame count: " << snapshot4.frameCount << "\n";
+  }
+
+  // ----------------------------------------
+  // Phase 7: 增量保存测试
+  // ----------------------------------------
+  std::cout << "\n[Phase 7] Incremental save test...\n";
+
+  const stl::string incrementalSavePath = "./test_save_incremental.bin";
+  scene2.save(incrementalSavePath);
+
+  Scene scene4;
+  scene4.add_system(stl::make_shared<CoreInitSystem>());
+  scene4.add_system(stl::make_shared<SpawnerSystem>());
+  scene4.add_system(stl::make_shared<AISystem>());
+  scene4.add_system(stl::make_shared<PhysicsSystem>());
+  scene4.add_system(stl::make_shared<RenderComputeSystem>());
+  scene4.add_system(stl::make_shared<BenchmarkMonitorSystem>());
+
+  scene4.compile();
+  scene4.load(incrementalSavePath);
+
+  SaveDataSnapshot snapshot5 = captureSnapshot(scene4.base());
+
+  bool incrementalSuccess = (snapshot4 == snapshot5);
+  std::cout << "[Phase 7] Incremental Save/Load: " << (incrementalSuccess ? "PASSED" : "FAILED") << "\n";
+
+  // ----------------------------------------
+  // Phase 8: 组件数据完整性抽样验证
+  // ----------------------------------------
+  std::cout << "\n[Phase 8] Component data integrity sampling...\n";
+
+  bool componentIntegrity = true;
+  int sampleCount = 0;
+  int maxSamples = g_config.MAX_SAMPLES;
+
+  // 抽样验证Transform组件数据
+  auto view1 = scene1.base().m_registry.view<Transform>();
+  auto view4 = scene4.base().m_registry.view<Transform>();
+
+  if (view1.size() == view4.size()) {
+    auto it1 = view1.begin();
+    auto it4 = view4.begin();
+
+    while (it1 != view1.end() && sampleCount < maxSamples) {
+      const auto& t1 = view1.get<Transform>(*it1);
+      const auto& t4 = view4.get<Transform>(*it4);
+
+      for (int i = 0; i < 3; ++i) {
+        if (std::abs(t1.pos[i] - t4.pos[i]) > 0.0001f) {
+          componentIntegrity = false;
+          break;
+        }
+        if (std::abs(t1.rot[i] - t4.rot[i]) > 0.0001f) {
+          componentIntegrity = false;
+          break;
+        }
+      }
+
+      if (!componentIntegrity)
+        break;
+
+      ++it1;
+      ++it4;
+      ++sampleCount;
+    }
+  } else {
+    componentIntegrity = false;
+  }
+
+  std::cout << "[Phase 8] Sampled " << sampleCount << " Transform components\n";
+  std::cout << "[Phase 8] Component Data Integrity: " << (componentIntegrity ? "PASSED" : "FAILED") << "\n";
+
+  // ----------------------------------------
+  // Final Summary
+  // ----------------------------------------
+  std::cout << "\n===========================================\n";
+  std::cout << "           TEST SUMMARY                    \n";
+  std::cout << "===========================================\n";
+  std::cout << " Binary Load Test     : " << (binaryLoadSuccess ? "PASSED" : "FAILED") << "\n";
+  std::cout << " JSON Load Test       : " << (jsonLoadSuccess ? "PASSED" : "FAILED") << "\n";
+  std::cout << " Frame Continuity     : " << (frameContinuity ? "PASSED" : "FAILED") << "\n";
+  std::cout << " Incremental Save     : " << (incrementalSuccess ? "PASSED" : "FAILED") << "\n";
+  std::cout << " Component Integrity  : " << (componentIntegrity ? "PASSED" : "FAILED") << "\n";
+  std::cout << "-------------------------------------------\n";
+
+  bool allPassed = binaryLoadSuccess && jsonLoadSuccess && frameContinuity && incrementalSuccess && componentIntegrity;
+  std::cout << " Overall Result       : " << (allPassed ? "ALL TESTS PASSED" : "SOME TESTS FAILED") << "\n";
+  std::cout << "===========================================\n";
+
+  // 清理测试文件
+  std::cout << "\nCleaning up test files...\n";
+  std::filesystem::remove(savePathBinary.c_str());
+  std::filesystem::remove(savePathJson.c_str());
+  std::filesystem::remove(incrementalSavePath.c_str());
+  std::cout << "Cleanup complete.\n";
+}
+
+// ==========================================
+// 5. 严格受控测试启动点
 // ==========================================
 int main() {
   std::cout << "===========================================\n";
   std::cout << " FantasyEngine ECS - Ironclad Benchmark  \n";
-  std::cout << "===========================================\n";
+  std::cout << "===========================================\n\n";
+
+  // 打印当前测试配置
+  g_config.print();
+  std::cout << "\n";
 
   try {
     Scene scene;
@@ -270,7 +790,7 @@ int main() {
       return EXIT_FAILURE;
     }
 
-    const int TEST_FRAMES = 500;
+    const int TEST_FRAMES = g_config.BENCHMARK_FRAMES;
     std::cout << "[3] Running Benchmark for " << TEST_FRAMES << " frames...\n\n";
 
     std::vector<double> frameTimes;
@@ -329,6 +849,16 @@ int main() {
 
   } catch (const std::exception& e) {
     std::cerr << "\n[FATAL ERROR] " << e.what() << "\n";
+    return EXIT_FAILURE;
+  }
+
+  // ==========================================
+  // 运行存档/加载测试
+  // ==========================================
+  try {
+    runSaveLoadTest();
+  } catch (const std::exception& e) {
+    std::cerr << "\n[SAVE/LOAD TEST ERROR] " << e.what() << "\n";
     return EXIT_FAILURE;
   }
 
