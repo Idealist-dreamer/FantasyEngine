@@ -10,7 +10,8 @@ class System {
   System(const stl::string& name) : m_name(name) {}
   virtual ~System() = default;
 
-  virtual bool init(Visitor<WorldBase>& visitor) = 0;
+  /// 初始化系统，通过 WorldVisitor 接口访问世界资源
+  virtual bool init(WorldVisitor& visitor) = 0;
 
   virtual void serialize_save(JsonOutputArchive&) {}
   virtual void serialize_load(JsonInputArchive&) {}

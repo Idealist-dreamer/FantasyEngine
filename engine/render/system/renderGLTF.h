@@ -9,7 +9,7 @@ class RenderGLTF : public System {
   RenderGLTF();
   ~RenderGLTF();
 
-  bool init(Visitor<WorldBase>& visitor) override;
+  bool init(WorldVisitor& visitor) override;
 
   FE_DECLARE_PRIVATE
 };

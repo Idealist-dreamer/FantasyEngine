@@ -55,34 +55,38 @@ class Pass {
   stage::StageHash m_stage = 0;
 
  private:
-  // Parameter fetch helper: distinguishes pass-by-value vs pass-by-reference
-  // Fix: Check original type T (preserving const) for Context Reader/Writer distinction
+  /// 参数获取辅助函数：通过 WorldVisitor 接口安全获取参数
+  /// 注意：保留原始类型 T 的 const 属性以正确区分 ContextReader/ContextWriter
   template <typename T>
-  static auto get_param(Visitor<WorldBase>& visitor, uint32_t passId) {
-    // Check context types first (preserving const)
+  static auto get_param(WorldVisitor& visitor, uint32_t passId) {
+    // 优先检查 context 类型（保留 const）
     if constexpr (is_context_reader<T>::value) {
-      return ParamAccess::get<T>(visitor->m_context_manager);
+      using U = typename is_context_reader<T>::type;
+      return Context<U>(visitor.template get_context<U>());
     } else if constexpr (is_context_writer<T>::value) {
-      return ParamAccess::get<T>(visitor->m_context_manager);
+      using U = typename is_context_writer<T>::type;
+      return Context<U>(visitor.template get_context<U>());
     } else {
       using RawT = meta::clean_t<T>;
       if constexpr (is_entity_command_buffer<RawT>::value) {
-        // EntityCommandBuffer: return by reference
-        return std::ref(ParamAccess::get<T>(visitor->m_entity_command_buffers, passId));
+        // EntityCommandBuffer: 返回引用
+        return std::ref(visitor.get_entity_command_buffers()[passId]);
       } else if constexpr (is_entity_query<RawT>::value) {
-        return ParamAccess::get<T>(visitor->m_registry);
+        return RawT(visitor.get_registry());
       } else if constexpr (is_entity_creator<RawT>::value) {
-        return ParamAccess::get<T>(visitor->m_registry);
+        return RawT(visitor.get_registry());
       } else if constexpr (is_entity_destroyer<RawT>::value) {
-        return ParamAccess::get<T>(visitor->m_registry);
+        return RawT(visitor.get_registry());
       } else if constexpr (is_component_reader<RawT>::value) {
-        return ParamAccess::get<T>(visitor->m_registry);
+        return RawT(visitor.get_registry());
       } else if constexpr (is_component_writer<RawT>::value) {
-        return ParamAccess::get<T>(visitor->m_registry);
+        return RawT(visitor.get_registry());
       } else if constexpr (is_event_reader<RawT>::value) {
-        return ParamAccess::get<T>(visitor->m_event_manager1);
+        using EvT = typename is_event_reader<RawT>::type;
+        return EventReader<EvT>(*visitor.get_event_manager1()[std::type_index(typeid(EvT))].template get<stl::vector<EvT>>());
       } else if constexpr (is_event_writer<RawT>::value) {
-        return ParamAccess::get<T>(visitor->m_event_manager2);
+        using EvT = typename is_event_writer<RawT>::type;
+        return EventWriter<EvT>(*visitor.get_event_manager2()[std::type_index(typeid(EvT))].template get<stl::vector<EvT>>());
       }
     }
   }
@@ -94,8 +98,9 @@ class Pass {
 
     uint32_t passId = m_id;
 
-    m_binder = [func = std::forward<Func>(func), passId](Visitor<WorldBase>& visitor) mutable -> CallType {
-      // Use std::reference_wrapper to ensure correct reference passing
+    // 使用 WorldVisitor 接口进行参数绑定
+    m_binder = [func = std::forward<Func>(func), passId](WorldVisitor& visitor) mutable -> CallType {
+      // 使用 std::reference_wrapper 确保正确传递引用
       return [func, params = std::make_tuple(get_param<Args>(visitor, passId)...)]() mutable {
         std::apply(func, params);
       };
@@ -103,10 +108,10 @@ class Pass {
   }
 
   CallType m_execute;
-  std::function<CallType(Visitor<WorldBase>&)> m_binder;
+  std::function<CallType(WorldVisitor&)> m_binder;
 
   stl::vector<Mutex> m_mutexes;
-  stl::vector<std::function<void(Visitor<WorldBase>&)>> m_preparers;
+  stl::vector<std::function<void(WorldVisitor&)>> m_preparers;
 
   friend class World;
 };

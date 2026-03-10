@@ -55,7 +55,8 @@ void World::compile() {
     }
   }
 
-  auto visitor = Visitor<WorldBase>(*this);
+  // 创建 WorldVisitor 实例，提供对 WorldBase 资源的安全访问
+  WorldVisitor visitor(*this);
 
   for (auto& [name, sys] : sys_map) {
     if (sys->init(visitor)) {
@@ -72,6 +73,7 @@ void World::compile() {
     }
   }
 
+  // 预先申请所有资源（通过 WorldVisitor 接口）
   for (auto pass : setup_passes) {
     for (auto& preparer : pass->m_preparers) {
       preparer(visitor);
@@ -83,6 +85,7 @@ void World::compile() {
     }
   }
 
+  // 绑定参数（通过 WorldVisitor 接口）
   for (auto pass : setup_passes) {
     pass->m_execute = pass->m_binder(visitor);
   }

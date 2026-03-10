@@ -83,7 +83,7 @@ class TestDataSystem : public System {
 public:
   TestDataSystem() : System("TestDataSystem") {}
   
-  bool init(Visitor<WorldBase>& visitor) override {
+  bool init(WorldVisitor& visitor) override {
     // Add startup pass to create test entities
     m_passes.push_back(Pass::create_start<stage::Startup>(
       "CreateTestEntities",
