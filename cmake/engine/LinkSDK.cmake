@@ -8,7 +8,6 @@ function(fe_link_engine_sdks TARGET_NAME)
     find_package(EnTT CONFIG REQUIRED)
     find_package(mimalloc CONFIG REQUIRED)
     find_package(EASTL CONFIG REQUIRED)
-    find_package(flatbuffers CONFIG REQUIRED)
     find_package(winpixevent CONFIG REQUIRED)
     find_package(benchmark CONFIG REQUIRED)
     find_package(directx12-agility CONFIG REQUIRED)
@@ -28,7 +27,6 @@ function(fe_link_engine_sdks TARGET_NAME)
         mimalloc
         EASTL
         spdlog::spdlog
-        flatbuffers::flatbuffers
 
         Microsoft::WinPixEventRuntime
         Microsoft::DirectX-Headers

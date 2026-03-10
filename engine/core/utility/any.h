@@ -1,17 +1,17 @@
 #pragma once
 
-#include "external.h"
+#include "core/memory/allocator.h"
 
 namespace fe::engine {
 
-struct ContextStorage {
-  ContextStorage() = default;
-  ~ContextStorage() { destroy(); }
+struct Any {
+  Any() = default;
+  ~Any() { destroy(); }
 
-  ContextStorage(const ContextStorage&) = delete;
-  ContextStorage& operator=(const ContextStorage&) = delete;
+  Any(const Any&) = delete;
+  Any& operator=(const Any&) = delete;
 
-  ContextStorage(ContextStorage&& other) noexcept : m_ptr(other.m_ptr), m_deleter(other.m_deleter) {
+  Any(Any&& other) noexcept : m_ptr(other.m_ptr), m_deleter(other.m_deleter) {
     other.m_ptr = nullptr;
     other.m_deleter = nullptr;
 
@@ -21,7 +21,7 @@ struct ContextStorage {
 #endif
   }
 
-  ContextStorage& operator=(ContextStorage&& other) noexcept {
+  Any& operator=(Any&& other) noexcept {
     if (this != &other) {
       destroy();
       m_ptr = other.m_ptr;
@@ -70,8 +70,8 @@ struct ContextStorage {
   }
 
   template <typename T, typename... Args>
-  static ContextStorage create(Args&&... args) {
-    ContextStorage res;
+  static Any create(Args&&... args) {
+    Any res;
     res.m_ptr = Allocator::create<T>(std::forward<Args>(args)...);
     res.m_deleter = [](void* p) {
       if (p) {
@@ -85,8 +85,8 @@ struct ContextStorage {
   }
 
   template <typename T>
-  static ContextStorage create(T* ptr, bool need_free = false) {
-    ContextStorage res;
+  static Any create(T* ptr, bool need_free = false) {
+    Any res;
     res.m_ptr = ptr;
     if (need_free) {
       res.m_deleter = [](void* p) {

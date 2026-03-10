@@ -1,6 +1,6 @@
 #pragma once
 
-#include "engine/ecs/system.h"
+#include "framework/system.h"
 
 namespace fe::engine::hierarchy {
 

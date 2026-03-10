@@ -1,6 +1,6 @@
 #pragma once
 
-#include "external.h"
+#include "core/container/stl.h"
 
 namespace fe::engine {
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "engine/base/container/stl.h"
-#include "engine/base/utility/class.h"
+#include "core/container/stl.h"
+#include "core/utility/common.h"
 
 class GraphicsContext;
 

@@ -1,14 +1,14 @@
 #pragma once
 
-#include "engine/ecs/system.h"
+#include "framework/system.h"
 
-#include "engine/render/rhi/GraphicsCore.h"
-#include "engine/render/rhi/SystemTime.h"
-#include "engine/render/rhi/TextRenderer.h"
-#include "engine/render/rhi/CommandContext.h"
-#include "engine/render/rhi/RootSignature.h"
-#include "engine/render/rhi/PipelineState.h"
-#include "engine/render/rhi/BufferManager.h"
+#include "render/rhi/GraphicsCore.h"
+#include "render/rhi/SystemTime.h"
+#include "render/rhi/TextRenderer.h"
+#include "render/rhi/CommandContext.h"
+#include "render/rhi/RootSignature.h"
+#include "render/rhi/PipelineState.h"
+#include "render/rhi/BufferManager.h"
 
 namespace fe::engine::render {
 struct GCInitInfo {

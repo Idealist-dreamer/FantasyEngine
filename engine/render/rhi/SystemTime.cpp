@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "engine/render/rhi/pch.h"
+#include "render/rhi/pch.h"
 #include "SystemTime.h"
 
 double SystemTime::sm_CpuTickDelta = 0.0;

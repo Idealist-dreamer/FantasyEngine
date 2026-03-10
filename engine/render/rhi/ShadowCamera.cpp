@@ -11,7 +11,7 @@
 // Author:  James Stanard
 //
 
-#include "engine/render/rhi/pch.h"
+#include "render/rhi/pch.h"
 #include "ShadowCamera.h"
 
 using namespace Math;
@@ -20,7 +20,7 @@ void ShadowCamera::UpdateMatrix(Vector3 LightDirection, Vector3 ShadowCenter, Ve
                                 uint32_t BufferPrecision) {
   SetLookDirection(LightDirection, Vector3(kZUnitVector));
 
-  // Converts world units to texel units so we can quantize the camera position to whole texel units
+  // Converts scene units to texel units so we can quantize the camera position to whole texel units
   Vector3 RcpDimensions = Recip(ShadowBounds);
   Vector3 QuantizeScale = Vector3((float)BufferWidth, (float)BufferHeight, (float)((1 << BufferPrecision) - 1)) * RcpDimensions;
 
@@ -30,9 +30,9 @@ void ShadowCamera::UpdateMatrix(Vector3 LightDirection, Vector3 ShadowCenter, Ve
 
   // Transform to view space
   ShadowCenter = ~GetRotation() * ShadowCenter;
-  // Scale to texel units, truncate fractional part, and scale back to world units
+  // Scale to texel units, truncate fractional part, and scale back to scene units
   ShadowCenter = Floor(ShadowCenter * QuantizeScale) / QuantizeScale;
-  // Transform back into world space
+  // Transform back into scene space
   ShadowCenter = GetRotation() * ShadowCenter;
 
   SetPosition(ShadowCenter);

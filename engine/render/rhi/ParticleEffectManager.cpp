@@ -12,7 +12,7 @@
 //             James Stanard
 //
 
-#include "engine/render/rhi/pch.h"
+#include "render/rhi/pch.h"
 #include "BufferManager.h"
 #include "BitonicSort.h"
 #include "Camera.h"

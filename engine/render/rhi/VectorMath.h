@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 // This is a system of classes that wrap DirectXMath in a more object-oriented and concise (readable) way.  While these
 // classes are not designed to maximize throughput on the instruction level, they are designed to be easily understood.
@@ -16,7 +16,7 @@
 // way of doing things obvious.  This leaves programmers constantly finding usage patterns that "work for them" but are
 // ultimately inefficient and don't use the API the "way it was intended".  The goal of this wrapper is to be cogent and
 // familiar.
-// 
+//
 // Note that DirectXMath treats vectors like [1x4] matrices (rows) rather than [4x1] matrices (columns).  Likewise, it
 // treats matrices like they are transposed, so that you would multiply a vector and a matrix like so:
 //
@@ -24,7 +24,7 @@
 //
 // Applying multiple transforms to a vector involves concatenating on the outside, or right of the previous transform:
 //
-//    ProjectedPosition = ModelPosition * ModelToWorld * WorldToView * ViewToProj
+//    ProjectedPosition = ModelPosition * ModelToScene * SceneToView * ViewToProj
 //
 // This is *not* how this API works because it is needlessly contrary to Math textbooks.  It's not "wrong", per se,
 // but it's a paradigm I'd like to see changed.  A vector is four floats.  A matrix is four consecutive vectors.  Whether
@@ -34,7 +34,7 @@
 //
 // and
 //
-//    ProjectedPosition = ViewToProj * WorldToView * ModelToWorld * ModelPosition
+//    ProjectedPosition = ViewToProj * SceneToView * ModelToScene * ModelPosition
 //
 // One very happy result of this is that you can stop transposing every matrix you set in a shader constant buffer.  They
 // were always in the right format, you were just multiplying them backwards.  In the shader you should have been calling
@@ -47,7 +47,6 @@
 //
 // Peace,
 //   James
-
 
 #pragma once
 

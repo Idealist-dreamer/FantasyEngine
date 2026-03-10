@@ -1,8 +1,9 @@
 #pragma once
 
-#include "meta.h"
+#include "core/utility/meta.h"
+#include "core/utility/any.h"
+
 #include "common.h"
-#include "context.h"
 
 namespace fe::engine {
 // ============================================================================
@@ -66,7 +67,7 @@ struct EntityCommandBuffer {
   stl::vector<Entity> m_entity_map;
   stl::vector<Entity> m_destroyed_entities;
 
-  friend class World;
+  friend class Scene;
 };
 
 // ============================================================================
@@ -334,7 +335,7 @@ template <typename T>
 struct Context {
   using type = T;
 
-  explicit Context(ContextStorage& res) : m_context(res) {}
+  explicit Context(Any& res) : m_context(res) {}
 
   bool valid() const { return m_context.valid(); }
 
@@ -345,13 +346,13 @@ struct Context {
 
   template <typename... Args>
   void create(Args&&... args) {
-    m_context = ContextStorage::create<T>(std::forward<Args>(args)...);
+    m_context = Any::create<T>(std::forward<Args>(args)...);
   }
 
-  void create(T* ptr, bool need_free = true) { m_context = ContextStorage::create<T>(ptr, need_free); }
+  void create(T* ptr, bool need_free = true) { m_context = Any::create<T>(ptr, need_free); }
 
  private:
-  ContextStorage& m_context;
+  Any& m_context;
 };
 
 template <typename T>

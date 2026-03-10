@@ -28,15 +28,15 @@ class BaseCamera {
   void SetEyeAtUp(Vector3 eye, Vector3 at, Vector3 up);
   void SetLookDirection(Vector3 forward, Vector3 up);
   void SetRotation(Quaternion basisRotation);
-  void SetPosition(Vector3 worldPos);
+  void SetPosition(Vector3 scenePos);
   void SetTransform(const AffineTransform& xform);
   void SetTransform(const OrthogonalTransform& xform);
 
-  const Quaternion GetRotation() const { return m_CameraToWorld.GetRotation(); }
+  const Quaternion GetRotation() const { return m_CameraToScene.GetRotation(); }
   const Vector3 GetRightVec() const { return m_Basis.GetX(); }
   const Vector3 GetUpVec() const { return m_Basis.GetY(); }
   const Vector3 GetForwardVec() const { return -m_Basis.GetZ(); }
-  const Vector3 GetPosition() const { return m_CameraToWorld.GetTranslation(); }
+  const Vector3 GetPosition() const { return m_CameraToScene.GetTranslation(); }
 
   // Accessors for reading the various matrices and frusta
   const Matrix4& GetViewMatrix() const { return m_ViewMatrix; }
@@ -44,22 +44,22 @@ class BaseCamera {
   const Matrix4& GetViewProjMatrix() const { return m_ViewProjMatrix; }
   const Matrix4& GetReprojectionMatrix() const { return m_ReprojectMatrix; }
   const Frustum& GetViewSpaceFrustum() const { return m_FrustumVS; }
-  const Frustum& GetWorldSpaceFrustum() const { return m_FrustumWS; }
+  const Frustum& GetSceneSpaceFrustum() const { return m_FrustumWS; }
 
  protected:
-  BaseCamera() : m_CameraToWorld(kIdentity), m_Basis(kIdentity) {}
+  BaseCamera() : m_CameraToScene(kIdentity), m_Basis(kIdentity) {}
 
   void SetProjMatrix(const Matrix4& ProjMat) { m_ProjMatrix = ProjMat; }
 
-  OrthogonalTransform m_CameraToWorld;
+  OrthogonalTransform m_CameraToScene;
 
   // Redundant data cached for faster lookups.
   Matrix3 m_Basis;
 
-  // Transforms homogeneous coordinates from world space to view space.  In this case, view space is defined as +X is
+  // Transforms homogeneous coordinates from scene space to view space.  In this case, view space is defined as +X is
   // to the right, +Y is up, and -Z is forward.  This has to match what the projection matrix expects, but you might
   // also need to know what the convention is if you work in view space in a shader.
-  Matrix4 m_ViewMatrix;  // i.e. "World-to-View" matrix
+  Matrix4 m_ViewMatrix;  // i.e. "Scene-to-View" matrix
 
   // The projection matrix transforms view space to clip space.  Once division by W has occurred, the final coordinates
   // can be transformed by the viewport matrix to screen space.  The projection matrix is determined by the screen aspect
@@ -68,7 +68,7 @@ class BaseCamera {
   Matrix4 m_ProjMatrix;  // i.e. "View-to-Projection" matrix
 
   // A concatenation of the view and projection matrices.
-  Matrix4 m_ViewProjMatrix;  // i.e.  "World-To-Projection" matrix.
+  Matrix4 m_ViewProjMatrix;  // i.e.  "Scene-To-Projection" matrix.
 
   // The view-projection matrix from the previous frame
   Matrix4 m_PreviousViewProjMatrix;
@@ -77,7 +77,7 @@ class BaseCamera {
   Matrix4 m_ReprojectMatrix;
 
   Frustum m_FrustumVS;  // View-space view frustum
-  Frustum m_FrustumWS;  // World-space view frustum
+  Frustum m_FrustumWS;  // Scene-space view frustum
 };
 
 class Camera : public BaseCamera {
@@ -125,8 +125,8 @@ inline void BaseCamera::SetEyeAtUp(Vector3 eye, Vector3 at, Vector3 up) {
   SetPosition(eye);
 }
 
-inline void BaseCamera::SetPosition(Vector3 worldPos) {
-  m_CameraToWorld.SetTranslation(worldPos);
+inline void BaseCamera::SetPosition(Vector3 scenePos) {
+  m_CameraToScene.SetTranslation(scenePos);
 }
 
 inline void BaseCamera::SetTransform(const AffineTransform& xform) {
@@ -136,8 +136,8 @@ inline void BaseCamera::SetTransform(const AffineTransform& xform) {
 }
 
 inline void BaseCamera::SetRotation(Quaternion basisRotation) {
-  m_CameraToWorld.SetRotation(Normalize(basisRotation));
-  m_Basis = Matrix3(m_CameraToWorld.GetRotation());
+  m_CameraToScene.SetRotation(Normalize(basisRotation));
+  m_Basis = Matrix3(m_CameraToScene.GetRotation());
 }
 
 inline Camera::Camera() : m_ReverseZ(true), m_InfiniteZ(false) {

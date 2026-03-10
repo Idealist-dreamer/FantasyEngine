@@ -1,9 +1,9 @@
 #pragma once
 
-#include "engine/base/macros.h"
-#include "engine/base/container/stl.h"
-#include "engine/base/utility/common.h"
-#include "engine/base/utility/assert.h"
+#include "core/macros.h"
+#include "core/container/stl.h"
+#include "core/utility/common.h"
+#include "core/utility/assert.h"
 
 namespace fe::engine {
 enum class MutexType : uint8_t {

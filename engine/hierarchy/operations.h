@@ -2,7 +2,7 @@
 
 #include "component.h"
 
-#include "engine/ecs/paramTypes.h"
+#include "framework/paramTypes.h"
 
 namespace fe::engine::hierarchy {
 

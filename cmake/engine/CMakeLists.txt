@@ -38,26 +38,9 @@ endif()
 
 target_include_directories(engine
     PUBLIC
+    ${CodePath}
     ${CMAKE_SOURCE_DIR}
 )
 
 include(LinkSDK.cmake)  
 fe_link_engine_sdks(engine)
-
-include(FlatGener.cmake)
-
-# find fbs file
-file(GLOB_RECURSE FBS_FILES
-    "${CodePath}/*.fbs"
-)
-
-FlatGenerateFun(
-    TARGET engineGeneratedHeaders
-    SCHEMAS ${FBS_FILES}
-    SCHEMA_ROOT "${CodePath}"
-    OUTPUT_DIR "${CodePath}/FlatBuffers"
-    # CUSTOM_INCLUDE ""
-    FLAGS --cpp --gen-mutable --gen-object-api
-)
-
-target_link_libraries(engine PUBLIC engineGeneratedHeaders)

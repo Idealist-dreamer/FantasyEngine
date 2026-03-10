@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include "engine/render/rhi/pch.h"
+#include "render/rhi/pch.h"
 #include "EngineTuning.h"
 
 class ComputeContext;

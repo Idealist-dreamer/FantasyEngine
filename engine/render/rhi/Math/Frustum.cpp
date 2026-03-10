@@ -11,9 +11,9 @@
 // Author:  James Stanard
 //
 
-#include "engine/render/rhi/pch.h"
+#include "render/rhi/pch.h"
 #include "Frustum.h"
-#include "Engine/Render/RHI/Camera.h"
+#include "render/rhi/Camera.h"
 
 using namespace Math;
 

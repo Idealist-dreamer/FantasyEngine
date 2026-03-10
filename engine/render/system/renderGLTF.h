@@ -1,6 +1,6 @@
 #pragma once
 
-#include "engine/ecs/system.h"
+#include "framework/system.h"
 
 namespace fe::engine::render {
 
@@ -9,7 +9,7 @@ class RenderGLTF : public System {
   RenderGLTF();
   ~RenderGLTF();
 
-  bool init(WorldVisitor& visitor) override;
+  bool init(SceneBase& scene) override;
 
   FE_DECLARE_PRIVATE
 };

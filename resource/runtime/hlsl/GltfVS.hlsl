@@ -78,14 +78,14 @@ VS_OUTPUT main(uint VertexID : SV_VertexID) {
     float3 position = LoadFloat3(g_PosOffset, VertexID, g_PosStride);
     
     // Transform to clip space
-    float4 worldPos = float4(position, 1.0f);
-    output.PositionCS = mul(g_ViewProjMatrix, worldPos);
+    float4 scenePos = float4(position, 1.0f);
+    output.PositionCS = mul(g_ViewProjMatrix, scenePos);
     output.PositionWS = position;
     
     // Load normal if present (indicated by non-~0u offset)
     if (g_NormOffset != 0xFFFFFFFF) {
         float3 normal = LoadFloat3(g_NormOffset, VertexID, g_NormStride);
-        // Transform normal to world space (assuming no non-uniform scale)
+        // Transform normal to scene space (assuming no non-uniform scale)
         output.NormalWS = normalize(mul((float3x3)g_ViewMatrix, normal));
     } else {
         output.NormalWS = float3(0.0f, 1.0f, 0.0f);

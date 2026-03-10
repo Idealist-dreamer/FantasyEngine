@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include "Engine/Render/RHI/VectorMath.h"
+#include "render/rhi/VectorMath.h"
 #include "Transform.h"
 
 namespace Math {

@@ -25,7 +25,7 @@ using namespace Math;
 
 class CameraController {
  public:
-  // Assumes worldUp is not the X basis vector
+  // Assumes sceneUp is not the X basis vector
   CameraController(Camera& camera) : m_TargetCamera(camera) {}
   virtual ~CameraController() {}
   virtual void Update(float dt) = 0;
@@ -42,7 +42,7 @@ class CameraController {
 
 class FlyingFPSCamera : public CameraController {
  public:
-  FlyingFPSCamera(Camera& camera, Vector3 worldUp);
+  FlyingFPSCamera(Camera& camera, Vector3 sceneUp);
 
   virtual void Update(float dt) override;
 
@@ -54,9 +54,9 @@ class FlyingFPSCamera : public CameraController {
   void SetHeadingPitchAndPosition(float heading, float pitch, const Vector3& position);
 
  private:
-  Vector3 m_WorldUp;
-  Vector3 m_WorldNorth;
-  Vector3 m_WorldEast;
+  Vector3 m_SceneUp;
+  Vector3 m_SceneNorth;
+  Vector3 m_SceneEast;
   float m_HorizontalLookSensitivity;
   float m_VerticalLookSensitivity;
   float m_MoveSpeed;
@@ -90,7 +90,7 @@ class OrbitCamera : public CameraController {
   OrbitCamera& operator=(const OrbitCamera&) { return *this; }
 
   Math::BoundingSphere m_ModelBounds;
-  Math::Vector3 m_WorldUp;
+  Math::Vector3 m_SceneUp;
 
   float m_JoystickSensitivityX;
   float m_JoystickSensitivityY;

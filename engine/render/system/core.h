@@ -1,6 +1,6 @@
 #pragma once
 
-#include "engine/ecs/system.h"
+#include "framework/system.h"
 
 namespace fe::engine::render {
 
@@ -9,7 +9,7 @@ class RenderCore : public System {
   RenderCore();
   ~RenderCore();
 
-  bool init(WorldVisitor& visitor) override;
+  bool init(SceneBase& scene) override;
 
   FE_DECLARE_PRIVATE
 };

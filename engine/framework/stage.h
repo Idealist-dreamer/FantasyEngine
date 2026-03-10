@@ -6,7 +6,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "engine/base/container/stl.h"
+#include "core/container/stl.h"
 
 namespace fe::engine::stage {
 struct IsStage {};

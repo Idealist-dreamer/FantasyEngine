@@ -14,50 +14,37 @@
 
 #include <iostream>
 #include <type_traits>
+#include <variant>
 
 namespace fe::engine {
 
-#define CORE_NVP(val) ::cereal::make_nvp(#val, val)
-#define CORE_BINARY_DATA(ptr, size) ::cereal::binary_data(ptr, size)
+#define FE_MAKE_NVP(val) ::cereal::make_nvp(#val, val)
+#define FE_MAKE_BINARY_DATA(ptr, size) ::cereal::binary_data(ptr, size)
 
-template <typename TArchive>
-class Output {
+using AnyArchive = std::variant<cereal::BinaryOutputArchive*, cereal::JSONOutputArchive*, cereal::BinaryInputArchive*, cereal::JSONInputArchive*>;
+
+class Archive {
  public:
-  explicit Output(std::ostream& os) : ar_(os) {}
-
-  template <typename... Args>
-  void operator()(Args&&... args) {
-    ar_(std::forward<Args>(args)...);
-  }
-
- private:
-  TArchive ar_;
-};
-
-template <typename TArchive>
-class Input {
- public:
-  explicit Input(std::istream& is) : ar_(is) {}
+  explicit Archive(AnyArchive ar) : ar_(ar) {}
 
   template <typename... Args>
   bool operator()(Args&&... args) {
     try {
-      ar_(std::forward<Args>(args)...);
+      std::visit([&](auto* concreteAr) { (*concreteAr)(std::forward<Args>(args)...); }, ar_);
       return true;
     } catch (const cereal::Exception& e) {
       return false;
     }
   }
 
+  bool is_input() const { return ar_.index() >= 2; }
+  bool is_output() const { return ar_.index() < 2; }
+  bool is_json() const { return ar_.index() == 1 || ar_.index() == 3; }
+  bool is_binary() const { return !is_json(); }
+
  private:
-  TArchive ar_;
+  AnyArchive ar_;
 };
-
-using BinaryOutputArchive = Output<cereal::BinaryOutputArchive>;
-using BinaryInputArchive = Input<cereal::BinaryInputArchive>;
-
-using JsonOutputArchive = Output<cereal::JSONOutputArchive>;
-using JsonInputArchive = Input<cereal::JSONInputArchive>;
 
 }  // namespace fe::engine
 
@@ -65,11 +52,36 @@ using JsonInputArchive = Input<cereal::JSONInputArchive>;
 #include <cereal/cereal.hpp>
 #include <cereal/details/helpers.hpp>
 
-#include "engine/base/container/stl.h"
+#include "core/container/stl.h"
 
 namespace cereal {
 
 using size_type = uint64_t;
+
+template <class Archive, class T, class Allocator>
+inline void save(Archive& ar, eastl::basic_string<T, Allocator> const& str) {
+  if constexpr (std::is_same_v<Archive, cereal::BinaryOutputArchive>) {
+    ar(make_size_tag(static_cast<size_type>(str.size())));
+    ar(binary_data(str.data(), str.size() * sizeof(T)));
+  } else {
+    std::basic_string<T> stdStr(str.begin(), str.end());
+    ar(stdStr);
+  }
+}
+
+template <class Archive, class T, class Allocator>
+inline void load(Archive& ar, eastl::basic_string<T, Allocator>& str) {
+  if constexpr (std::is_same_v<Archive, cereal::BinaryInputArchive>) {
+    size_type size;
+    ar(make_size_tag(size));
+    str.resize(static_cast<size_t>(size));
+    ar(binary_data(str.data(), static_cast<size_t>(size) * sizeof(T)));
+  } else {
+    std::basic_string<T> stdStr;
+    ar(stdStr);
+    str.assign(stdStr.c_str(), stdStr.length());
+  }
+}
 
 template <class Archive, class T, class Allocator>
 inline void save(Archive& ar, eastl::vector<T, Allocator> const& vector) {
@@ -93,20 +105,6 @@ inline void load(Archive& ar, eastl::vector<T, Allocator>& vector) {
     for (auto& i : vector)
       ar(i);
   }
-}
-
-template <class Archive, class T, class Allocator>
-inline void save(Archive& ar, eastl::basic_string<T, Allocator> const& str) {
-  ar(make_size_tag(static_cast<size_type>(str.size())));
-  ar(binary_data(str.data(), str.size() * sizeof(T)));
-}
-
-template <class Archive, class T, class Allocator>
-inline void load(Archive& ar, eastl::basic_string<T, Allocator>& str) {
-  size_type size;
-  ar(make_size_tag(size));
-  str.resize(static_cast<size_t>(size));
-  ar(binary_data(str.data(), static_cast<size_t>(size) * sizeof(T)));
 }
 
 template <class Archive, typename... Args>

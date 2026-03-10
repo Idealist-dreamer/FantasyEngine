@@ -1,47 +1,43 @@
-#include "world.h"
-
-#include "paramPrepare.h"
+#include "scene.h"
 
 #include <taskflow/taskflow.hpp>
 
 namespace fe::engine {
-struct World::Impl {
+struct Scene::Impl {
+  stl::string m_name;
+
   stl::deque<Pass> m_default_passes;
+  stl::vector<stl::shared_ptr<System>> m_systems;
 
-  tf::Executor executor;
-  tf::Taskflow setup_taskflow;
-  tf::Taskflow run_taskflow;
-
-  stl::map<stl::string, stl::shared_ptr<System>> sys_map;
+  tf::Executor m_executor;
+  tf::Taskflow m_setup_taskflow;
+  tf::Taskflow m_run_taskflow;
 };
 
-World::World() {
+Scene::Scene() {
   FE_DECLARE_PRIVATE_INIT
-  d()->m_default_passes.push_back(Pass::create_start<stage::Init>("World_Init", [this]() { Init(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_start<stage::PreStartup>("World_PreStartup", [this]() { PreStartup(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_start<stage::Startup>("World_Startup", [this]() { Startup(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_start<stage::PostStartup>("World_PostStartup", [this]() { PostStartup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::Init>("Scene_Init", [this]() { Init(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::PreStartup>("Scene_PreStartup", [this]() { PreStartup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::Startup>("Scene_Startup", [this]() { Startup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::PostStartup>("Scene_PostStartup", [this]() { PostStartup(); }, Priority::First));
 
-  d()->m_default_passes.push_back(Pass::create_update<stage::First>("World_First", [this]() { First(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update<stage::PreUpdate>("World_PreUpdate", [this]() { PreUpdate(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update<stage::Update>("World_Update", [this]() { Update(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update<stage::PostUpdate>("World_PostUpdate", [this]() { PostUpdate(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update<stage::Last>("World_Last", [this]() { Last(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update<stage::Cleanup>("World_Cleanup", [this]() { Cleanup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::First>("Scene_First", [this]() { First(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::PreUpdate>("Scene_PreUpdate", [this]() { PreUpdate(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::Update>("Scene_Update", [this]() { Update(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::PostUpdate>("Scene_PostUpdate", [this]() { PostUpdate(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::Last>("Scene_Last", [this]() { Last(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::Cleanup>("Scene_Cleanup", [this]() { Cleanup(); }, Priority::First));
 }
-World::~World() {}
+Scene::~Scene() {}
 
-void World::add_system(stl::shared_ptr<System> sys) {
-  auto& sys_map = d()->sys_map;
-
-  FE_ASSERT(sys_map.find(sys->m_name) == sys_map.end());
-  sys_map.insert({sys->m_name, sys});
+void Scene::add_system(stl::shared_ptr<System> sys) {
+  d()->m_systems.push_back(sys);
 }
 
-void World::compile() {
-  auto& sys_map = d()->sys_map;
-  auto& setup_taskflow = d()->setup_taskflow;
-  auto& run_taskflow = d()->run_taskflow;
+void Scene::compile() {
+  auto& sys_map = d()->m_systems;
+  auto& setup_taskflow = d()->m_setup_taskflow;
+  auto& run_taskflow = d()->m_run_taskflow;
 
   stl::unordered_set<stl::string> pass_name_set;
   stl::vector<Pass*> setup_passes;
@@ -55,11 +51,8 @@ void World::compile() {
     }
   }
 
-  // 创建 WorldVisitor 实例，提供对 WorldBase 资源的安全访问
-  WorldVisitor visitor(*this);
-
-  for (auto& [name, sys] : sys_map) {
-    if (sys->init(visitor)) {
+  for (auto& sys : sys_map) {
+    if (sys->init(*this)) {
       for (auto& pass : sys->m_passes) {
         FE_ASSERT(pass_name_set.find(pass.m_name) == pass_name_set.end());
         pass_name_set.insert(pass.m_name);
@@ -73,24 +66,22 @@ void World::compile() {
     }
   }
 
-  // 预先申请所有资源（通过 WorldVisitor 接口）
   for (auto pass : setup_passes) {
     for (auto& preparer : pass->m_preparers) {
-      preparer(visitor);
+      preparer(*this);
     }
   }
   for (auto pass : run_passes) {
     for (auto& preparer : pass->m_preparers) {
-      preparer(visitor);
+      preparer(*this);
     }
   }
 
-  // 绑定参数（通过 WorldVisitor 接口）
   for (auto pass : setup_passes) {
-    pass->m_execute = pass->m_binder(visitor);
+    pass->m_execute = pass->m_binder(*this);
   }
   for (auto pass : run_passes) {
-    pass->m_execute = pass->m_binder(visitor);
+    pass->m_execute = pass->m_binder(*this);
   }
 
   setup_taskflow.clear();
@@ -253,25 +244,25 @@ void World::compile() {
   mutex_pass_fun(run_passes);
 }
 
-void World::setup() {
+void Scene::setup() {
   try {
-    d()->executor.run(d()->setup_taskflow).wait();
+    d()->m_executor.run(d()->m_setup_taskflow).wait();
   } catch (const std::exception& e) {
     FE_ERROR("Scheduler execution failed: %s", e.what());
     throw;  // Rethrow for caller to handle
   }
 }
 
-void World::run() {
+void Scene::run() {
   try {
-    d()->executor.run(d()->run_taskflow).wait();
+    d()->m_executor.run(d()->m_run_taskflow).wait();
   } catch (const std::exception& e) {
     FE_ERROR("Scheduler execution failed: %s", e.what());
     throw;  // Rethrow for caller to handle
   }
 }
 
-void World::dump_graph(const stl::string& path) {
+void Scene::dump_graph(const stl::string& path) {
   std::filesystem::path base_path(path.c_str());
 
   if (base_path.has_parent_path()) {
@@ -287,30 +278,81 @@ void World::dump_graph(const stl::string& path) {
   {
     std::ofstream ofs(setup_path);
     if (ofs) {
-      d()->setup_taskflow.dump(ofs);
+      d()->m_setup_taskflow.dump(ofs);
     }
   }
 
   {
     std::ofstream ofs(run_path);
     if (ofs) {
-      d()->run_taskflow.dump(ofs);
+      d()->m_run_taskflow.dump(ofs);
     }
   }
 }
 
-void World::Init() {}
-void World::PreStartup() {}
-void World::Startup() {}
-void World::PostStartup() {}
+bool is_json(const stl::string& path) {
+  return path.size() >= 5 && path.compare(path.size() - 5, 5, ".json") == 0;
+}
 
-void World::First() {}
-void World::PreUpdate() {}
-void World::Update() {}
-void World::PostUpdate() {}
+void Scene::save(const stl::string& path) {
+  std::ofstream os(path.c_str(), std::ios::binary);
 
-void World::Last() {}
-void World::Cleanup() {
+  if (is_json(path)) {
+    cereal::JSONOutputArchive concreteAr(os);
+    Archive archive(&concreteAr);
+
+    archive(FE_MAKE_NVP(d()->m_name));
+    entt::snapshot{m_registry}.get<entt::entity>(concreteAr);
+
+    for (auto& sys : d()->m_systems)
+      sys->save(*this, archive);
+  } else {
+    cereal::BinaryOutputArchive concreteAr(os);
+    Archive archive(&concreteAr);
+
+    entt::snapshot{m_registry}.get<entt::entity>(concreteAr);
+
+    for (auto& sys : d()->m_systems)
+      sys->save(*this, archive);
+  }
+}
+
+void Scene::load(const stl::string& path) {
+  std::ifstream is(path.c_str(), std::ios::binary);
+  entt::continuous_loader loader{m_registry};
+
+  if (is_json(path)) {
+    cereal::JSONInputArchive concreteAr(is);
+    Archive archive(&concreteAr);
+
+    archive(FE_MAKE_NVP(d()->m_name));
+    loader.get<entt::entity>(archive);
+
+    for (auto& sys : d()->m_systems)
+      sys->load(*this, archive);
+  } else {
+    cereal::BinaryInputArchive concreteAr(is);
+    Archive archive(&concreteAr);
+
+    loader.get<entt::entity>(archive);
+
+    for (auto& sys : d()->m_systems)
+      sys->load(*this, archive);
+  }
+}
+
+void Scene::Init() {}
+void Scene::PreStartup() {}
+void Scene::Startup() {}
+void Scene::PostStartup() {}
+
+void Scene::First() {}
+void Scene::PreUpdate() {}
+void Scene::Update() {}
+void Scene::PostUpdate() {}
+
+void Scene::Last() {}
+void Scene::Cleanup() {
   for (auto& [tid, swap] : m_event_swap) {
     swap(*this);
   }

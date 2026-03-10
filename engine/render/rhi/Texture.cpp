@@ -11,7 +11,7 @@
 // Author(s):  James Stanard
 //
 
-#include "engine/render/rhi/pch.h"
+#include "render/rhi/pch.h"
 #include "Texture.h"
 #include "DDSTextureLoader.h"
 #include "FileUtility.h"

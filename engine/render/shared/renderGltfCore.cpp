@@ -2,9 +2,9 @@
 
 #include "tiny_gltf.h"
 
-#include "engine/render/rhi/GraphicsCore.h"
-#include "engine/render/rhi/GpuBuffer.h"
-#include "engine/render/rhi/CommandContext.h"
+#include "render/rhi/GraphicsCore.h"
+#include "render/rhi/GpuBuffer.h"
+#include "render/rhi/CommandContext.h"
 
 namespace fe::engine::render {
 

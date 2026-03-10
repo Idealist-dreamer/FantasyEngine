@@ -3,10 +3,11 @@
 #include "system.h"
 
 namespace fe::engine {
-class World : public WorldBase {
+
+class Scene : protected SceneBase {
  public:
-  World();
-  ~World();
+  Scene();
+  ~Scene();
 
   void add_system(stl::shared_ptr<System> sys);
 
@@ -15,6 +16,9 @@ class World : public WorldBase {
   void run();
 
   void dump_graph(const stl::string& path);
+
+  void save(const stl::string& path);
+  void load(const stl::string& path);
 
  private:
   void Init();
