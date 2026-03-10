@@ -26,10 +26,10 @@ class System {
 
 }  // namespace fe::engine
 
-#define REGISTER_PASS(ClassName, FuncName, Stage) \
-  {                                               \
-    Pass p(#FuncName);                            \
-    p.set_stage<Stage>();                         \
-    p.init(this, &ClassName::FuncName);           \
-    this->m_passes.push_back(std::move(p));       \
+#define FE_SYS_PASS(ClassName, FuncName, Stage) \
+  {                                             \
+    Pass p(#FuncName);                          \
+    p.set_stage<Stage>();                       \
+    p.init(this, &ClassName::FuncName);         \
+    this->m_passes.push_back(std::move(p));     \
   }
