@@ -299,18 +299,19 @@ void Scene::save(const stl::string& path) {
 
   if (is_json(path)) {
     cereal::JSONOutputArchive concreteAr(os);
-    Archive archive(&concreteAr);
+    Archive archive(&concreteAr, &m_registry);
 
     archive(FE_MAKE_NVP(d()->m_name));
-    entt::snapshot{m_registry}.get<entt::entity>(concreteAr);
+    archive.entities();
 
     for (auto& sys : d()->m_systems)
       sys->save(*this, archive);
   } else {
     cereal::BinaryOutputArchive concreteAr(os);
-    Archive archive(&concreteAr);
+    Archive archive(&concreteAr, &m_registry);
 
-    entt::snapshot{m_registry}.get<entt::entity>(concreteAr);
+    archive(FE_MAKE_NVP(d()->m_name));
+    archive.entities();
 
     for (auto& sys : d()->m_systems)
       sys->save(*this, archive);
@@ -319,22 +320,24 @@ void Scene::save(const stl::string& path) {
 
 void Scene::load(const stl::string& path) {
   std::ifstream is(path.c_str(), std::ios::binary);
-  entt::continuous_loader loader{m_registry};
+
+  m_registry.clear();
 
   if (is_json(path)) {
     cereal::JSONInputArchive concreteAr(is);
-    Archive archive(&concreteAr);
+    Archive archive(&concreteAr, &m_registry);
 
     archive(FE_MAKE_NVP(d()->m_name));
-    loader.get<entt::entity>(archive);
+    archive.entities();
 
     for (auto& sys : d()->m_systems)
       sys->load(*this, archive);
   } else {
     cereal::BinaryInputArchive concreteAr(is);
-    Archive archive(&concreteAr);
+    Archive archive(&concreteAr, &m_registry);
 
-    loader.get<entt::entity>(archive);
+    archive(FE_MAKE_NVP(d()->m_name));
+    archive.entities();
 
     for (auto& sys : d()->m_systems)
       sys->load(*this, archive);

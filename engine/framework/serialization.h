@@ -25,7 +25,11 @@ using AnyArchive = std::variant<cereal::BinaryOutputArchive*, cereal::JSONOutput
 
 class Archive {
  public:
-  explicit Archive(AnyArchive ar) : ar_(ar) {}
+  explicit Archive(AnyArchive ar, Registry* reg = nullptr) : ar_(ar), reg_(reg) {
+    if (reg_ && is_input()) {
+      loader_ = stl::make_unique<entt::continuous_loader>(*reg_);
+    }
+  }
 
   template <typename... Args>
   bool operator()(Args&&... args) {
@@ -37,6 +41,40 @@ class Archive {
     }
   }
 
+  void entities() {
+    if (!reg_)
+      return;
+
+    std::visit(
+        [this](auto* concreteAr) {
+          using ArType = std::remove_pointer_t<decltype(concreteAr)>;
+          if constexpr (std::is_same_v<ArType, cereal::BinaryOutputArchive> || std::is_same_v<ArType, cereal::JSONOutputArchive>) {
+            entt::snapshot{*reg_}.get<entt::entity>(*concreteAr);
+          } else {
+            if (loader_)
+              loader_->get<entt::entity>(*concreteAr);
+          }
+        },
+        ar_);
+  }
+
+  template <typename... Components>
+  void components() {
+    if (!reg_)
+      return;
+    std::visit(
+        [this](auto* concreteAr) {
+          using ArType = std::remove_pointer_t<decltype(concreteAr)>;
+          if constexpr (std::is_same_v<ArType, cereal::BinaryOutputArchive> || std::is_same_v<ArType, cereal::JSONOutputArchive>) {
+            entt::snapshot{*reg_}.get<Components...>(*concreteAr);
+          } else {
+            if (loader_)
+              loader_->get<Components...>(*concreteAr);
+          }
+        },
+        ar_);
+  }
+
   bool is_input() const { return ar_.index() >= 2; }
   bool is_output() const { return ar_.index() < 2; }
   bool is_json() const { return ar_.index() == 1 || ar_.index() == 3; }
@@ -44,6 +82,8 @@ class Archive {
 
  private:
   AnyArchive ar_;
+  Registry* reg_ = nullptr;
+  stl::unique_ptr<entt::continuous_loader> loader_;
 };
 
 }  // namespace fe::engine
