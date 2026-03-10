@@ -20,6 +20,9 @@ class Scene : protected SceneBase {
   void save(const stl::string& path);
   void load(const stl::string& path);
 
+  SceneBase& base() { return *this; }
+  const SceneBase& base() const { return *this; }
+
  private:
   void Init();
   void PreStartup();

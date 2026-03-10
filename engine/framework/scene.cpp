@@ -297,6 +297,11 @@ bool is_json(const stl::string& path) {
 void Scene::save(const stl::string& path) {
   std::ofstream os(path.c_str(), std::ios::binary);
 
+  if (!os) {
+    FE_ERROR("Failed to open file for saving: %s", path.c_str());
+    return;
+  }
+
   if (is_json(path)) {
     cereal::JSONOutputArchive concreteAr(os);
     Archive archive(&concreteAr, &m_registry);
@@ -316,10 +321,17 @@ void Scene::save(const stl::string& path) {
     for (auto& sys : d()->m_systems)
       sys->save(*this, archive);
   }
+
+  FE_DEBUGPRINT("Scene saved to: %s", path.c_str());
 }
 
 void Scene::load(const stl::string& path) {
   std::ifstream is(path.c_str(), std::ios::binary);
+
+  if (!is) {
+    FE_ERROR("Failed to open file for loading: %s", path.c_str());
+    return;
+  }
 
   m_registry.clear();
 
@@ -342,6 +354,8 @@ void Scene::load(const stl::string& path) {
     for (auto& sys : d()->m_systems)
       sys->load(*this, archive);
   }
+
+  FE_DEBUGPRINT("Scene loaded from: %s", path.c_str());
 }
 
 void Scene::Init() {}

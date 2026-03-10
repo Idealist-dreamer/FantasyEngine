@@ -66,10 +66,11 @@ class Archive {
         [this](auto* concreteAr) {
           using ArType = std::remove_pointer_t<decltype(concreteAr)>;
           if constexpr (std::is_same_v<ArType, cereal::BinaryOutputArchive> || std::is_same_v<ArType, cereal::JSONOutputArchive>) {
-            entt::snapshot{*reg_}.get<Components...>(*concreteAr);
+            (entt::snapshot{*reg_}.get<Components>(*concreteAr), ...);
           } else {
-            if (loader_)
-              loader_->get<Components...>(*concreteAr);
+            if (loader_) {
+              (loader_->get<Components>(*concreteAr), ...);
+            }
           }
         },
         ar_);
