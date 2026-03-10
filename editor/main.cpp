@@ -219,15 +219,16 @@ class CoreInitSystem : public System {
   }
 
   void load(SceneBase& scene, Archive& ar) override {
-    // 重建上下文（如果不存在）
+    // 重建上下文（如果不存在或无效）
+    // 注意：compile() 期间 ParamAdapter::prepare 可能已创建空的 Any 占位符
     auto timeIt = scene.m_context_manager.find(typeid(GlobalTime));
-    if (timeIt == scene.m_context_manager.end()) {
-      scene.m_context_manager.emplace(typeid(GlobalTime), Any::create<GlobalTime>(0.016f, 0));
+    if (timeIt == scene.m_context_manager.end() || !timeIt->second.valid()) {
+      scene.m_context_manager[typeid(GlobalTime)] = Any::create<GlobalTime>(0.016f, 0);
     }
 
     auto statsIt = scene.m_context_manager.find(typeid(GameStats));
-    if (statsIt == scene.m_context_manager.end()) {
-      scene.m_context_manager.emplace(typeid(GameStats), Any::create<GameStats>(0, 0));
+    if (statsIt == scene.m_context_manager.end() || !statsIt->second.valid()) {
+      scene.m_context_manager[typeid(GameStats)] = Any::create<GameStats>(0, 0);
     }
 
     // 安全获取上下文指针

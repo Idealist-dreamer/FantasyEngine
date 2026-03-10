@@ -70,14 +70,11 @@ class Archive {
 
           if constexpr (std::is_same_v<ArType, cereal::BinaryOutputArchive> || std::is_same_v<ArType, cereal::JSONOutputArchive>) {
             if constexpr (sizeof...(Components) > 0) {
-              // 【核心修复】：使用 C++17 折叠表达式，从语言标准层面强硬保证从左向右的执行顺序，
-              // 彻底告别 dummy 数组可能造成的编译器 UB 或乱序，杜绝数据流错位读取！
-              (snapshot_->template get<Components>(*concreteAr), ...);
+              ((snapshot_->template get<Components>(*concreteAr)), ...);
             }
           } else {
             if constexpr (sizeof...(Components) > 0) {
-              // 同上，强制反序列化按保存时的精确一致顺序进行
-              (loader_->template get<Components>(*concreteAr), ...);
+              ((loader_->template get<Components>(*concreteAr)), ...);
             }
           }
         },
@@ -109,12 +106,16 @@ namespace cereal {
 
 using size_type = uint64_t;
 
+// eastl::string serialization:
+// - Binary: use binary_data for efficiency
+// - JSON/XML: convert to std::string for proper string representation
 template <class Archive, class T, class Allocator>
 inline void save(Archive& ar, eastl::basic_string<T, Allocator> const& str) {
   if constexpr (std::is_same_v<Archive, cereal::BinaryOutputArchive>) {
     ar(make_size_tag(static_cast<size_type>(str.size())));
     ar(binary_data(str.data(), str.size() * sizeof(T)));
   } else {
+    // JSON/XML: convert to std::string for proper serialization
     std::basic_string<T> stdStr(str.begin(), str.end());
     ar(stdStr);
   }
@@ -128,6 +129,7 @@ inline void load(Archive& ar, eastl::basic_string<T, Allocator>& str) {
     str.resize(static_cast<size_t>(size));
     ar(binary_data(str.data(), static_cast<size_t>(size) * sizeof(T)));
   } else {
+    // JSON/XML: load as std::string then convert
     std::basic_string<T> stdStr;
     ar(stdStr);
     str.assign(stdStr.c_str(), stdStr.length());
