@@ -693,24 +693,24 @@ void runSaveLoadTest() {
   int sampleCount = 0;
   int maxSamples = g_config.MAX_SAMPLES;
 
-  // 抽样验证Transform组件数据
-  auto view1 = scene1.base().m_registry.view<Transform>();
+  // 抽样验证Transform组件数据 (比较 scene2 和 scene4，增量保存前后)
+  auto view2 = scene2.base().m_registry.view<Transform>();
   auto view4 = scene4.base().m_registry.view<Transform>();
 
-  if (view1.size() == view4.size()) {
-    auto it1 = view1.begin();
+  if (view2.size() == view4.size() && view2.size() > 0) {
+    auto it2 = view2.begin();
     auto it4 = view4.begin();
 
-    while (it1 != view1.end() && sampleCount < maxSamples) {
-      const auto& t1 = view1.get<Transform>(*it1);
+    while (it2 != view2.end() && it4 != view4.end() && sampleCount < maxSamples) {
+      const auto& t2 = view2.get<Transform>(*it2);
       const auto& t4 = view4.get<Transform>(*it4);
 
       for (int i = 0; i < 3; ++i) {
-        if (std::abs(t1.pos[i] - t4.pos[i]) > 0.0001f) {
+        if (std::abs(t2.pos[i] - t4.pos[i]) > 0.0001f) {
           componentIntegrity = false;
           break;
         }
-        if (std::abs(t1.rot[i] - t4.rot[i]) > 0.0001f) {
+        if (std::abs(t2.rot[i] - t4.rot[i]) > 0.0001f) {
           componentIntegrity = false;
           break;
         }
@@ -719,7 +719,7 @@ void runSaveLoadTest() {
       if (!componentIntegrity)
         break;
 
-      ++it1;
+      ++it2;
       ++it4;
       ++sampleCount;
     }
