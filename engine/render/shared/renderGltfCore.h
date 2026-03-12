@@ -1,7 +1,7 @@
 // #pragma once
 
-// #include "core/container/stl.h"
-// #include "core/utility/common.h"
+// #include "foundation/container/stl.h"
+// #include "foundation/utility/common.h"
 
 // class GraphicsContext;
 

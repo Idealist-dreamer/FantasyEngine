@@ -96,4 +96,52 @@ struct is_subset_of_impl<std::tuple<Targets...>, std::tuple<Sources...>> : std::
 template <typename TargetPack, typename SourcePack>
 constexpr bool is_subset_of_v = is_subset_of_impl<TargetPack, SourcePack>::value;
 
+// ============================================================================
+// Type hash utilities (compile-time friendly)
+// ============================================================================
+
+template <typename T>
+inline constexpr size_t type_hash_v = typeid(T).hash_code();
+
+// Get hash for type, handling const/volatile/reference
+template <typename T>
+inline constexpr size_t clean_type_hash_v = type_hash_v<clean_t<T>>;
+
+// ============================================================================
+// Template for generating type hash arrays at compile time
+// ============================================================================
+
+template <typename... Ts>
+constexpr stl::array<size_t, sizeof...(Ts)> make_type_hashes() {
+  return {type_hash_v<Ts>...};
+}
+
+// ============================================================================
+// Remove first type from tuple
+// ============================================================================
+
+template <typename Tuple>
+struct remove_first;
+
+template <typename T, typename... Ts>
+struct remove_first<std::tuple<T, Ts...>> {
+  using type = std::tuple<Ts...>;
+};
+
+template <typename Tuple>
+using remove_first_t = typename remove_first<Tuple>::type;
+
+// ============================================================================
+// Check if type has a specific nested type
+// ============================================================================
+
+template <typename T, typename = void>
+struct has_access_info : std::false_type {};
+
+template <typename T>
+struct has_access_info<T, std::void_t<typename T::AccessInfo>> : std::true_type {};
+
+template <typename T>
+inline constexpr bool has_access_info_v = has_access_info<T>::value;
+
 }  // namespace fe::engine::meta

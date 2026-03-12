@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/memory/allocator.h"
+#include "foundation/memory/allocator.h"
 
 namespace fe::engine {
 

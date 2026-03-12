@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-#include "core/log/log.h"
+#include "foundation/log/log.h"
 
 #if defined(_WIN32)
 #define FE_DEBUGBREAK() __debugbreak()

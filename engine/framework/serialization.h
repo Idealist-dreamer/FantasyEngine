@@ -100,7 +100,7 @@ class Archive {
 #include <cereal/cereal.hpp>
 #include <cereal/details/helpers.hpp>
 
-#include "core/container/stl.h"
+#include "foundation/container/stl.h"
 
 namespace cereal {
 

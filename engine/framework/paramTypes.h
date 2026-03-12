@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/utility/meta.h"
-#include "core/utility/any.h"
+#include "foundation/utility/meta.h"
+#include "foundation/utility/any.h"
 
 #include "common.h"
 

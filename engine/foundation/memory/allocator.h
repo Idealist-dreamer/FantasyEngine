@@ -4,7 +4,7 @@
 #include <utility>
 #include <cstddef>
 
-#include "core/macros.h"
+#include "foundation/macros.h"
 
 namespace fe::engine {
 
@@ -107,4 +107,4 @@ class Allocator {
 }  // namespace fe::engine
 
 #include "allocator.inl"
-#include "overNewDele.h"
+#include "override.h"

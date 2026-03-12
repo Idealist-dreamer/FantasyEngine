@@ -4,7 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include "core/macros.h"
+#include "foundation/macros.h"
 
 namespace fe::engine {
 

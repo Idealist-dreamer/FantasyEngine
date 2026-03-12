@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/macros.h"
+#include "foundation/macros.h"
 
 #ifdef FE_USE_EASTL
 #define FE_STL_NAMESPACE eastl

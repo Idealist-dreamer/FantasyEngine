@@ -20,7 +20,7 @@
 #include "render/rhi/TemporalEffects.h"
 #include "render/rhi/Display.h"
 
-#include "core/platform/dx12.h"
+#include "foundation/platform/dx12.h"
 
 namespace GameCore {
 extern HWND g_hWnd;

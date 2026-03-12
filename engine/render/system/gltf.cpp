@@ -12,7 +12,7 @@
 // #include "render/rhi/VectorMath.h"
 // #include "framework/pass.h"
 // #include "framework/paramTypes.h"
-// #include "core/log/log.h"
+// #include "foundation/log/log.h"
 
 // #include <DirectXMath.h>
 
