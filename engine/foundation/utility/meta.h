@@ -124,7 +124,7 @@ template <typename Tuple>
 struct remove_first;
 
 template <typename T, typename... Ts>
-struct remove_first<std::tuple<T, Ts...>> {
+struct remove_first<std::tuple<T, Ts...>>   {
   using type = std::tuple<Ts...>;
 };
 
