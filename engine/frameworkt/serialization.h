@@ -7,8 +7,8 @@
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/map.hpp>
-#include <iostream>
 #include <variant>
+#include <iostream>
 
 namespace fe::engine {
 
@@ -22,21 +22,20 @@ using AnyArchive = std::variant<
     cereal::JSONInputArchive*
 >;
 
-// Archive wrapper for entity/component serialization
+// 档案包装器，支持实体快照
 class Archive {
 public:
-    explicit Archive(AnyArchive ar, Registry* reg = nullptr) 
+    explicit Archive(AnyArchive ar, Registry* reg = nullptr)
         : m_ar(ar), m_reg(reg) {
         if (m_reg) {
-            if (is_output()) {
+            if (is_output())
                 m_snapshot = std::make_unique<entt::snapshot>(*m_reg);
-            } else {
+            else
                 m_loader = std::make_unique<entt::snapshot_loader>(*m_reg);
-            }
         }
     }
 
-    template<typename... Args>
+    template <typename... Args>
     bool operator()(Args&&... args) {
         try {
             std::visit([&](auto* ar) { (*ar)(std::forward<Args>(args)...); }, m_ar);
@@ -50,7 +49,7 @@ public:
         if (!m_reg) return;
         std::visit([this](auto* ar) {
             using ArType = std::remove_pointer_t<decltype(ar)>;
-            if constexpr (std::is_same_v<ArType, cereal::BinaryOutputArchive> || 
+            if constexpr (std::is_same_v<ArType, cereal::BinaryOutputArchive> ||
                           std::is_same_v<ArType, cereal::JSONOutputArchive>) {
                 m_snapshot->template get<entt::entity>(*ar);
             } else {
@@ -59,12 +58,12 @@ public:
         }, m_ar);
     }
 
-    template<typename... Components>
+    template <typename... Components>
     void components() {
         if (!m_reg) return;
         std::visit([this](auto* ar) {
             using ArType = std::remove_pointer_t<decltype(ar)>;
-            if constexpr (std::is_same_v<ArType, cereal::BinaryOutputArchive> || 
+            if constexpr (std::is_same_v<ArType, cereal::BinaryOutputArchive> ||
                           std::is_same_v<ArType, cereal::JSONOutputArchive>) {
                 ((m_snapshot->template get<Components>(*ar)), ...);
             } else {
@@ -76,7 +75,6 @@ public:
     bool is_input() const { return m_ar.index() >= 2; }
     bool is_output() const { return m_ar.index() < 2; }
     bool is_json() const { return m_ar.index() == 1 || m_ar.index() == 3; }
-    bool is_binary() const { return !is_json(); }
 
 private:
     AnyArchive m_ar;
@@ -88,14 +86,17 @@ private:
 } // namespace fe::engine
 
 #ifdef FE_USE_EASTL
+#include <cereal/cereal.hpp>
+#include <cereal/details/helpers.hpp>
 #include "foundation/container/stl.h"
 
 namespace cereal {
+
 using size_type = uint64_t;
 
 // eastl::string serialization
-template<class Archive, class T, class Allocator>
-void save(Archive& ar, eastl::basic_string<T, Allocator> const& str) {
+template <class Archive, class T, class Allocator>
+inline void save(Archive& ar, eastl::basic_string<T, Allocator> const& str) {
     if constexpr (std::is_same_v<Archive, cereal::BinaryOutputArchive>) {
         ar(make_size_tag(static_cast<size_type>(str.size())));
         ar(binary_data(str.data(), str.size() * sizeof(T)));
@@ -105,8 +106,8 @@ void save(Archive& ar, eastl::basic_string<T, Allocator> const& str) {
     }
 }
 
-template<class Archive, class T, class Allocator>
-void load(Archive& ar, eastl::basic_string<T, Allocator>& str) {
+template <class Archive, class T, class Allocator>
+inline void load(Archive& ar, eastl::basic_string<T, Allocator>& str) {
     if constexpr (std::is_same_v<Archive, cereal::BinaryInputArchive>) {
         size_type size;
         ar(make_size_tag(size));
@@ -119,48 +120,55 @@ void load(Archive& ar, eastl::basic_string<T, Allocator>& str) {
     }
 }
 
-// eastl::vector serialization
-template<class Archive, class T, class Allocator>
-void save(Archive& ar, eastl::vector<T, Allocator> const& vec) {
-    ar(make_size_tag(static_cast<size_type>(vec.size())));
-    if constexpr (std::is_trivially_copyable_v<T> && 
-                  traits::is_output_serializable<BinaryData<T>, Archive>::value) {
-        ar(binary_data(vec.data(), vec.size() * sizeof(T)));
+template <class Archive, class T, class Allocator>
+inline void save(Archive& ar, eastl::vector<T, Allocator> const& vector) {
+    ar(make_size_tag(static_cast<size_type>(vector.size())));
+    if constexpr (std::is_trivially_copyable_v<T> && traits::is_output_serializable<BinaryData<T>, Archive>::value) {
+        ar(binary_data(vector.data(), vector.size() * sizeof(T)));
     } else {
-        for (auto const& i : vec) ar(i);
+        for (auto const& i : vector)
+            ar(i);
     }
 }
 
-template<class Archive, class T, class Allocator>
-void load(Archive& ar, eastl::vector<T, Allocator>& vec) {
+template <class Archive, class T, class Allocator>
+inline void load(Archive& ar, eastl::vector<T, Allocator>& vector) {
     size_type size;
     ar(make_size_tag(size));
-    vec.resize(static_cast<size_t>(size));
-    if constexpr (std::is_trivially_copyable_v<T> && 
-                  traits::is_input_serializable<BinaryData<T>, Archive>::value) {
-        ar(binary_data(vec.data(), static_cast<size_t>(size) * sizeof(T)));
+    vector.resize(static_cast<size_t>(size));
+    if constexpr (std::is_trivially_copyable_v<T> && traits::is_input_serializable<BinaryData<T>, Archive>::value) {
+        ar(binary_data(vector.data(), static_cast<size_t>(size) * sizeof(T)));
     } else {
-        for (auto& i : vec) ar(i);
+        for (auto& i : vector)
+            ar(i);
     }
 }
 
-// eastl::map serialization
-template<class Archive, typename... Args>
-void save(Archive& ar, eastl::map<Args...> const& map) {
-    ar(make_size_tag(static_cast<size_type>(map.size())));
-    for (auto const& i : map) ar(i);
+template <class Archive, typename... Args>
+inline void save(Archive& ar, eastl::map<Args...> const& container) {
+    ar(make_size_tag(static_cast<size_type>(container.size())));
+    for (auto const& i : container)
+        ar(i);
 }
 
-template<class Archive, typename... Args>
-void load(Archive& ar, eastl::map<Args...>& map) {
+template <class Archive, typename... Args>
+inline void load(Archive& ar, eastl::map<Args...>& container) {
     size_type size;
     ar(make_size_tag(size));
-    map.clear();
-    for (size_type i = 0; i < size; ++i) {
+    container.clear();
+    for (size_t i = 0; i < size; ++i) {
         typename eastl::map<Args...>::value_type vt;
         ar(vt);
-        map.insert(eastl::move(vt));
+        container.insert(eastl::move(vt));
     }
+}
+
+template <class Archive, class T, class D>
+inline void serialize(Archive& ar, eastl::unique_ptr<T, D>& ptr) {
+    T* rawPtr = ptr.get();
+    ar(rawPtr);
+    if (Archive::is_loading::value)
+        ptr.reset(rawPtr);
 }
 
 } // namespace cereal

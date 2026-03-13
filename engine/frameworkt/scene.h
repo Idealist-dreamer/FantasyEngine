@@ -1,57 +1,53 @@
 #pragma once
 
-#include "blackboard.h"
-#include "pass.h"
 #include "system.h"
 #include <taskflow/taskflow.hpp>
 
 namespace fe::engine {
 
-// Scene: Task-Graph scheduler (formerly World)
-// Manages passes, builds dependency graph, executes with taskflow
 class Scene {
 public:
     Scene();
     ~Scene() = default;
 
-    // Add a system
+    // 添加系统
     void add_system(stl::shared_ptr<System> sys);
 
-    // Compile all passes into task graph
+    // 编译：收集所有 Pass，构建任务图
     void compile();
 
-    // Run setup taskflow (one-time initialization)
+    // 执行一次性设置任务流
     void setup();
 
-    // Run main taskflow (per-frame)
+    // 执行每帧更新任务流
     void run();
 
-    // Dump task graph to file
+    // 导出任务图 DOT 文件
     void dump_graph(const stl::string& path);
 
-    // Serialization
+    // 序列化场景（仅实体和组件）
     void save(const stl::string& path);
     void load(const stl::string& path);
 
-    // Access blackboard
+    // 访问黑板
     Blackboard& blackboard() { return m_blackboard; }
     const Blackboard& blackboard() const { return m_blackboard; }
 
 private:
-    // Build stage barrier tasks
-    stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>> 
+    // 构建阶段屏障任务
+    stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>>
     build_stage_barriers(tf::Taskflow& tf, const stl::vector<Pass*>& passes);
 
-    // Check if stage is reachable from another
+    // 判断阶段可达性
     bool is_stage_reachable(stage::StageHash from, stage::StageHash to) const;
 
-    // Apply entity command buffers
+    // 应用实体命令缓冲区（在 Cleanup 阶段调用）
     void apply_command_buffers();
 
     Blackboard m_blackboard;
-    stl::vector<Pass> m_passes;
+    stl::vector<Pass> m_passes;                 // 内置 Pass + 系统 Pass
     stl::vector<stl::shared_ptr<System>> m_systems;
-    
+
     tf::Executor m_executor;
     tf::Taskflow m_setup_tf;
     tf::Taskflow m_run_tf;
