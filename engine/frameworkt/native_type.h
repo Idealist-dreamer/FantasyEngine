@@ -242,36 +242,6 @@ class ComponentWriter : public ComponentReader<Components...> {
   void tag_remove(Entity e) {
     add<RemoveComponentTag<T>>(e);
   }
-
-  template <typename T, typename... Args>
-  void add_delayed(Entity e, Args&&... args) {
-    check_auth<T>();
-    if (!have<T>(e)) {
-      m_reg.remove<ChangeComponentDelayed<T>, RemoveComponentDelayed<T>>(e);
-      m_reg.emplace_or_replace<AddComponentDelayed<T>>(
-          e, T{std::forward<Args>(args)...});
-    }
-  }
-
-  template <typename T, typename... Args>
-  void change_delayed(Entity e, Args&&... args) {
-    check_auth<T>();
-    if (m_reg.try_get<T>(e) && !m_reg.all_of<RemoveComponentDelayed<T>>(e)) {
-      m_reg.emplace_or_replace<ChangeComponentDelayed<T>>(
-          e, T{std::forward<Args>(args)...});
-    } else if (auto* add_ptr = m_reg.try_get<AddComponentDelayed<T>>(e)) {
-      add_ptr->m_data = T(std::forward<Args>(args)...);
-    }
-  }
-
-  template <typename T>
-  void remove_delayed(Entity e) {
-    check_auth<T>();
-    if (m_reg.try_get<T>(e)) {
-      m_reg.remove<AddComponentDelayed<T>, ChangeComponentDelayed<T>>(e);
-      m_reg.emplace_or_replace<RemoveComponentDelayed<T>>(e);
-    }
-  }
 };
 
 // Access event

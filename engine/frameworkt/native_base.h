@@ -10,23 +10,11 @@ using Entity = entt::entity;
 using Registry = entt::registry;
 
 template <typename T>
-struct AddTag {};
+struct AddComponentTag {};
 template <typename T>
-struct ChangeTag {};
+struct ChangeComponentTag {};
 template <typename T>
-struct RemoveTag {};
-
-// Delayed tag component types
-template <typename T>
-struct AddDelayed {
-  T data;
-};
-template <typename T>
-struct ChangeDelayed {
-  T data;
-};
-template <typename T>
-struct RemoveDelayed {};
+struct RemoveEntityTag {};
 
 // Type traits
 template <typename T>
@@ -34,27 +22,15 @@ struct base_type {
   using type = T;
 };
 template <typename T>
-struct base_type<AddTag<T>> {
+struct base_type<AddComponentTag<T>> {
   using type = T;
 };
 template <typename T>
-struct base_type<ChangeTag<T>> {
+struct base_type<ChangeComponentTag<T>> {
   using type = T;
 };
 template <typename T>
-struct base_type<RemoveTag<T>> {
-  using type = T;
-};
-template <typename T>
-struct base_type<AddDelayed<T>> {
-  using type = T;
-};
-template <typename T>
-struct base_type<ChangeDelayed<T>> {
-  using type = T;
-};
-template <typename T>
-struct base_type<RemoveDelayed<T>> {
+struct base_type<RemoveEntityTag<T>> {
   using type = T;
 };
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <tuple>
+
 #include "blockboard.h"
 
 namespace fe::engine {

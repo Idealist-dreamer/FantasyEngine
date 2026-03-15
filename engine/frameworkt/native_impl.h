@@ -1,94 +1,161 @@
 #pragma once
 
-#include <entt/entt.hpp>
-
-#include <functional>
-
-#include "foundation/utility/any.h"
-#include "foundation/container/stl.h"
+#include "access.h"
+#include "native_type.h"
 
 namespace fe::engine {
 
-using Entity = entt::entity;
-using Registry = entt::registry;
-
-struct EntityQuery {
-  EntityQuery(Registry& reg) : m_reg(reg) {}
-
-  bool valid(Entity e) const { return m_reg.valid(e); }
-  auto view() const { return m_reg.view<Entity>(); }
-
- protected:
-  Registry& m_reg;
+// ============================================================================
+// Entity 访问适配
+// ============================================================================
+template <>
+struct AccessTraits<EntityQuery> {
+  static void declare(AccessInfo& acc) { acc.child<Registry>().read(); }
+  static void prepare(Blackboard& bb, uint32_t) {
+    if (!bb.has<Registry>()) bb.emplace_or_replace<Registry>();
+  }
+  static EntityQuery fetch(Blackboard& bb, uint32_t) {
+    return EntityQuery(bb.get<Registry>());
+  }
 };
 
-struct EntityCreator : EntityQuery {
-  EntityCreator(Registry& reg) : EntityQuery(reg) {}
-
-  Entity create() { return m_reg.create(); }
-  auto view() { return m_reg.view<Entity>(); }
+template <>
+struct AccessTraits<EntityCreator> {
+  static void declare(AccessInfo& acc) { acc.child<Registry>().write(); }
+  static void prepare(Blackboard& bb, uint32_t) {
+    if (!bb.has<Registry>()) bb.emplace_or_replace<Registry>();
+  }
+  static EntityCreator fetch(Blackboard& bb, uint32_t) {
+    return EntityCreator(bb.get<Registry>());
+  }
 };
 
-struct EntityDestroyer : EntityCreator {
-  EntityDestroyer(Registry& reg) : EntityCreator(reg) {}
-
-  void destroy(Entity e) { m_reg.destroy(e); }
+template <>
+struct AccessTraits<EntityDestroyer> {
+  static void declare(AccessInfo& acc) { acc.child<Registry>().write(); }
+  static void prepare(Blackboard& bb, uint32_t) {
+    if (!bb.has<Registry>()) bb.emplace_or_replace<Registry>();
+  }
+  static EntityDestroyer fetch(Blackboard& bb, uint32_t) {
+    return EntityDestroyer(bb.get<Registry>());
+  }
 };
 
-struct ECCommandBuffer {
-  slt::vector<std::function<void(Registry&)>> m_commands;
+struct PassCommandBuffers {
+  stl::unordered_map<uint32_t, EntityCommandBuffer> buffers;
+};
+
+// ============================================================================
+// Component 访问适配
+// ============================================================================
+template <typename... Cs>
+struct AccessTraits<ComponentReader<Cs...>> {
+  static void declare(AccessInfo& acc) {
+    acc.child<Registry>().read();
+    (acc.child<Registry>().template child<std::remove_const_t<Cs>>().read(),
+     ...);
+  }
+  static void prepare(Blackboard& bb, uint32_t) {
+    if (!bb.has<Registry>()) bb.emplace_or_replace<Registry>();
+    auto& reg = bb.get<Registry>();
+    (reg.template storage<std::remove_const_t<Cs>>(), ...);
+    (reg.template storage<AddTag<std::remove_const_t<Cs>>>(), ...);
+    (reg.template storage<ChangeTag<std::remove_const_t<Cs>>>(), ...);
+    (reg.template storage<RemoveTag<std::remove_const_t<Cs>>>(), ...);
+  }
+  static ComponentReader<Cs...> fetch(Blackboard& bb, uint32_t) {
+    return ComponentReader<Cs...>(bb.get<Registry>());
+  }
+};
+
+template <typename... Cs>
+struct AccessTraits<ComponentWriter<Cs...>> {
+  static void declare(AccessInfo& acc) {
+    acc.child<Registry>().read();
+    (acc.child<Registry>().template child<std::remove_const_t<Cs>>().write(),
+     ...);
+  }
+  static void prepare(Blackboard& bb, uint32_t pass_id) {
+    AccessTraits<ComponentReader<Cs...>>::prepare(bb, pass_id);
+  }
+  static ComponentWriter<Cs...> fetch(Blackboard& bb, uint32_t) {
+    return ComponentWriter<Cs...>(bb.get<Registry>());
+  }
+};
+
+// ============================================================================
+// Event 访问适配
+// ============================================================================
+struct ReadEventTag {};
+struct WriteEventTag {};
+
+template <typename T>
+struct EventStorage {
+  stl::vector<T> current;
+  stl::vector<T> next;
+  bool cleanup_registered = false;
 };
 
 template <typename T>
-struct AddTag {};
-template <typename T>
-struct ChangeTag {};
-template <typename T>
-struct RemoveTag {};
-template <typename T>
-struct AddDelayed {
-  T data;
+struct AccessTraits<EventReader<T>> {
+  static void declare(AccessInfo& acc) {
+    acc.child<EventStorage<T>>().template child<ReadEventTag>().read();
+  }
+  static void prepare(Blackboard& bb, uint32_t) {
+    if (!bb.has<EventStorage<T>>()) bb.emplace_or_replace<EventStorage<T>>();
+    auto& storage = bb.get<EventStorage<T>>();
+  }
+  static EventReader<T> fetch(Blackboard& bb, uint32_t) {
+    return EventReader<T>(bb.get<EventStorage<T>>().current);
+  }
 };
-template <typename T>
-struct ChangeDelayed {
-  T data;
-};
-template <typename T>
-struct RemoveDelayed {};
 
 template <typename T>
-struct base_type {
-  using type = T;
+struct AccessTraits<EventWriter<T>> {
+  static void declare(AccessInfo& acc) {
+    acc.child<EventStorage<T>>().template child<WriteEventTag>().write();
+  }
+  static void prepare(Blackboard& bb, uint32_t pass_id) {
+    AccessTraits<EventReader<T>>::prepare(bb, pass_id);
+  }
+  static EventWriter<T> fetch(Blackboard& bb, uint32_t) {
+    return EventWriter<T>(bb.get<EventStorage<T>>().next);
+  }
 };
-template <typename T>
-struct base_type<AddTag<T>> {
-  using type = T;
-};
-template <typename T>
-struct base_type<ChangeTag<T>> {
-  using type = T;
-};
-template <typename T>
-struct base_type<RemoveTag<T>> {
-  using type = T;
-};
-template <typename T>
-struct base_type<AddDelayed<T>> {
-  using type = T;
-};
-template <typename T>
-struct base_type<ChangeDelayed<T>> {
-  using type = T;
-};
-template <typename T>
-struct base_type<RemoveDelayed<T>> {
-  using type = T;
-};
-template <typename T>
-using base_type_t = typename base_type<T>::type;
 
-template <typename Req, typename Decl>
-struct is_compatible : std::is_same<std::remove_const_t<base_type_t<Req>>,
-                                    std::remove_const_t<base_type_t<Decl>>> {};
+// ============================================================================
+// Context 访问适配
+// ============================================================================
+template <typename T>
+struct ContextStorage {
+  Any data;
+};
+
+template <typename T>
+struct AccessTraits<ContextReader<T>> {
+  static void declare(AccessInfo& acc) {
+    acc.child<ContextStorage<T>>().read();
+  }
+  static void prepare(Blackboard& bb, uint32_t) {
+    if (!bb.has<ContextStorage<T>>())
+      bb.emplace_or_replace<ContextStorage<T>>();
+  }
+  static ContextReader<T> fetch(Blackboard& bb, uint32_t) {
+    return ContextReader<T>(bb.get<ContextStorage<T>>().data);
+  }
+};
+
+template <typename T>
+struct AccessTraits<ContextWriter<T>> {
+  static void declare(AccessInfo& acc) {
+    acc.child<ContextStorage<T>>().write();
+  }
+  static void prepare(Blackboard& bb, uint32_t pass_id) {
+    AccessTraits<ContextReader<T>>::prepare(bb, pass_id);
+  }
+  static ContextWriter<T> fetch(Blackboard& bb, uint32_t) {
+    return ContextWriter<T>(bb.get<ContextStorage<T>>().data);
+  }
+};
 
 }  // namespace fe::engine
