@@ -1,6 +1,7 @@
 #pragma once
 
 #include "foundation/memory/allocator.h"
+#include "foundation/utility/assert.h"
 
 namespace fe::engine {
 

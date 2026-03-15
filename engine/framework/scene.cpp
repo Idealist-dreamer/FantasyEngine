@@ -1,5 +1,6 @@
 #include "scene.h"
 #include "native_type.h"
+#include "access.h"
 
 #include "foundation/utility/assert.h"
 
@@ -382,12 +383,9 @@ void Scene::Last() {}
 
 void Scene::Cleanup() {
   // 执行由各模块注入 Blackboard 的清理回调 (如 Event 交换机制)
-  // 此处依赖你在 native_type/native_impl 中注册的 CleanupRegistry
-  // if (auto* cleanup_reg = m_blackboard.try_get<CleanupRegistry>()) {
-  //   for (auto& func : cleanup_reg->cleanups) {
-  //     func(m_blackboard);
-  //   }
-  // }
+  if (auto* cleanup_reg = m_blackboard.try_get<CleanupRegistry>()) {
+    cleanup_reg->execute(m_blackboard);
+  }
 }
 
 }  // namespace fe::engine

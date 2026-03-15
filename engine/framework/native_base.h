@@ -9,6 +9,9 @@ namespace fe::engine {
 using Entity = entt::entity;
 using Registry = entt::registry;
 
+// ============================================================================
+// Tag types for immediate component operations
+// ============================================================================
 template <typename T>
 struct AddComponentTag {};
 template <typename T>
@@ -16,7 +19,39 @@ struct ChangeComponentTag {};
 template <typename T>
 struct RemoveComponentTag {};
 
+// Aliases for shorter usage
+template <typename T>
+using AddTag = AddComponentTag<T>;
+template <typename T>
+using ChangeTag = ChangeComponentTag<T>;
+template <typename T>
+using RemoveTag = RemoveComponentTag<T>;
+
+// ============================================================================
+// Delayed types for deferred component operations
+// ============================================================================
+template <typename T>
+struct AddComponentDelayed {
+  T m_data;
+};
+template <typename T>
+struct ChangeComponentDelayed {
+  T m_data;
+};
+template <typename T>
+struct RemoveComponentDelayed {};
+
+// Aliases for shorter usage
+template <typename T>
+using AddDelayed = AddComponentDelayed<T>;
+template <typename T>
+using ChangeDelayed = ChangeComponentDelayed<T>;
+template <typename T>
+using RemoveDelayed = RemoveComponentDelayed<T>;
+
+// ============================================================================
 // Type traits
+// ============================================================================
 template <typename T>
 struct base_type {
   using type = T;
@@ -31,6 +66,18 @@ struct base_type<ChangeComponentTag<T>> {
 };
 template <typename T>
 struct base_type<RemoveComponentTag<T>> {
+  using type = T;
+};
+template <typename T>
+struct base_type<AddComponentDelayed<T>> {
+  using type = T;
+};
+template <typename T>
+struct base_type<ChangeComponentDelayed<T>> {
+  using type = T;
+};
+template <typename T>
+struct base_type<RemoveComponentDelayed<T>> {
   using type = T;
 };
 

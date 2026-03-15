@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tuple>
+#include <functional>
 
 #include "blackboard.h"
 
@@ -134,6 +135,35 @@ struct AccessTraits<const Blackboard&> {
   static const Blackboard& fetch(Blackboard& bb, uint32_t) { return bb; }
 };
 
+// ============================================================================
+// CleanupRegistry: 用于注册在 Cleanup 阶段执行的回调
+// ============================================================================
+struct CleanupRegistry {
+  stl::vector<std::function<void(Blackboard&)>> cleanups;
+
+  template <typename Func>
+  void register_cleanup(Func&& func) {
+    cleanups.push_back(std::forward<Func>(func));
+  }
+
+  void execute(Blackboard& bb) {
+    for (auto& cleanup : cleanups) {
+      cleanup(bb);
+    }
+  }
+};
+
+template <>
+struct AccessTraits<CleanupRegistry&> {
+  static void declare(AccessInfo& acc) { acc.child<CleanupRegistry>().write(); }
+  static void prepare(Blackboard& bb, uint32_t) {
+    if (!bb.has<CleanupRegistry>()) bb.emplace_or_replace<CleanupRegistry>();
+  }
+  static CleanupRegistry& fetch(Blackboard& bb, uint32_t) {
+    return bb.get<CleanupRegistry>();
+  }
+};
+
 struct AccessOps {
   template <typename... Args>
   static AccessInfo declare_all() {
@@ -150,7 +180,8 @@ struct AccessOps {
 
   template <typename... Args>
   static auto fetch_all(Blackboard& bb, uint32_t pass_id) {
-    return std::forward_as_tuple(AccessTraits<Args>::fetch(bb, pass_id)...);
+    return std::tuple<decltype(AccessTraits<Args>::fetch(bb, pass_id))...>(
+        AccessTraits<Args>::fetch(bb, pass_id)...);
   }
 };
 

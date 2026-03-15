@@ -8,7 +8,9 @@
 
 namespace fe::engine {
 
-// Access ecs-entity
+// ============================================================================
+// Entity access types
+// ============================================================================
 struct EntityQuery {
   EntityQuery(Registry& reg) : m_reg(reg) {}
 
@@ -32,7 +34,9 @@ struct EntityDestroyer : EntityCreator {
   void destroy(Entity e) { m_reg.destroy(e); }
 };
 
-// Access ecs-component
+// ============================================================================
+// Component access types
+// ============================================================================
 template <typename... T>
 using exclude_t = entt::exclude_t<T...>;
 
@@ -46,9 +50,8 @@ class ComponentReader {
  public:
   template <typename T>
   static constexpr void check_auth() {
-    static_assert(
-        (is_compatible<T, Components>::value || ...),
-        "ECS Access Denied: Component or variant not authorized in pack.");
+    static_assert((is_compatible<T, Components>::value || ...),
+                  "ECS Access Denied: Component or variant not authorized in pack.");
   }
 
   template <typename... Ts>
@@ -61,8 +64,7 @@ class ComponentReader {
   // Subset conversion constructor
   template <typename... OtherComponents,
             typename OtherTuple = std::tuple<OtherComponents...>,
-            typename = std::enable_if_t<
-                meta::is_subset_of_v<ComponentTuple, OtherTuple>>>
+            typename = std::enable_if_t<meta::is_subset_of_v<ComponentTuple, OtherTuple>>>
   ComponentReader(const ComponentReader<OtherComponents...>& other)
       : m_reg(other.m_reg) {}
 
@@ -122,7 +124,6 @@ class ComponentReader {
  protected:
   Registry& m_reg;
 
-  // Allow different ComponentReader/Writer instantiations to access m_reg
   template <typename...>
   friend class ComponentReader;
   template <typename...>
@@ -151,15 +152,13 @@ class ComponentWriter : public ComponentReader<Components...> {
   // Subset conversion constructor
   template <typename... OtherComponents,
             typename OtherTuple = std::tuple<OtherComponents...>,
-            typename = std::enable_if_t<
-                meta::is_subset_of_v<ComponentTuple, OtherTuple>>>
+            typename = std::enable_if_t<meta::is_subset_of_v<ComponentTuple, OtherTuple>>>
   ComponentWriter(ComponentWriter<OtherComponents...>& other)
       : Base(other.m_reg) {}
 
   template <typename... OtherComponents,
             typename OtherTuple = std::tuple<OtherComponents...>,
-            typename = std::enable_if_t<
-                meta::is_subset_of_v<ComponentTuple, OtherTuple>>>
+            typename = std::enable_if_t<meta::is_subset_of_v<ComponentTuple, OtherTuple>>>
   ComponentWriter(const ComponentWriter<OtherComponents...>& other)
       : Base(other.m_reg) {}
 
@@ -228,23 +227,55 @@ class ComponentWriter : public ComponentReader<Components...> {
     m_reg.clear<T>();
   }
 
+  // Immediate tag operations
   template <typename T>
   void tag_add(Entity e) {
-    add<AddComponentTag<T>>(e);
+    add<AddTag<T>>(e);
   }
 
   template <typename T>
   void tag_change(Entity e) {
-    add<ChangeComponentTag<T>>(e);
+    add<ChangeTag<T>>(e);
   }
 
   template <typename T>
   void tag_remove(Entity e) {
-    add<RemoveComponentTag<T>>(e);
+    add<RemoveTag<T>>(e);
+  }
+
+  // Delayed operations - execute at end of frame
+  template <typename T, typename... Args>
+  void add_delayed(Entity e, Args&&... args) {
+    check_auth<T>();
+    if (!have<T>(e)) {
+      m_reg.template remove<ChangeDelayed<T>, RemoveDelayed<T>>(e);
+      m_reg.template emplace_or_replace<AddDelayed<T>>(e, T{std::forward<Args>(args)...});
+    }
+  }
+
+  template <typename T, typename... Args>
+  void change_delayed(Entity e, Args&&... args) {
+    check_auth<T>();
+    if (m_reg.template try_get<T>(e) && !m_reg.template all_of<RemoveDelayed<T>>(e)) {
+      m_reg.template emplace_or_replace<ChangeDelayed<T>>(e, T{std::forward<Args>(args)...});
+    } else if (auto* add_ptr = m_reg.template try_get<AddDelayed<T>>(e)) {
+      add_ptr->m_data = T(std::forward<Args>(args)...);
+    }
+  }
+
+  template <typename T>
+  void remove_delayed(Entity e) {
+    check_auth<T>();
+    if (m_reg.template try_get<T>(e)) {
+      m_reg.template remove<AddDelayed<T>, ChangeDelayed<T>>(e);
+      m_reg.template emplace_or_replace<RemoveDelayed<T>>(e);
+    }
   }
 };
 
-// Access event
+// ============================================================================
+// Event access types
+// ============================================================================
 template <typename T>
 class EventReader {
  public:
@@ -267,7 +298,9 @@ class EventWriter : public EventReader<T> {
   stl::vector<T>& get() { return m_events; }
 };
 
-// Access context
+// ============================================================================
+// Context access types
+// ============================================================================
 template <typename T>
 struct Context {
   using type = T;

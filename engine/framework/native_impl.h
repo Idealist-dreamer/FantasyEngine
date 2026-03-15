@@ -10,7 +10,9 @@ namespace fe::engine {
 // ============================================================================
 template <>
 struct AccessTraits<EntityQuery> {
-  static void declare(AccessInfo& acc) { acc.child<Registry>().read(); }
+  static void declare(AccessInfo& acc) {
+    acc.child<Registry>().child<Entity>().read();
+  }
   static void prepare(Blackboard& bb, uint32_t) {
     if (!bb.has<Registry>()) bb.emplace_or_replace<Registry>();
   }
@@ -21,7 +23,9 @@ struct AccessTraits<EntityQuery> {
 
 template <>
 struct AccessTraits<EntityCreator> {
-  static void declare(AccessInfo& acc) { acc.child<Registry>().write(); }
+  static void declare(AccessInfo& acc) {
+    acc.child<Registry>().child<Entity>().write();
+  }
   static void prepare(Blackboard& bb, uint32_t) {
     if (!bb.has<Registry>()) bb.emplace_or_replace<Registry>();
   }
@@ -41,10 +45,6 @@ struct AccessTraits<EntityDestroyer> {
   }
 };
 
-struct PassCommandBuffers {
-  stl::unordered_map<uint32_t, EntityCommandBuffer> buffers;
-};
-
 // ============================================================================
 // Component 访问适配
 // ============================================================================
@@ -58,7 +58,9 @@ struct AccessTraits<ComponentReader<Cs...>> {
   static void prepare(Blackboard& bb, uint32_t) {
     if (!bb.has<Registry>()) bb.emplace_or_replace<Registry>();
     auto& reg = bb.get<Registry>();
+    // 预分配组件 storage
     (reg.template storage<std::remove_const_t<Cs>>(), ...);
+    // 预分配标记组件 storage
     (reg.template storage<AddTag<std::remove_const_t<Cs>>>(), ...);
     (reg.template storage<ChangeTag<std::remove_const_t<Cs>>>(), ...);
     (reg.template storage<RemoveTag<std::remove_const_t<Cs>>>(), ...);
@@ -76,7 +78,13 @@ struct AccessTraits<ComponentWriter<Cs...>> {
      ...);
   }
   static void prepare(Blackboard& bb, uint32_t pass_id) {
+    // 继承 Reader 的预分配
     AccessTraits<ComponentReader<Cs...>>::prepare(bb, pass_id);
+    auto& reg = bb.get<Registry>();
+    // 预分配延迟组件 storage
+    (reg.template storage<AddDelayed<std::remove_const_t<Cs>>>(), ...);
+    (reg.template storage<ChangeDelayed<std::remove_const_t<Cs>>>(), ...);
+    (reg.template storage<RemoveDelayed<std::remove_const_t<Cs>>>(), ...);
   }
   static ComponentWriter<Cs...> fetch(Blackboard& bb, uint32_t) {
     return ComponentWriter<Cs...>(bb.get<Registry>());
@@ -93,7 +101,6 @@ template <typename T>
 struct EventStorage {
   stl::vector<T> current;
   stl::vector<T> next;
-  bool cleanup_registered = false;
 };
 
 template <typename T>
@@ -102,8 +109,18 @@ struct AccessTraits<EventReader<T>> {
     acc.child<EventStorage<T>>().template child<ReadEventTag>().read();
   }
   static void prepare(Blackboard& bb, uint32_t) {
-    if (!bb.has<EventStorage<T>>()) bb.emplace_or_replace<EventStorage<T>>();
-    auto& storage = bb.get<EventStorage<T>>();
+    if (!bb.has<EventStorage<T>>()) {
+      bb.emplace_or_replace<EventStorage<T>>();
+      // 注册事件交换回调到 CleanupRegistry
+      if (!bb.has<CleanupRegistry>()) {
+        bb.emplace_or_replace<CleanupRegistry>();
+      }
+      bb.get<CleanupRegistry>().register_cleanup([](Blackboard& b) {
+        auto& storage = b.get<EventStorage<T>>();
+        storage.current.swap(storage.next);
+        storage.next.clear();
+      });
+    }
   }
   static EventReader<T> fetch(Blackboard& bb, uint32_t) {
     return EventReader<T>(bb.get<EventStorage<T>>().current);
@@ -129,6 +146,27 @@ struct AccessTraits<EventWriter<T>> {
 template <typename T>
 struct ContextStorage {
   Any data;
+
+  // 序列化支持：直接序列化内部数据 T
+  template <class Archive>
+  void save(Archive& ar) const {
+    bool has_data = data.valid();
+    ar(has_data);
+    if (has_data) {
+      ar(*data.get<T>());
+    }
+  }
+
+  template <class Archive>
+  void load(Archive& ar) {
+    bool has_data;
+    ar(has_data);
+    if (has_data) {
+      T value;
+      ar(value);
+      data = Any::create<T>(std::move(value));
+    }
+  }
 };
 
 template <typename T>

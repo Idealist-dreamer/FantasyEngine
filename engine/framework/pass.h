@@ -41,23 +41,20 @@ class Pass final {
     return pass;
   }
 
-  // 适用于普通函数和 Lambda
   template <typename Func>
   void init(Func&& func) {
     using CleanFunc = std::remove_cvref_t<Func>;
     using ArgsTuple = typename meta::function_traits<CleanFunc>::args_tuple;
-    init_impl<CleanFunc>(std::forward<Func>(func),
-                         static_cast<ArgsTuple*>(nullptr));
+    init_impl(std::forward<Func>(func), static_cast<ArgsTuple*>(nullptr));
   }
 
-  // 适用于系统成员函数绑定，兼容旧版 FE_SYS_PASS 宏
+  // 适用于系统成员函数绑定，适配闭包的自动推导避免强制类型指针声明失败
   template <typename T, typename Class, typename... Args>
   void init(T* obj, void (Class::*mem_func)(Args...)) {
-    init_impl<void(Args...)>(
-        [obj, mem_func](Args... args) {
-          (obj->*mem_func)(std::forward<Args>(args)...);
-        },
-        static_cast<std::tuple<Args...>*>(nullptr));
+    auto invoker = [obj, mem_func](Args... args) {
+      (obj->*mem_func)(std::forward<Args>(args)...);
+    };
+    init_impl(std::move(invoker), static_cast<std::tuple<Args...>*>(nullptr));
   }
 
   template <typename T>
@@ -72,21 +69,18 @@ class Pass final {
   uint32_t m_priority = 0;
   stage::StageHash m_stage = 0;
 
-  AccessInfo m_access;  // 使用全新的图论访问校验
+  AccessInfo m_access;
 
  private:
   template <typename Func, typename... Args>
   void init_impl(Func&& func, std::tuple<Args...>*) {
-    // 声明读写权限
     m_access = AccessOps::declare_all<Args...>();
     uint32_t passId = m_id;
 
-    // 收集准备函数
     m_preparers.push_back([passId](Blackboard& bb) {
       AccessOps::prepare_all<Args...>(bb, passId);
     });
 
-    // 闭包打包：实际执行时才调用 fetch 抓取数据
     m_binder = [func = std::forward<Func>(func),
                 passId](Blackboard& bb) mutable -> CallType {
       return [func, &bb, passId]() mutable {
