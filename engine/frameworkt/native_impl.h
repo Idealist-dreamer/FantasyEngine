@@ -1,13 +1,43 @@
 #pragma once
 
 #include <entt/entt.hpp>
-#include <type_traits>
+
+#include <functional>
+
+#include "foundation/utility/any.h"
+#include "foundation/container/stl.h"
 
 namespace fe::engine {
 
-// Entt base type
 using Entity = entt::entity;
 using Registry = entt::registry;
+
+struct EntityQuery {
+  EntityQuery(Registry& reg) : m_reg(reg) {}
+
+  bool valid(Entity e) const { return m_reg.valid(e); }
+  auto view() const { return m_reg.view<Entity>(); }
+
+ protected:
+  Registry& m_reg;
+};
+
+struct EntityCreator : EntityQuery {
+  EntityCreator(Registry& reg) : EntityQuery(reg) {}
+
+  Entity create() { return m_reg.create(); }
+  auto view() { return m_reg.view<Entity>(); }
+};
+
+struct EntityDestroyer : EntityCreator {
+  EntityDestroyer(Registry& reg) : EntityCreator(reg) {}
+
+  void destroy(Entity e) { m_reg.destroy(e); }
+};
+
+struct ECCommandBuffer {
+  slt::vector<std::function<void(Registry&)>> m_commands;
+};
 
 template <typename T>
 struct AddTag {};
@@ -15,8 +45,6 @@ template <typename T>
 struct ChangeTag {};
 template <typename T>
 struct RemoveTag {};
-
-// Delayed tag component types
 template <typename T>
 struct AddDelayed {
   T data;
@@ -28,7 +56,6 @@ struct ChangeDelayed {
 template <typename T>
 struct RemoveDelayed {};
 
-// Type traits
 template <typename T>
 struct base_type {
   using type = T;
@@ -57,7 +84,6 @@ template <typename T>
 struct base_type<RemoveDelayed<T>> {
   using type = T;
 };
-
 template <typename T>
 using base_type_t = typename base_type<T>::type;
 
