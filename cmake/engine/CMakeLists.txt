@@ -12,6 +12,10 @@ file(GLOB_RECURSE HEAD_FILE
 file(GLOB_RECURSE SOURCE_FILE
     "${CodePath}/*.cpp")
 
+
+list(FILTER SOURCE_FILE EXCLUDE REGEX 
+    "${CodePath}/framework_old/|${CodePath}/hierarchy/|${CodePath}/render/")
+
 add_library(engine STATIC ${SOURCE_FILE})
 
 # Target config

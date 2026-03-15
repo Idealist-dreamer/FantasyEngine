@@ -1,11 +1,6 @@
 #include "scene.h"
-#include "native_type.h"
-
-#include "foundation/utility/assert.h"
 
 #include <taskflow/taskflow.hpp>
-#include <fstream>
-#include <filesystem>
 
 namespace fe::engine {
 struct Scene::Impl {
@@ -21,29 +16,18 @@ struct Scene::Impl {
 
 Scene::Scene() {
   FE_DECLARE_PRIVATE_INIT
-  d()->m_default_passes.push_back(Pass::create_start<stage::Init>(
-      "Scene_Init", [this]() { Init(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_start<stage::PreStartup>(
-      "Scene_PreStartup", [this]() { PreStartup(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_start<stage::Startup>(
-      "Scene_Startup", [this]() { Startup(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_start<stage::PostStartup>(
-      "Scene_PostStartup", [this]() { PostStartup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::Init>("Scene_Init", [this]() { Init(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::PreStartup>("Scene_PreStartup", [this]() { PreStartup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::Startup>("Scene_Startup", [this]() { Startup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_start<stage::PostStartup>("Scene_PostStartup", [this]() { PostStartup(); }, Priority::First));
 
-  d()->m_default_passes.push_back(Pass::create_update<stage::First>(
-      "Scene_First", [this]() { First(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update<stage::PreUpdate>(
-      "Scene_PreUpdate", [this]() { PreUpdate(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update<stage::Update>(
-      "Scene_Update", [this]() { Update(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update<stage::PostUpdate>(
-      "Scene_PostUpdate", [this]() { PostUpdate(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update<stage::Last>(
-      "Scene_Last", [this]() { Last(); }, Priority::First));
-  d()->m_default_passes.push_back(Pass::create_update<stage::Cleanup>(
-      "Scene_Cleanup", [this]() { Cleanup(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::First>("Scene_First", [this]() { First(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::PreUpdate>("Scene_PreUpdate", [this]() { PreUpdate(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::Update>("Scene_Update", [this]() { Update(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::PostUpdate>("Scene_PostUpdate", [this]() { PostUpdate(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::Last>("Scene_Last", [this]() { Last(); }, Priority::First));
+  d()->m_default_passes.push_back(Pass::create_update<stage::Cleanup>("Scene_Cleanup", [this]() { Cleanup(); }, Priority::First));
 }
-
 Scene::~Scene() {}
 
 void Scene::add_system(stl::shared_ptr<System> sys) {
@@ -84,20 +68,20 @@ void Scene::compile() {
 
   for (auto pass : setup_passes) {
     for (auto& preparer : pass->m_preparers) {
-      preparer(m_blackboard);
+      preparer(*this);
     }
   }
   for (auto pass : run_passes) {
     for (auto& preparer : pass->m_preparers) {
-      preparer(m_blackboard);
+      preparer(*this);
     }
   }
 
   for (auto pass : setup_passes) {
-    pass->m_execute = pass->m_binder(m_blackboard);
+    pass->m_execute = pass->m_binder(*this);
   }
   for (auto pass : run_passes) {
-    pass->m_execute = pass->m_binder(m_blackboard);
+    pass->m_execute = pass->m_binder(*this);
   }
 
   setup_taskflow.clear();
@@ -107,9 +91,8 @@ void Scene::compile() {
     return;
   }
 
-  auto create_stage_barriers = [](tf::Taskflow& tf,
-                                  const stl::vector<Pass*>& passes)
-      -> stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>> {
+  // Create Stage barrier tasks to ensure dependency chain doesn't break on empty stages
+  auto create_stage_barriers = [](tf::Taskflow& tf, const stl::vector<Pass*>& passes) -> stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>> {
     stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>> barriers;
     stl::unordered_set<stage::StageHash> used_stages;
 
@@ -142,11 +125,10 @@ void Scene::compile() {
     stl::string begin_str = "_Begin";
     stl::string end_str = "_End";
 
+    // Create barrier task for each stage
     for (auto stage_hash : used_stages) {
-      barriers[stage_hash].first = tf.emplace([]() {}).name(
-          (stage::g_stage_name_registry[stage_hash] + begin_str).c_str());
-      barriers[stage_hash].second = tf.emplace([]() {}).name(
-          (stage::g_stage_name_registry[stage_hash] + end_str).c_str());
+      barriers[stage_hash].first = tf.emplace([]() {}).name((stage::g_stage_name_registry[stage_hash] + begin_str).c_str());
+      barriers[stage_hash].second = tf.emplace([]() {}).name((stage::g_stage_name_registry[stage_hash] + end_str).c_str());
       barriers[stage_hash].first.precede(barriers[stage_hash].second);
     }
 
@@ -169,60 +151,58 @@ void Scene::compile() {
     return barriers;
   };
 
-  stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>> setup_barriers =
-      create_stage_barriers(setup_taskflow, setup_passes);
-  stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>> run_barriers =
-      create_stage_barriers(run_taskflow, run_passes);
+  stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>> setup_barriers = create_stage_barriers(setup_taskflow, setup_passes);
+  stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>> run_barriers = create_stage_barriers(run_taskflow, run_passes);
 
+  // Create Pass tasks
   stl::map<Pass*, tf::Task> task_node_map;
   for (auto pass : setup_passes) {
-    task_node_map[pass] =
-        setup_taskflow.emplace([pass]() { pass->m_execute(); })
-            .name(pass->m_name.c_str());
+    task_node_map[pass] = setup_taskflow.emplace([pass, this]() { pass->m_execute(); }).name(pass->m_name.c_str());
   }
   for (auto pass : run_passes) {
-    task_node_map[pass] = run_taskflow.emplace([pass]() { pass->m_execute(); })
-                              .name(pass->m_name.c_str());
+    task_node_map[pass] = run_taskflow.emplace([pass, this]() { pass->m_execute(); }).name(pass->m_name.c_str());
   }
 
-  auto link_pass_to_barriers =
-      [](stl::map<Pass*, tf::Task>& task_map,
-         stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>>& barriers,
-         const stl::vector<Pass*>& passes) {
-        for (auto pass : passes) {
-          auto& task = task_map[pass];
-          auto stage_hash = pass->m_stage;
-          if (barriers.find(stage_hash) != barriers.end()) {
-            barriers[stage_hash].first.precede(task);
-            barriers[stage_hash].second.succeed(task);
-          }
-        }
-      };
+  // Link Pass tasks to their corresponding Stage barriers
+  auto link_pass_to_barriers = [](stl::map<Pass*, tf::Task>& task_map, stl::map<stage::StageHash, stl::pair<tf::Task, tf::Task>>& barriers,
+                                  const stl::vector<Pass*>& passes) {
+    for (auto pass : passes) {
+      auto& task = task_map[pass];
+      auto stage_hash = pass->m_stage;
+
+      // Pass must execute after its Stage barrier
+      if (barriers.find(stage_hash) != barriers.end()) {
+        barriers[stage_hash].first.precede(task);
+        barriers[stage_hash].second.succeed(task);
+      }
+    }
+  };
 
   link_pass_to_barriers(task_node_map, setup_barriers, setup_passes);
   link_pass_to_barriers(task_node_map, run_barriers, run_passes);
 
-  auto is_stage_reachable = [](stage::StageHash start,
-                               stage::StageHash target) -> bool {
-    if (start == target) return false;
+  auto is_stage_reachable = [](stage::StageHash start, stage::StageHash target) -> bool {
+    if (start == target)
+      return false;
     stl::unordered_set<stage::StageHash> visited;
     stl::vector<stage::StageHash> queue{start};
     visited.insert(start);
     for (size_t head = 0; head < queue.size(); ++head) {
       auto curr = queue[head];
-      if (curr == target) return true;
+      if (curr == target)
+        return true;
       auto it = stage::g_stage_after_map.find(curr);
       if (it != stage::g_stage_after_map.end()) {
         for (auto next : it->second) {
-          if (visited.insert(next).second) queue.push_back(next);
+          if (visited.insert(next).second)
+            queue.push_back(next);
         }
       }
     }
     return false;
   };
 
-  auto access_pass_fun = [&task_node_map, &is_stage_reachable](
-                             const stl::vector<Pass*>& pass_array) {
+  auto mutex_pass_fun = [&task_node_map, &is_stage_reachable](const stl::vector<Pass*>& pass_array) {
     auto count = pass_array.size();
     for (size_t i = 0; i < count; ++i) {
       for (size_t j = i + 1; j < count; ++j) {
@@ -232,12 +212,21 @@ void Scene::compile() {
         auto& task_a = task_node_map[pass_a];
         auto& task_b = task_node_map[pass_b];
 
-        // 使用新 AccessInfo 图判定替代旧版 mutex 遍历
-        if (pass_a->m_access.is_conflict(pass_b->m_access)) {
-          bool a_before_b =
-              is_stage_reachable(pass_a->m_stage, pass_b->m_stage);
-          bool b_before_a =
-              is_stage_reachable(pass_b->m_stage, pass_a->m_stage);
+        bool is_conflict = false;
+        for (auto& mutex_a : pass_a->m_mutexes) {
+          for (auto& mutex_b : pass_b->m_mutexes) {
+            if (mutex_a.is_conflict(mutex_b)) {
+              is_conflict = true;
+              break;
+            }
+          }
+          if (is_conflict)
+            break;
+        }
+
+        if (is_conflict) {
+          bool a_before_b = is_stage_reachable(pass_a->m_stage, pass_b->m_stage);
+          bool b_before_a = is_stage_reachable(pass_b->m_stage, pass_a->m_stage);
 
           if (!a_before_b && !b_before_a) {
             if (pass_a->m_priority <= pass_b->m_priority) {
@@ -251,8 +240,8 @@ void Scene::compile() {
     }
   };
 
-  access_pass_fun(setup_passes);
-  access_pass_fun(run_passes);
+  mutex_pass_fun(setup_passes);
+  mutex_pass_fun(run_passes);
 }
 
 void Scene::setup() {
@@ -260,7 +249,7 @@ void Scene::setup() {
     d()->m_executor.run(d()->m_setup_taskflow).wait();
   } catch (const std::exception& e) {
     FE_ERROR("Scheduler execution failed: %s", e.what());
-    throw;
+    throw;  // Rethrow for caller to handle
   }
 }
 
@@ -269,7 +258,7 @@ void Scene::run() {
     d()->m_executor.run(d()->m_run_taskflow).wait();
   } catch (const std::exception& e) {
     FE_ERROR("Scheduler execution failed: %s", e.what());
-    throw;
+    throw;  // Rethrow for caller to handle
   }
 }
 
@@ -313,24 +302,24 @@ void Scene::save(const stl::string& path) {
     return;
   }
 
-  Registry* reg = m_blackboard.try_get<Registry>();
-
   if (is_json(path)) {
     cereal::JSONOutputArchive concreteAr(os);
-    Archive archive(&concreteAr, reg);
+    Archive archive(&concreteAr, &m_registry);
 
     archive(FE_MAKE_NVP(d()->m_name));
     archive.entities();
 
-    for (auto& sys : d()->m_systems) sys->save(*this, archive);
+    for (auto& sys : d()->m_systems)
+      sys->save(*this, archive);
   } else {
     cereal::BinaryOutputArchive concreteAr(os);
-    Archive archive(&concreteAr, reg);
+    Archive archive(&concreteAr, &m_registry);
 
     archive(FE_MAKE_NVP(d()->m_name));
     archive.entities();
 
-    for (auto& sys : d()->m_systems) sys->save(*this, archive);
+    for (auto& sys : d()->m_systems)
+      sys->save(*this, archive);
   }
 
   FE_DEBUGPRINT("Scene saved to: %s", path.c_str());
@@ -344,26 +333,26 @@ void Scene::load(const stl::string& path) {
     return;
   }
 
-  // 重置 Registry
-  m_blackboard.emplace_or_replace<Registry>();
-  Registry* reg = m_blackboard.try_get<Registry>();
+  m_registry = Registry{};
 
   if (is_json(path)) {
     cereal::JSONInputArchive concreteAr(is);
-    Archive archive(&concreteAr, reg);
+    Archive archive(&concreteAr, &m_registry);
 
     archive(FE_MAKE_NVP(d()->m_name));
     archive.entities();
 
-    for (auto& sys : d()->m_systems) sys->load(*this, archive);
+    for (auto& sys : d()->m_systems)
+      sys->load(*this, archive);
   } else {
     cereal::BinaryInputArchive concreteAr(is);
-    Archive archive(&concreteAr, reg);
+    Archive archive(&concreteAr, &m_registry);
 
     archive(FE_MAKE_NVP(d()->m_name));
     archive.entities();
 
-    for (auto& sys : d()->m_systems) sys->load(*this, archive);
+    for (auto& sys : d()->m_systems)
+      sys->load(*this, archive);
   }
 
   FE_DEBUGPRINT("Scene loaded from: %s", path.c_str());
@@ -378,16 +367,23 @@ void Scene::First() {}
 void Scene::PreUpdate() {}
 void Scene::Update() {}
 void Scene::PostUpdate() {}
-void Scene::Last() {}
 
+void Scene::Last() {}
 void Scene::Cleanup() {
-  // 执行由各模块注入 Blackboard 的清理回调 (如 Event 交换机制)
-  // 此处依赖你在 native_type/native_impl 中注册的 CleanupRegistry
-  // if (auto* cleanup_reg = m_blackboard.try_get<CleanupRegistry>()) {
-  //   for (auto& func : cleanup_reg->cleanups) {
-  //     func(m_blackboard);
-  //   }
-  // }
+  for (auto& [tid, swap] : m_event_swap) {
+    swap(*this);
+  }
+  for (auto& [passId, ecb] : m_entity_command_buffers) {
+    for (auto& entity : ecb.m_entity_map) {
+      if (entity == entt::null) {
+        entity = m_registry.create();
+      }
+    }
+    for (auto& e : ecb.m_destroyed_entities) {
+      m_registry.destroy(e);
+    }
+    ecb.m_destroyed_entities.clear();
+  }
 }
 
 }  // namespace fe::engine

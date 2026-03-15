@@ -1,16 +1,10 @@
 #pragma once
 
-#include "foundation/utility/common.h"
-
 #include "system.h"
-#include "blackboard.h"
-
-#include <memory>
-#include <deque>
 
 namespace fe::engine {
 
-class Scene {
+class Scene : protected SceneBase {
  public:
   Scene();
   ~Scene();
@@ -26,8 +20,8 @@ class Scene {
   void save(const stl::string& path);
   void load(const stl::string& path);
 
-  Blackboard& get_blackboard() { return m_blackboard; }
-  const Blackboard& get_blackboard() const { return m_blackboard; }
+  SceneBase& base() { return *this; }
+  const SceneBase& base() const { return *this; }
 
  private:
   void Init();
@@ -43,9 +37,6 @@ class Scene {
   void Last();
   void Cleanup();
 
-  Blackboard m_blackboard;
-
   FE_DECLARE_PRIVATE
 };
-
 }  // namespace fe::engine

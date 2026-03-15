@@ -7,17 +7,15 @@
 
 namespace fe::engine {
 
-class Scene;
-
 class System {
  public:
   System(const stl::string& name) : m_name(name) {}
   virtual ~System() = default;
 
-  virtual bool init(Scene& scene) = 0;
+  virtual bool init(SceneBase& scene) = 0;
 
-  virtual void save(Scene& scene, Archive&) {}
-  virtual void load(Scene& scene, Archive&) {}
+  virtual void save(SceneBase& scene, Archive&) {}
+  virtual void load(SceneBase& scene, Archive&) {}
 
  protected:
   stl::string m_name;

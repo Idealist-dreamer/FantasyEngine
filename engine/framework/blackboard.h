@@ -1,6 +1,7 @@
 #pragma once
 
 #include "foundation/utility/any.h"
+#include "foundation/utility/meta.h"
 #include "foundation/utility/type.h"
 #include "foundation/container/stl.h"
 

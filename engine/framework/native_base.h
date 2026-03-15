@@ -14,7 +14,7 @@ struct AddComponentTag {};
 template <typename T>
 struct ChangeComponentTag {};
 template <typename T>
-struct RemoveEntityTag {};
+struct RemoveComponentTag {};
 
 // Type traits
 template <typename T>
@@ -30,7 +30,7 @@ struct base_type<ChangeComponentTag<T>> {
   using type = T;
 };
 template <typename T>
-struct base_type<RemoveEntityTag<T>> {
+struct base_type<RemoveComponentTag<T>> {
   using type = T;
 };
 

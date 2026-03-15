@@ -38,8 +38,7 @@ using ensure_tuple_t = typename ensure_tuple<T>::type;
 // Stage definitions
 // ============================================================================
 
-template <typename P = None, typename N = None,
-          typename Repeat = std::true_type>
+template <typename P = None, typename N = None, typename Repeat = std::true_type>
 class Stage : public IsStage {
  public:
   using is_repeat = Repeat;
@@ -48,12 +47,10 @@ class Stage : public IsStage {
 };
 
 template <typename... Targets>
-using after = Stage<std::tuple<Targets...>, None,
-                    std::conjunction<typename Targets::is_repeat...>>;
+using after = Stage<std::tuple<Targets...>, None, std::conjunction<typename Targets::is_repeat...>>;
 
 template <typename... Targets>
-using before = Stage<None, std::tuple<Targets...>,
-                     std::conjunction<typename Targets::is_repeat...>>;
+using before = Stage<None, std::tuple<Targets...>, std::conjunction<typename Targets::is_repeat...>>;
 
 // Built-in Stage definitions
 class Init : public Stage<None, None, std::false_type> {};
@@ -81,7 +78,8 @@ inline stl::unordered_map<StageHash, stl::vector<StageHash>> g_stage_after_map;
 template <typename T>
 void init_stage_info() {
   static bool initialized = false;
-  if (initialized) return;
+  if (initialized)
+    return;
 
   initialized = true;
 
@@ -93,28 +91,24 @@ void init_stage_info() {
 
   for (auto prev_hash : befores) {
     auto& my_befores = g_stage_before_map[stage_hash];
-    if (std::find(my_befores.begin(), my_befores.end(), prev_hash) ==
-        my_befores.end()) {
+    if (std::find(my_befores.begin(), my_befores.end(), prev_hash) == my_befores.end()) {
       my_befores.push_back(prev_hash);
     }
 
     auto& prev_afters = g_stage_after_map[prev_hash];
-    if (std::find(prev_afters.begin(), prev_afters.end(), stage_hash) ==
-        prev_afters.end()) {
+    if (std::find(prev_afters.begin(), prev_afters.end(), stage_hash) == prev_afters.end()) {
       prev_afters.push_back(stage_hash);
     }
   }
 
   for (auto next_hash : afters) {
     auto& my_afters = g_stage_after_map[stage_hash];
-    if (std::find(my_afters.begin(), my_afters.end(), next_hash) ==
-        my_afters.end()) {
+    if (std::find(my_afters.begin(), my_afters.end(), next_hash) == my_afters.end()) {
       my_afters.push_back(next_hash);
     }
 
     auto& next_befores = g_stage_before_map[next_hash];
-    if (std::find(next_befores.begin(), next_befores.end(), stage_hash) ==
-        next_befores.end()) {
+    if (std::find(next_befores.begin(), next_befores.end(), stage_hash) == next_befores.end()) {
       next_befores.push_back(stage_hash);
     }
   }
@@ -140,8 +134,7 @@ template <typename T>
   using PList = typename T::previous_list;
   stl::vector<StageHash> result;
   result.reserve(std::tuple_size_v<PList>);
-  detail::fill_hashes<PList>(
-      result, std::make_index_sequence<std::tuple_size_v<PList>>{});
+  detail::fill_hashes<PList>(result, std::make_index_sequence<std::tuple_size_v<PList>>{});
   return result;
 }
 
@@ -150,8 +143,7 @@ template <typename T>
   using NList = typename T::next_list;
   stl::vector<StageHash> result;
   result.reserve(std::tuple_size_v<NList>);
-  detail::fill_hashes<NList>(
-      result, std::make_index_sequence<std::tuple_size_v<NList>>{});
+  detail::fill_hashes<NList>(result, std::make_index_sequence<std::tuple_size_v<NList>>{});
   return result;
 }
 

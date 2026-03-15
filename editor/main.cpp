@@ -59,7 +59,8 @@ struct TestConfig {
   }
 
   void print() const {
-    std::cout << "Test Configuration (" << (isDebug ? "DEBUG" : "RELEASE") << "):\n";
+    std::cout << "Test Configuration (" << (isDebug ? "DEBUG" : "RELEASE")
+              << "):\n";
     std::cout << "  Agents        : " << AGENT_COUNT << "\n";
     std::cout << "  Particles     : " << PARTICLE_COUNT << "\n";
     std::cout << "  Benchmark     : " << BENCHMARK_FRAMES << " frames\n";
@@ -119,7 +120,8 @@ struct RenderState {
     // 必须退化类型，去除可能附带的 & 或 const 约束，以精确匹配 Archive 原型
     using ArType = std::decay_t<Archive>;
 
-    if constexpr (std::is_same_v<ArType, cereal::JSONOutputArchive> || std::is_same_v<ArType, cereal::XMLOutputArchive>) {
+    if constexpr (std::is_same_v<ArType, cereal::JSONOutputArchive> ||
+                  std::is_same_v<ArType, cereal::XMLOutputArchive>) {
       for (int i = 0; i < 16; ++i) {
         ar(matrix[i]);
       }
@@ -132,7 +134,8 @@ struct RenderState {
   void load(Archive& ar) {
     using ArType = std::decay_t<Archive>;
 
-    if constexpr (std::is_same_v<ArType, cereal::JSONInputArchive> || std::is_same_v<ArType, cereal::XMLInputArchive>) {
+    if constexpr (std::is_same_v<ArType, cereal::JSONInputArchive> ||
+                  std::is_same_v<ArType, cereal::XMLInputArchive>) {
       for (int i = 0; i < 16; ++i) {
         ar(matrix[i]);
       }
@@ -191,12 +194,12 @@ class CoreInitSystem : public System {
   CoreInitSystem() : System("CoreInitSystem") {}
 
   bool init(SceneBase& scene) override {
-    m_passes.push_back(Pass::create_start<stage::Init>("InitContexts", [](ContextWriter<GlobalTime> time, ContextWriter<GameStats> stats) {
-      if (!time.valid())
-        time.create(GlobalTime{0.016f, 0});
-      if (!stats.valid())
-        stats.create(GameStats{0, 0});
-    }));
+    m_passes.push_back(Pass::create_start<stage::Init>(
+        "InitContexts",
+        [](ContextWriter<GlobalTime> time, ContextWriter<GameStats> stats) {
+          if (!time.valid()) time.create(GlobalTime{0.016f, 0});
+          if (!stats.valid()) stats.create(GameStats{0, 0});
+        }));
     return true;
   }
 
@@ -223,7 +226,8 @@ class CoreInitSystem : public System {
     // 注意：compile() 期间 ParamAdapter::prepare 可能已创建空的 Any 占位符
     auto timeIt = scene.m_context_manager.find(typeid(GlobalTime));
     if (timeIt == scene.m_context_manager.end() || !timeIt->second.valid()) {
-      scene.m_context_manager[typeid(GlobalTime)] = Any::create<GlobalTime>(0.016f, 0);
+      scene.m_context_manager[typeid(GlobalTime)] =
+          Any::create<GlobalTime>(0.016f, 0);
     }
 
     auto statsIt = scene.m_context_manager.find(typeid(GameStats));
@@ -256,11 +260,14 @@ class SpawnerSystem : public System {
 
   bool init(SceneBase& scene) override {
     m_passes.push_back(Pass::create_start<stage::Startup>(
-        "Initial_Mass_Spawn", [](EntityCreator creator, ComponentWriter<Transform, Velocity, BoidState, RenderState, Health, ParticleData> writer,
-                                 ContextWriter<GameStats> stats) {
+        "Initial_Mass_Spawn",
+        [](EntityCreator creator,
+           ComponentWriter<Transform, Velocity, BoidState, RenderState, Health,
+                           ParticleData>
+               writer,
+           ContextWriter<GameStats> stats) {
           g_setup_executions.fetch_add(1, std::memory_order_relaxed);
-          if (!stats.valid())
-            stats.create(GameStats{0, 0});
+          if (!stats.valid()) stats.create(GameStats{0, 0});
 
           // 使用全局配置
           const int AGENT_COUNT = g_config.AGENT_COUNT;
@@ -272,16 +279,22 @@ class SpawnerSystem : public System {
 
           for (int i = 0; i < AGENT_COUNT; ++i) {
             auto e = creator.create();
-            writer.add<Transform>(e, Transform{{dist(rng), dist(rng), dist(rng)}, {dist(rng), 0.0f, 0.0f}});
+            writer.add<Transform>(e,
+                                  Transform{{dist(rng), dist(rng), dist(rng)},
+                                            {dist(rng), 0.0f, 0.0f}});
             writer.add<Velocity>(e, Velocity{{1.0f, 0.5f, 0.1f}});
-            writer.add<BoidState>(e, BoidState{{dist(rng), dist(rng), dist(rng)}, 1.0f});
+            writer.add<BoidState>(
+                e, BoidState{{dist(rng), dist(rng), dist(rng)}, 1.0f});
             writer.add<RenderState>(e);
             writer.add<Health>(e, Health{100.0f});
           }
 
           for (int i = 0; i < PARTICLE_COUNT; ++i) {
             auto e = creator.create();
-            writer.add<ParticleData>(e, ParticleData{{dist(rng), dist(rng), dist(rng)}, {0.0f, 1.0f, 0.0f}, 100.0f});
+            writer.add<ParticleData>(
+                e, ParticleData{{dist(rng), dist(rng), dist(rng)},
+                                {0.0f, 1.0f, 0.0f},
+                                100.0f});
           }
 
           stats.get().activeEntities += (AGENT_COUNT + PARTICLE_COUNT);
@@ -292,12 +305,14 @@ class SpawnerSystem : public System {
 
   void save(SceneBase& scene, Archive& ar) override {
     // 序列化所有组件类型
-    ar.components<Transform, Velocity, BoidState, RenderState, Health, ParticleData>();
+    ar.components<Transform, Velocity, BoidState, RenderState, Health,
+                  ParticleData>();
   }
 
   void load(SceneBase& scene, Archive& ar) override {
     // 反序列化所有组件类型
-    ar.components<Transform, Velocity, BoidState, RenderState, Health, ParticleData>();
+    ar.components<Transform, Velocity, BoidState, RenderState, Health,
+                  ParticleData>();
   }
 };
 
@@ -305,8 +320,9 @@ class AISystem : public System {
  public:
   AISystem() : System("AISystem") {}
   bool init(SceneBase& scene) override {
-    m_passes.push_back(
-        Pass::create_update<stage::PreUpdate>("AI_BoidSteer", [](ComponentReader<Transform> r_trans, ComponentWriter<Velocity, BoidState> w_velboid) {
+    m_passes.push_back(Pass::create_update<stage::PreUpdate>(
+        "AI_BoidSteer", [](ComponentReader<Transform> r_trans,
+                           ComponentWriter<Velocity, BoidState> w_velboid) {
           uint64_t iters = 0;
           for (auto e : w_velboid.view<Velocity, BoidState>()) {
             if (const auto* t = r_trans.try_get<Transform>(e)) {
@@ -337,7 +353,9 @@ class PhysicsSystem : public System {
   PhysicsSystem() : System("PhysicsSystem") {}
   bool init(SceneBase& scene) override {
     m_passes.push_back(Pass::create_update<stage::Update>(
-        "Phys_UpdateAgents", [](ComponentWriter<Transform> w_trans, ComponentReader<Velocity> r_vel, ContextReader<GlobalTime> time) {
+        "Phys_UpdateAgents",
+        [](ComponentWriter<Transform> w_trans, ComponentReader<Velocity> r_vel,
+           ContextReader<GlobalTime> time) {
           float dt = time.valid() ? time.get().dt : 0.016f;
           uint64_t iters = 0;
           for (auto e : w_trans.view<Transform>()) {
@@ -353,8 +371,9 @@ class PhysicsSystem : public System {
           g_total_loop_iterations.fetch_add(iters, std::memory_order_relaxed);
         }));
 
-    m_passes.push_back(
-        Pass::create_update<stage::Update>("Phys_UpdateParticles", [](ComponentWriter<ParticleData> w_part, ContextReader<GlobalTime> time) {
+    m_passes.push_back(Pass::create_update<stage::Update>(
+        "Phys_UpdateParticles", [](ComponentWriter<ParticleData> w_part,
+                                   ContextReader<GlobalTime> time) {
           float dt = time.valid() ? time.get().dt : 0.016f;
           uint64_t iters = 0;
           for (auto e : w_part.view<ParticleData>()) {
@@ -374,8 +393,9 @@ class RenderComputeSystem : public System {
  public:
   RenderComputeSystem() : System("RenderComputeSystem") {}
   bool init(SceneBase& scene) override {
-    m_passes.push_back(
-        Pass::create_update<stage::PostUpdate>("Render_ComputeMatrix", [](ComponentReader<Transform> r_trans, ComponentWriter<RenderState> w_rend) {
+    m_passes.push_back(Pass::create_update<stage::PostUpdate>(
+        "Render_ComputeMatrix", [](ComponentReader<Transform> r_trans,
+                                   ComponentWriter<RenderState> w_rend) {
           uint64_t iters = 0;
           uint64_t math_accumulator = 0;
           for (auto e : w_rend.view<RenderState>()) {
@@ -393,12 +413,14 @@ class RenderComputeSystem : public System {
               r.matrix[15] = 1.0f;
 
               // 将算力注入整数累计，绝对阻止浮点代码被剔除
-              math_accumulator += static_cast<uint64_t>(std::abs(r.matrix[0] * 1000.0f));
+              math_accumulator +=
+                  static_cast<uint64_t>(std::abs(r.matrix[0] * 1000.0f));
               iters++;
             }
           }
           g_total_loop_iterations.fetch_add(iters, std::memory_order_relaxed);
-          g_global_state_hash.fetch_add(math_accumulator, std::memory_order_relaxed);
+          g_global_state_hash.fetch_add(math_accumulator,
+                                        std::memory_order_relaxed);
         }));
     return true;
   }
@@ -408,10 +430,10 @@ class BenchmarkMonitorSystem : public System {
  public:
   BenchmarkMonitorSystem() : System("BenchmarkMonitorSystem") {}
   bool init(SceneBase& scene) override {
-    m_passes.push_back(
-        Pass::create_update<stage::Cleanup>("Checksum_Eval", [](ComponentReader<RenderState, ParticleData> reader, ContextWriter<GlobalTime> time) {
-          if (!time.valid())
-            time.create(GlobalTime{0.016f, 0});
+    m_passes.push_back(Pass::create_update<stage::Cleanup>(
+        "Checksum_Eval", [](ComponentReader<RenderState, ParticleData> reader,
+                            ContextWriter<GlobalTime> time) {
+          if (!time.valid()) time.create(GlobalTime{0.016f, 0});
 
           // 使用 EnTT 自带的 size_hint 进行实体存在性硬校验
           uint64_t agents = reader.view<RenderState>().size();
@@ -476,23 +498,38 @@ struct SaveDataSnapshot {
   }
 
   bool operator==(const SaveDataSnapshot& other) const {
-    return entityCount == other.entityCount && transformCount == other.transformCount && velocityCount == other.velocityCount &&
-           boidStateCount == other.boidStateCount && renderStateCount == other.renderStateCount && particleCount == other.particleCount &&
-           healthCount == other.healthCount && std::abs(globalTimeDt - other.globalTimeDt) < 0.0001f && frameCount == other.frameCount &&
-           activeEntities == other.activeEntities && totalSpawned == other.totalSpawned;
+    return entityCount == other.entityCount &&
+           transformCount == other.transformCount &&
+           velocityCount == other.velocityCount &&
+           boidStateCount == other.boidStateCount &&
+           renderStateCount == other.renderStateCount &&
+           particleCount == other.particleCount &&
+           healthCount == other.healthCount &&
+           std::abs(globalTimeDt - other.globalTimeDt) < 0.0001f &&
+           frameCount == other.frameCount &&
+           activeEntities == other.activeEntities &&
+           totalSpawned == other.totalSpawned;
   }
 };
 
 SaveDataSnapshot captureSnapshot(SceneBase& scene) {
   SaveDataSnapshot snapshot;
   // 使用 Transform 视图大小作为实体计数的参考（因为所有 Agent 都有 Transform）
-  snapshot.entityCount = static_cast<uint32_t>(scene.m_registry.view<entt::entity>().size() + scene.m_registry.view<ParticleData>().size());
-  snapshot.transformCount = static_cast<uint32_t>(scene.m_registry.view<Transform>().size());
-  snapshot.velocityCount = static_cast<uint32_t>(scene.m_registry.view<Velocity>().size());
-  snapshot.boidStateCount = static_cast<uint32_t>(scene.m_registry.view<BoidState>().size());
-  snapshot.renderStateCount = static_cast<uint32_t>(scene.m_registry.view<RenderState>().size());
-  snapshot.particleCount = static_cast<uint32_t>(scene.m_registry.view<ParticleData>().size());
-  snapshot.healthCount = static_cast<uint32_t>(scene.m_registry.view<Health>().size());
+  snapshot.entityCount =
+      static_cast<uint32_t>(scene.m_registry.view<entt::entity>().size() +
+                            scene.m_registry.view<ParticleData>().size());
+  snapshot.transformCount =
+      static_cast<uint32_t>(scene.m_registry.view<Transform>().size());
+  snapshot.velocityCount =
+      static_cast<uint32_t>(scene.m_registry.view<Velocity>().size());
+  snapshot.boidStateCount =
+      static_cast<uint32_t>(scene.m_registry.view<BoidState>().size());
+  snapshot.renderStateCount =
+      static_cast<uint32_t>(scene.m_registry.view<RenderState>().size());
+  snapshot.particleCount =
+      static_cast<uint32_t>(scene.m_registry.view<ParticleData>().size());
+  snapshot.healthCount =
+      static_cast<uint32_t>(scene.m_registry.view<Health>().size());
 
   auto timeIt = scene.m_context_manager.find(typeid(GlobalTime));
   if (timeIt != scene.m_context_manager.end()) {
@@ -557,7 +594,8 @@ void runSaveLoadTest() {
   // ----------------------------------------
   // Phase 2: 保存到二进制文件
   // ----------------------------------------
-  std::cout << "\n[Phase 2] Saving to binary file: " << savePathBinary.c_str() << "\n";
+  std::cout << "\n[Phase 2] Saving to binary file: " << savePathBinary.c_str()
+            << "\n";
   scene1.save(savePathBinary);
 
   // 验证文件是否存在
@@ -572,7 +610,8 @@ void runSaveLoadTest() {
   // ----------------------------------------
   // Phase 3: 保存到JSON文件
   // ----------------------------------------
-  std::cout << "\n[Phase 3] Saving to JSON file: " << savePathJson.c_str() << "\n";
+  std::cout << "\n[Phase 3] Saving to JSON file: " << savePathJson.c_str()
+            << "\n";
   scene1.save(savePathJson);
 
   if (!std::filesystem::exists(savePathJson.c_str())) {
@@ -605,7 +644,8 @@ void runSaveLoadTest() {
 
   // 验证二进制加载
   bool binaryLoadSuccess = (snapshot1 == snapshot2);
-  std::cout << "\n[Phase 4] Binary Load Verification: " << (binaryLoadSuccess ? "PASSED" : "FAILED") << "\n";
+  std::cout << "\n[Phase 4] Binary Load Verification: "
+            << (binaryLoadSuccess ? "PASSED" : "FAILED") << "\n";
 
   if (!binaryLoadSuccess) {
     std::cout << "  Expected:\n";
@@ -636,7 +676,8 @@ void runSaveLoadTest() {
 
   // 验证JSON加载
   bool jsonLoadSuccess = (snapshot1 == snapshot3);
-  std::cout << "\n[Phase 5] JSON Load Verification: " << (jsonLoadSuccess ? "PASSED" : "FAILED") << "\n";
+  std::cout << "\n[Phase 5] JSON Load Verification: "
+            << (jsonLoadSuccess ? "PASSED" : "FAILED") << "\n";
 
   // ----------------------------------------
   // Phase 6: 继续运行加载的场景，验证功能正常
@@ -649,14 +690,18 @@ void runSaveLoadTest() {
   }
 
   SaveDataSnapshot snapshot4 = captureSnapshot(scene2.base());
-  std::cout << "[Phase 6] Snapshot after " << CONTINUE_FRAMES << " more frames:\n";
+  std::cout << "[Phase 6] Snapshot after " << CONTINUE_FRAMES
+            << " more frames:\n";
   snapshot4.print();
 
   // 验证帧数是否正确增加
-  bool frameContinuity = (snapshot4.frameCount == snapshot1.frameCount + CONTINUE_FRAMES);
-  std::cout << "\n[Phase 6] Frame Continuity Check: " << (frameContinuity ? "PASSED" : "FAILED") << "\n";
+  bool frameContinuity =
+      (snapshot4.frameCount == snapshot1.frameCount + CONTINUE_FRAMES);
+  std::cout << "\n[Phase 6] Frame Continuity Check: "
+            << (frameContinuity ? "PASSED" : "FAILED") << "\n";
   if (!frameContinuity) {
-    std::cout << "  Expected frame count: " << snapshot1.frameCount + CONTINUE_FRAMES << "\n";
+    std::cout << "  Expected frame count: "
+              << snapshot1.frameCount + CONTINUE_FRAMES << "\n";
     std::cout << "  Actual frame count: " << snapshot4.frameCount << "\n";
   }
 
@@ -682,7 +727,8 @@ void runSaveLoadTest() {
   SaveDataSnapshot snapshot5 = captureSnapshot(scene4.base());
 
   bool incrementalSuccess = (snapshot4 == snapshot5);
-  std::cout << "[Phase 7] Incremental Save/Load: " << (incrementalSuccess ? "PASSED" : "FAILED") << "\n";
+  std::cout << "[Phase 7] Incremental Save/Load: "
+            << (incrementalSuccess ? "PASSED" : "FAILED") << "\n";
 
   // ----------------------------------------
   // Phase 8: 组件数据完整性抽样验证
@@ -701,7 +747,8 @@ void runSaveLoadTest() {
     auto it2 = view2.begin();
     auto it4 = view4.begin();
 
-    while (it2 != view2.end() && it4 != view4.end() && sampleCount < maxSamples) {
+    while (it2 != view2.end() && it4 != view4.end() &&
+           sampleCount < maxSamples) {
       const auto& t2 = view2.get<Transform>(*it2);
       const auto& t4 = view4.get<Transform>(*it4);
 
@@ -716,8 +763,7 @@ void runSaveLoadTest() {
         }
       }
 
-      if (!componentIntegrity)
-        break;
+      if (!componentIntegrity) break;
 
       ++it2;
       ++it4;
@@ -728,7 +774,8 @@ void runSaveLoadTest() {
   }
 
   std::cout << "[Phase 8] Sampled " << sampleCount << " Transform components\n";
-  std::cout << "[Phase 8] Component Data Integrity: " << (componentIntegrity ? "PASSED" : "FAILED") << "\n";
+  std::cout << "[Phase 8] Component Data Integrity: "
+            << (componentIntegrity ? "PASSED" : "FAILED") << "\n";
 
   // ----------------------------------------
   // Final Summary
@@ -736,15 +783,22 @@ void runSaveLoadTest() {
   std::cout << "\n===========================================\n";
   std::cout << "           TEST SUMMARY                    \n";
   std::cout << "===========================================\n";
-  std::cout << " Binary Load Test     : " << (binaryLoadSuccess ? "PASSED" : "FAILED") << "\n";
-  std::cout << " JSON Load Test       : " << (jsonLoadSuccess ? "PASSED" : "FAILED") << "\n";
-  std::cout << " Frame Continuity     : " << (frameContinuity ? "PASSED" : "FAILED") << "\n";
-  std::cout << " Incremental Save     : " << (incrementalSuccess ? "PASSED" : "FAILED") << "\n";
-  std::cout << " Component Integrity  : " << (componentIntegrity ? "PASSED" : "FAILED") << "\n";
+  std::cout << " Binary Load Test     : "
+            << (binaryLoadSuccess ? "PASSED" : "FAILED") << "\n";
+  std::cout << " JSON Load Test       : "
+            << (jsonLoadSuccess ? "PASSED" : "FAILED") << "\n";
+  std::cout << " Frame Continuity     : "
+            << (frameContinuity ? "PASSED" : "FAILED") << "\n";
+  std::cout << " Incremental Save     : "
+            << (incrementalSuccess ? "PASSED" : "FAILED") << "\n";
+  std::cout << " Component Integrity  : "
+            << (componentIntegrity ? "PASSED" : "FAILED") << "\n";
   std::cout << "-------------------------------------------\n";
 
-  bool allPassed = binaryLoadSuccess && jsonLoadSuccess && frameContinuity && incrementalSuccess && componentIntegrity;
-  std::cout << " Overall Result       : " << (allPassed ? "ALL TESTS PASSED" : "SOME TESTS FAILED") << "\n";
+  bool allPassed = binaryLoadSuccess && jsonLoadSuccess && frameContinuity &&
+                   incrementalSuccess && componentIntegrity;
+  std::cout << " Overall Result       : "
+            << (allPassed ? "ALL TESTS PASSED" : "SOME TESTS FAILED") << "\n";
   std::cout << "===========================================\n";
 
   // 清理测试文件
@@ -786,13 +840,16 @@ int main() {
 
     // 关键断言！如果此处等于 0，证明 Taskflow 在执行 Setup 阶段时失效！
     if (g_setup_executions.load() == 0) {
-      std::cerr << ">>> [FATAL] Setup Phase NEVER EXECUTED! The Registry is empty!\n";
-      std::cerr << ">>> Please check Taskflow dispatch logic for Setup passes.\n";
+      std::cerr
+          << ">>> [FATAL] Setup Phase NEVER EXECUTED! The Registry is empty!\n";
+      std::cerr
+          << ">>> Please check Taskflow dispatch logic for Setup passes.\n";
       return EXIT_FAILURE;
     }
 
     const int TEST_FRAMES = g_config.BENCHMARK_FRAMES;
-    std::cout << "[3] Running Benchmark for " << TEST_FRAMES << " frames...\n\n";
+    std::cout << "[3] Running Benchmark for " << TEST_FRAMES
+              << " frames...\n\n";
 
     std::vector<double> frameTimes;
     frameTimes.reserve(TEST_FRAMES);
@@ -805,25 +862,28 @@ int main() {
       scene.run();
 
       auto frameEnd = std::chrono::high_resolution_clock::now();
-      double frameTimeMs = std::chrono::duration<double, std::milli>(frameEnd - frameStart).count();
+      double frameTimeMs =
+          std::chrono::duration<double, std::milli>(frameEnd - frameStart)
+              .count();
       frameTimes.push_back(frameTimeMs);
 
       if ((frame + 1) % 100 == 0) {
         std::cout << "[Frame " << std::setw(3) << (frame + 1) << "] "
-                  << "Time: " << std::fixed << std::setprecision(2) << std::setw(6) << frameTimeMs << " ms "
-                  << "(" << std::setw(5) << static_cast<int>(1000.0 / frameTimeMs) << " FPS)\n";
+                  << "Time: " << std::fixed << std::setprecision(2)
+                  << std::setw(6) << frameTimeMs << " ms "
+                  << "(" << std::setw(5)
+                  << static_cast<int>(1000.0 / frameTimeMs) << " FPS)\n";
       }
     }
 
     auto testEndTime = std::chrono::high_resolution_clock::now();
-    double totalTestTime = std::chrono::duration<double>(testEndTime - testStartTime).count();
+    double totalTestTime =
+        std::chrono::duration<double>(testEndTime - testStartTime).count();
 
     double minTime = frameTimes[0], maxTime = frameTimes[0], sumTime = 0.0;
     for (double t : frameTimes) {
-      if (t < minTime)
-        minTime = t;
-      if (t > maxTime)
-        maxTime = t;
+      if (t < minTime) minTime = t;
+      if (t > maxTime) maxTime = t;
       sumTime += t;
     }
     double avgTime = sumTime / TEST_FRAMES;
@@ -832,20 +892,25 @@ int main() {
     std::cout << "             IRONCLAD RESULTS              \n";
     std::cout << "===========================================\n";
     std::cout << " Total Frames     : " << TEST_FRAMES << "\n";
-    std::cout << " Total Time (s)   : " << std::fixed << std::setprecision(3) << totalTestTime << " s\n";
+    std::cout << " Total Time (s)   : " << std::fixed << std::setprecision(3)
+              << totalTestTime << " s\n";
     std::cout << " Max Frame Time   : " << maxTime << " ms\n";
     std::cout << " Min Frame Time   : " << minTime << " ms\n";
     std::cout << " Avg Frame Time   : " << avgTime << " ms\n";
-    std::cout << " Avg FPS          : " << static_cast<int>(1000.0 / avgTime) << "\n";
+    std::cout << " Avg FPS          : " << static_cast<int>(1000.0 / avgTime)
+              << "\n";
     std::cout << "-------------------------------------------\n";
-    std::cout << " Iterations Exec  : " << g_total_loop_iterations.load() << " loops\n";
+    std::cout << " Iterations Exec  : " << g_total_loop_iterations.load()
+              << " loops\n";
     std::cout << " Operations Hash  : " << g_global_state_hash.load() << "\n";
     std::cout << "===========================================\n";
 
     // 如果迭代次数为 0，说明视图内根本没东西
     if (g_total_loop_iterations.load() == 0) {
-      std::cerr << "\n>>> [WARNING] 0 iterations detected! The Views are EMPTY during update.\n";
-      std::cerr << ">>> Reason: Either `m_reg.emplace_or_replace` failed silently, or Entity creation didn't persist.\n";
+      std::cerr << "\n>>> [WARNING] 0 iterations detected! The Views are EMPTY "
+                   "during update.\n";
+      std::cerr << ">>> Reason: Either `m_reg.emplace_or_replace` failed "
+                   "silently, or Entity creation didn't persist.\n";
     }
 
   } catch (const std::exception& e) {
